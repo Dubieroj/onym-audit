@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="console-token" content="{{TOKEN}}">
+<title>Auditor console</title>
+<link rel="stylesheet" href="/ui/console.css">
+<script type="module" src="/ui/console.js"></script>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><span class="mark"></span><b id="who">Auditor</b><span class="muted" id="fp"></span></div>
+  <div class="top-actions">
+    <span id="engine-state" class="chip"></span>
+    <button id="pull" class="ghost" title="Copy queued orders from the server over SSH">Pull orders</button>
+    <button id="publish" class="ghost" title="Run deploy/deploy.sh: tests, page check, push">Publish</button>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="side">
+    <section>
+      <h2>New review</h2>
+      <form id="new-review" class="stack">
+        <div class="seg" role="radiogroup" aria-label="Method">
+          <label><input type="radio" name="kind" value="llm" checked> LLM-assisted</label>
+          <label><input type="radio" name="kind" value="manual"> Manual</label>
+        </div>
+        <input name="repo" placeholder="https://github.com/org/repo" required>
+        <input name="commit" placeholder="commit (40 hex)" class="mono" required>
+        <textarea name="scope" rows="3" placeholder="scope: files, directories, concerns" required></textarea>
+        <button type="submit">Check out &amp; start</button>
+      </form>
+    </section>
+    <section>
+      <h2>Orders <span class="count" id="orders-count"></span></h2>
+      <ul id="orders" class="list"></ul>
+    </section>
+    <section>
+      <h2>Reviews <span class="count" id="reviews-count"></span></h2>
+      <ul id="reviews" class="list"></ul>
+    </section>
+  </aside>
+
+  <main id="main" class="main">
+    <div class="empty-state">
+      <h1>Auditor console</h1>
+      <p>Pick a queued order or start a review. Everything here runs on this machine: the auditor key signs locally, and only <b>Publish</b> sends anything to the server.</p>
+      <ol>
+        <li>Check out a repository at an exact commit.</li>
+        <li>LLM-assisted: run the engine, then keep or drop each finding with a reason. Manual: select lines in the code and record findings; the quote is checked against the pinned bytes.</li>
+        <li>State coverage, sign, publish.</li>
+      </ol>
+    </div>
+  </main>
+</div>
+
+<div id="toast" class="toast" hidden role="status"></div>
+<dialog id="job"><h3>Publishing</h3><pre id="job-out"></pre><form method="dialog"><button>Close</button></form></dialog>
+</body>
+</html>

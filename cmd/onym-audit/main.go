@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/exec"
@@ -29,6 +30,7 @@ import (
 	"onym-audit/audit"
 	"onym-audit/canon"
 	"onym-audit/conformance/discovery"
+	"onym-audit/console"
 	"onym-audit/server"
 	"onym-audit/sig"
 	"onym-audit/site"
@@ -61,6 +63,10 @@ Anyone:
   draft-conformance -root DIR -config FILE -report FILE -id ID -contact C -notified-at T
                     -relationships TEXT [-observations FILE] -out DRAFT.json
 
+Local auditor console (web UI on loopback; holds the auditor key):
+  console -root DIR -config FILE -key FILE -status-key FILE [-reviews DIR] [-inbox DIR]
+          [-deploy-host HOST] [-provider openrouter|anthropic] [-listen 127.0.0.1:8790]
+
 LLM-assisted security review (drafts only; the auditor reviews and signs):
   agent-review -repo URL -commit SHA -scope TEXT|-scope-file FILE -out DIR [-provider openrouter|anthropic] [-model M] [-effort E]
   draft-review -root DIR -config FILE -findings DIR/findings.json -id ID -relationships TEXT
@@ -78,7 +84,7 @@ func main() {
 		"countersign": countersign, "offer": offer, "status": status, "serve": serve, "verify": verify,
 		"respond": respond, "sign-order": signOrder, "fixtures": fixtures,
 		"conformance-discovery": conformanceDiscovery, "draft-conformance": draftConformance,
-		"agent-review": agentReview, "draft-review": draftReview,
+		"agent-review": agentReview, "draft-review": draftReview, "console": runConsole,
 	}
 	run, ok := cmds[os.Args[1]]
 	if !ok {
@@ -1177,3 +1183,39 @@ type multiFlag []string
 
 func (m *multiFlag) String() string     { return strings.Join(*m, "; ") }
 func (m *multiFlag) Set(v string) error { *m = append(*m, v); return nil }
+
+func runConsole(args []string) error {
+	fs := flag.NewFlagSet("console", flag.ExitOnError)
+	root := fs.String("root", "public", "site root")
+	config := fs.String("config", "config.json", "auditor config")
+	key := fs.String("key", "keys/auditor.key", "auditor key")
+	statusKey := fs.String("status-key", "keys/status.key", "status key")
+	reviews := fs.String("reviews", "reviews", "review directories")
+	inbox := fs.String("inbox", "inbox", "orders pulled from the server")
+	host := fs.String("deploy-host", "root@69.62.114.87", "server holding the order inbox")
+	provider := fs.String("provider", agent.ProviderOpenRouter, "engine provider: openrouter or anthropic")
+	listen := fs.String("listen", "127.0.0.1:8790", "loopback address")
+	fs.Parse(args)
+	h, _, err := net.SplitHostPort(*listen)
+	if err != nil || (h != "127.0.0.1" && h != "localhost") {
+		return errors.New("the console holds the auditor key: listen on 127.0.0.1 only")
+	}
+	c, k, err := loadAll(*root, *config, *key)
+	if err != nil {
+		return err
+	}
+	sk, err := site.LoadKey(*statusKey)
+	if err != nil {
+		return err
+	}
+	for _, d := range []string{*reviews, *inbox} {
+		if err := os.MkdirAll(d, 0o700); err != nil {
+			return err
+		}
+	}
+	wd, _ := os.Getwd()
+	con := &console.Console{PublicRoot: *root, Config: c, AuditorKey: k, StatusKey: sk, Reviews: *reviews, Inbox: *inbox, RepoRoot: wd, DeployHost: *host, Provider: *provider}
+	srv := &http.Server{Addr: *listen, Handler: con.Handler(*listen), ReadHeaderTimeout: 10 * time.Second}
+	fmt.Printf("auditor console: http://%s/\n(loopback only; the auditor key never leaves this machine)\n", *listen)
+	return srv.ListenAndServe()
+}

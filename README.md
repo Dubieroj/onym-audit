@@ -28,6 +28,8 @@ showed **"Audit report: Pending — no audits yet"**.
 | `tools/sandbox.sh` | The whole lifecycle on your machine in one command: issue, reply, order, supersede, revoke, byte drift |
 | [`EXERCISE.md`](EXERCISE.md) | How to exercise the submission — no credentials needed |
 | `agent/` | An **LLM examination engine** (Claude, via the Anthropic Go SDK) for the `security-review` methodology: read-only tools confined to a repository checked out at an exact commit; every finding must quote the lines it rests on and is checked mechanically against the pinned bytes; the prompt is published and its digest recorded; the auditor reviews, drops with reasons, and signs |
+| `review/`, `console/` | **The auditor console**: a local web UI (loopback only, per-start token, Host check) for the order queue, manual reviews (select lines → the quote is checked against the pinned bytes), LLM-assisted reviews (run the engine, keep or drop each finding with a published reason), signing with the offline key — including countersigning commissioned orders and holding embargoed reports — and publishing |
+| `public/order/` | **Order page** (EN/RU/CNR): the subject's browser creates an Ed25519 key, signs the `AuditOrder` as subject and sponsor, and queues it with its scope text; the key is downloaded, never sent |
 | `server/`, `cmd/onym-audit` | The auditor CLI and the online server (status re-signing, `POST orders`, `POST responses`) |
 | `public/` | The published tree: manifest, profile, policies, methodology, scope, severity scale, privacy profile, landing page (EN, RU, CNR) |
 | `web/` | The landing's single template and its strings in all three languages — `python3 tools/build_landing.py` renders `public/{,ru/,cnr/}index.html`; `--check` fails on drift |
@@ -77,7 +79,14 @@ bin/onym-audit verify \
   -credit      <operator key you choose to credit>
 ```
 
-Operate an auditor:
+Run the auditor console (holds the auditor key; loopback only):
+
+```sh
+export OPENROUTER_API_KEY=…      # for LLM-assisted reviews; in your own terminal
+bin/onym-audit console           # → http://127.0.0.1:8790/
+```
+
+Operate an auditor from the command line:
 
 ```sh
 bin/onym-audit keygen  -out keys/auditor.key         # stays on your machine

@@ -185,6 +185,15 @@ var ws = regexp.MustCompile(`\s+`)
 
 func normalize(s string) string { return strings.TrimSpace(ws.ReplaceAllString(s, " ")) }
 
+// VerifyEvidence checks f's quote against the file it cites in repoDir,
+// setting Verified or Rejection. It is the same check the engine's
+// report_finding tool applies, so a finding recorded by hand meets the same
+// evidence rule as one drafted by the model.
+func VerifyEvidence(repoDir string, f *Finding) { workspace{root: repoDir}.verify(f) }
+
+// ReadLines returns a text file of repoDir, confined like the engine's tools.
+func ReadLines(repoDir, rel string) ([]string, error) { return workspace{root: repoDir}.lines(rel) }
+
 // verify checks a finding's evidence against the pinned bytes.
 func (w workspace) verify(f *Finding) {
 	f.Verified = false

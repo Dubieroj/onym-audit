@@ -103,7 +103,16 @@ go test ./agent -v
 A live run needs `ANTHROPIC_API_KEY` (see README); the prompt it sends is
 published at <https://foldy.io/audit/methodology/security-review-llm-prompt.md>.
 
-## 8. Where each requirement is met
+## 8. Order an examination, as a subject would
+
+<https://foldy.io/audit/order/> (also `/ru/order/`, `/cnr/order/`): the page
+creates an Ed25519 key in your browser, signs a real `AuditOrder` as subject
+and sponsor, and queues it. The server verifies both signatures and that the
+scope text hashes to what the order pins. The auditor then works it in the
+local console (`bin/onym-audit console`), which countersigns the order on
+signing and publishes it at `orders/<orderId>.json` with the attestation.
+
+## 9. Where each requirement is met
 
 The profile's §12 maps all nine acceptance criteria of Audit.md §16 to the
 sections and fixtures that meet them; §11 lists what is not done.
