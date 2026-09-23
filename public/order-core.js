@@ -110,6 +110,13 @@ export async function pin(root, kind, f, hosted, t, progress = () => {}) {
   progress(t("pinning"));
   const d = await api("fetch", { url }).catch((e) => { throw new Error(t("err_pin", { url, err: e.message })); });
   if (d.status !== 200) throw new Error(t("err_pin", { url, err: "HTTP " + d.status }));
+  // A service is ordered by its manifest, and the Discovery suite applies
+  // to Discovery providers only: anything else would yield a verdict about
+  // a document that is not the component.
+  let m = null;
+  try { m = plain(parseStrict(d.body)); } catch { /* not JSON */ }
+  if (!m || typeof m !== "object" || typeof m.seat !== "string") throw new Error(t("err_not_manifest", { url }));
+  if (kind === "discovery" && m.seat !== "discovery") throw new Error(t("err_not_discovery", { seat: m.seat }));
   return { artifact: { kind: "deployment", source: url, revision: d.digest, artifactHash: null }, preface: "" };
 }
 

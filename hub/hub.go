@@ -804,6 +804,16 @@ func (h *Hub) conformance(w http.ResponseWriter, r *http.Request) {
 	defer func() { <-h.heavy }()
 	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Minute)
 	defer cancel()
+	// The suite judges Discovery providers only: run on any other component
+	// its every check would "fail", and an attestation built on that would be
+	// a false adverse verdict about a component the suite does not cover.
+	if _, b, err := h.get(ctx, in.ManifestURL, MaxFetchBytes); err != nil {
+		fail(w, 502, err)
+		return
+	} else if err := discoveryProvider(b); err != nil {
+		fail(w, 422, err)
+		return
+	}
 	rep := discovery.Run(ctx, discovery.NewHTTPFetcher(), in.ManifestURL, h.Now())
 	b, err := rep.Canonical()
 	if err != nil {
@@ -813,6 +823,21 @@ func (h *Hub) conformance(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Cache-Control", "no-store")
 	w.Write(b)
+}
+
+// discoveryProvider accepts a document the Discovery suite applies to: a
+// JSON object that says it is a Discovery provider's manifest.
+func discoveryProvider(b []byte) error {
+	var m struct {
+		Seat any `json:"seat"`
+	}
+	if err := json.Unmarshal(b, &m); err != nil {
+		return errors.New("this address does not serve a JSON manifest; the Discovery suite needs a provider manifest")
+	}
+	if m.Seat != "discovery" {
+		return fmt.Errorf("this is not a Discovery provider (seat %v); the Discovery suite does not apply to it — examine it as a running service instead", m.Seat)
+	}
+	return nil
 }
 
 func (h *Hub) acquire(w http.ResponseWriter) bool {

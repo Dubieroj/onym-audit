@@ -260,3 +260,17 @@ func TestRateLimit(t *testing.T) {
 		t.Error("twenty claims in a burst were not limited")
 	}
 }
+
+// The Discovery suite runs on Discovery providers only.
+func TestDiscoveryProviderOnly(t *testing.T) {
+	for doc, ok := range map[string]bool{
+		`{"seat":"discovery","providerId":"onym:component:x"}`:   true,
+		`{"seat":"moderation","componentId":"onym:component:x"}`: false,
+		`{"componentId":"onym:component:x"}`:                     false,
+		`<!doctype html><html>order page</html>`:                 false,
+	} {
+		if err := discoveryProvider([]byte(doc)); (err == nil) != ok {
+			t.Errorf("%s: %v", doc, err)
+		}
+	}
+}

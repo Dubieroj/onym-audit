@@ -693,6 +693,7 @@ async function inspect(p) {
     A.evidence = [{ uri: url, digest: doc.digest }];
     out.replaceChildren(el("ul", { class: "checks" }, checks.map(([ok, text]) => el("li", { class: ok ? "ok" : "bad", text: (ok ? "✓ " : "✗ ") + text }))));
     if (A.kind === "discovery") {
+      if (!m || m.seat !== "discovery") throw new Error(t("err_not_discovery", { seat: m ? m.seat : "—" }));
       out.append(el("p", { class: "muted", text: t("running_suite") }));
       const rep = await api("conformance/discovery", { manifestUrl: url });
       A.method = "conformance";

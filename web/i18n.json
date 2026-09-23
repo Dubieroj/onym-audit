@@ -290,7 +290,9 @@
    "err_offer": "Choose an auditor and an offer.",
    "hashing": "Hashing the build…",
    "pinning": "Reading the manifest…",
-   "err_github": "This auditor reads repositories in the hub studio, which opens GitHub repositories: enter https://github.com/org/repo."
+   "err_github": "This auditor reads repositories in the hub studio, which opens GitHub repositories: enter https://github.com/org/repo.",
+   "err_not_manifest": "{url} does not serve a component manifest (a JSON document naming its seat). Order a service by its manifest URL.",
+   "err_not_discovery": "This is not a Discovery provider (seat “{seat}”): the Discovery suite does not apply to it. Choose “a running service” to examine it."
   },
   "nav_order": "Order a review",
   "s_title": "Onym audit · the app",
@@ -541,7 +543,9 @@
    "rq_send": "Sign and send the offer",
    "rq_sent": "Offer sent.",
    "embargo_days": "a fail is held up to {n} days",
-   "vault_unreachable": "Your order list is saved here but not yet in your vault ({err}); it syncs next time."
+   "vault_unreachable": "Your order list is saved here but not yet in your vault ({err}); it syncs next time.",
+   "err_not_manifest": "{url} does not serve a component manifest (a JSON document naming its seat). Order a service by its manifest URL.",
+   "err_not_discovery": "This is not a Discovery provider (seat “{seat}”): the Discovery suite does not apply to it. Choose “a running service” to examine it."
   },
   "o_brand": "Onym auditors",
   "o_rule": "Orders under signed offers · Onym audit seat",
@@ -926,7 +930,9 @@
    "err_offer": "Выберите аудитора и предложение.",
    "hashing": "Считаю хеш сборки…",
    "pinning": "Читаю манифест…",
-   "err_github": "Этот аудитор читает репозитории в студии хаба, которая открывает репозитории GitHub: укажите https://github.com/org/repo."
+   "err_github": "Этот аудитор читает репозитории в студии хаба, которая открывает репозитории GitHub: укажите https://github.com/org/repo.",
+   "err_not_manifest": "По адресу {url} нет манифеста компонента (JSON-документа с полем seat). Сервис заказывается по URL его манифеста.",
+   "err_not_discovery": "Это не Discovery-провайдер (seat «{seat}»): набор проверок Discovery к нему не применим. Чтобы проверить его, выберите «работающий сервис»."
   },
   "nav_order": "Заказать аудит",
   "s_title": "Аудит Onym · приложение",
@@ -1177,7 +1183,9 @@
    "rq_send": "Подписать и отправить предложение",
    "rq_sent": "Предложение отправлено.",
    "embargo_days": "провал придерживается до {n} дней",
-   "vault_unreachable": "Список заказов сохранён здесь, но ещё не в вашем хранилище ({err}); синхронизируется в следующий раз."
+   "vault_unreachable": "Список заказов сохранён здесь, но ещё не в вашем хранилище ({err}); синхронизируется в следующий раз.",
+   "err_not_manifest": "По адресу {url} нет манифеста компонента (JSON-документа с полем seat). Сервис заказывается по URL его манифеста.",
+   "err_not_discovery": "Это не Discovery-провайдер (seat «{seat}»): набор проверок Discovery к нему не применим. Чтобы проверить его, выберите «работающий сервис»."
   },
   "o_brand": "Аудиторы Onym",
   "o_rule": "Заказы по подписанным предложениям · место аудитора Onym",
@@ -1562,7 +1570,9 @@
    "err_offer": "Izaberite revizora i ponudu.",
    "hashing": "Računam heš build-a…",
    "pinning": "Čitam manifest…",
-   "err_github": "Ovaj revizor čita repozitorijume u studiju huba, koji otvara GitHub repozitorijume: unesite https://github.com/org/repo."
+   "err_github": "Ovaj revizor čita repozitorijume u studiju huba, koji otvara GitHub repozitorijume: unesite https://github.com/org/repo.",
+   "err_not_manifest": "Na adresi {url} nema manifesta komponente (JSON dokumenta s poljem seat). Servis se naručuje po URL-u manifesta.",
+   "err_not_discovery": "Ovo nije Discovery provajder (seat „{seat}“): Discovery skup provjera se na njega ne primjenjuje. Da biste ga pregledali, izaberite „servis u radu“."
   },
   "nav_order": "Naruči reviziju",
   "s_title": "Onym revizija · aplikacija",
@@ -1813,7 +1823,9 @@
    "rq_send": "Potpiši i pošalji ponudu",
    "rq_sent": "Ponuda poslata.",
    "embargo_days": "neuspjeh se zadržava do {n} dana",
-   "vault_unreachable": "Lista narudžbi je sačuvana ovdje, ali još nije u vašem trezoru ({err}); sinhronizuje se sljedeći put."
+   "vault_unreachable": "Lista narudžbi je sačuvana ovdje, ali još nije u vašem trezoru ({err}); sinhronizuje se sljedeći put.",
+   "err_not_manifest": "Na adresi {url} nema manifesta komponente (JSON dokumenta s poljem seat). Servis se naručuje po URL-u manifesta.",
+   "err_not_discovery": "Ovo nije Discovery provajder (seat „{seat}“): Discovery skup provjera se na njega ne primjenjuje. Da biste ga pregledali, izaberite „servis u radu“."
   },
   "o_brand": "Onym revizori",
   "o_rule": "Narudžbe po potpisanim ponudama · Onym mjesto revizora",
