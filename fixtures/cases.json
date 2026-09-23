@@ -1,0 +1,478 @@
+{
+  "cases": [
+    {
+      "name": "active-fresh-credited",
+      "covers": "§6 verify, §7.1–7.2",
+      "attestation": "att-active.json",
+      "manifest": "auditor-manifest.json",
+      "status": [
+        "status-fresh.json"
+      ],
+      "target": {
+        "kind": "deployment",
+        "source": "https://discovery.example.net/manifest.json",
+        "revision": "sha256:2826b8cab953a52824e73ecc0414e6da3b5b5fbcd2e89cdb23390a62a5f8f6e5",
+        "artifactHash": null
+      },
+      "creditAuditor": true,
+      "now": "2026-09-24T12:00:00Z",
+      "expectDisplay": "attested",
+      "expectError": "",
+      "expectHighStakesOK": true
+    },
+    {
+      "name": "deployment-manifest-drift",
+      "covers": "§7.3 hash mismatch → no attestation",
+      "attestation": "att-active.json",
+      "manifest": "auditor-manifest.json",
+      "status": [
+        "status-fresh.json"
+      ],
+      "target": {
+        "kind": "deployment",
+        "source": "https://discovery.example.net/manifest.json",
+        "revision": "sha256:46059793cf2205d6d422af6824215ab4fe474eed0310ef82162832711d838f34",
+        "artifactHash": null
+      },
+      "creditAuditor": true,
+      "now": "2026-09-24T12:00:00Z",
+      "expectDisplay": "no-attestation",
+      "expectError": "artifact_mismatch",
+      "expectHighStakesOK": false
+    },
+    {
+      "name": "adverse-result-rendered",
+      "covers": "§7.5 fail rendered like favorable results",
+      "attestation": "att-fail.json",
+      "manifest": "auditor-manifest.json",
+      "status": [
+        "status-fresh.json"
+      ],
+      "target": {
+        "kind": "deployment",
+        "source": "https://discovery.example.net/manifest.json",
+        "revision": "sha256:2826b8cab953a52824e73ecc0414e6da3b5b5fbcd2e89cdb23390a62a5f8f6e5",
+        "artifactHash": null
+      },
+      "creditAuditor": true,
+      "now": "2026-09-24T12:00:00Z",
+      "expectDisplay": "attested",
+      "expectError": "",
+      "expectHighStakesOK": true
+    },
+    {
+      "name": "embargoed-report",
+      "covers": "§5.6 counts without report under embargo",
+      "attestation": "att-embargo.json",
+      "manifest": "auditor-manifest.json",
+      "status": [
+        "status-fresh.json"
+      ],
+      "target": {
+        "kind": "deployment",
+        "source": "https://discovery.example.net/manifest.json",
+        "revision": "sha256:2826b8cab953a52824e73ecc0414e6da3b5b5fbcd2e89cdb23390a62a5f8f6e5",
+        "artifactHash": null
+      },
+      "creditAuditor": true,
+      "now": "2026-09-24T12:00:00Z",
+      "expectDisplay": "attested",
+      "expectError": "",
+      "expectHighStakesOK": true
+    },
+    {
+      "name": "superseded",
+      "covers": "§5.5 supersession display",
+      "attestation": "att-active.json",
+      "manifest": "auditor-manifest.json",
+      "status": [
+        "status-superseded.json"
+      ],
+      "target": {
+        "kind": "deployment",
+        "source": "https://discovery.example.net/manifest.json",
+        "revision": "sha256:2826b8cab953a52824e73ecc0414e6da3b5b5fbcd2e89cdb23390a62a5f8f6e5",
+        "artifactHash": null
+      },
+      "creditAuditor": true,
+      "now": "2026-09-24T12:00:00Z",
+      "expectDisplay": "superseded",
+      "expectError": "attestation_superseded",
+      "expectHighStakesOK": false
+    },
+    {
+      "name": "revoked",
+      "covers": "§5.5 revocation, reason class",
+      "attestation": "att-active.json",
+      "manifest": "auditor-manifest.json",
+      "status": [
+        "status-revoked.json"
+      ],
+      "revocation": "revocation.json",
+      "target": {
+        "kind": "deployment",
+        "source": "https://discovery.example.net/manifest.json",
+        "revision": "sha256:2826b8cab953a52824e73ecc0414e6da3b5b5fbcd2e89cdb23390a62a5f8f6e5",
+        "artifactHash": null
+      },
+      "creditAuditor": true,
+      "now": "2026-09-24T12:00:00Z",
+      "expectDisplay": "revoked",
+      "expectError": "attestation_revoked",
+      "expectHighStakesOK": false
+    },
+    {
+      "name": "expired",
+      "covers": "§5.4.5 expiry",
+      "attestation": "att-short.json",
+      "manifest": "auditor-manifest.json",
+      "status": [
+        "status-expired.json"
+      ],
+      "target": {
+        "kind": "deployment",
+        "source": "https://discovery.example.net/manifest.json",
+        "revision": "sha256:2826b8cab953a52824e73ecc0414e6da3b5b5fbcd2e89cdb23390a62a5f8f6e5",
+        "artifactHash": null
+      },
+      "creditAuditor": true,
+      "now": "2026-09-24T12:00:00Z",
+      "expectDisplay": "expired",
+      "expectError": "attestation_expired",
+      "expectHighStakesOK": false
+    },
+    {
+      "name": "status-rollback",
+      "covers": "§5.5 epoch monotonicity, rollback rejected",
+      "attestation": "att-active.json",
+      "manifest": "auditor-manifest.json",
+      "status": [
+        "status-fresh.json",
+        "status-older.json"
+      ],
+      "target": {
+        "kind": "deployment",
+        "source": "https://discovery.example.net/manifest.json",
+        "revision": "sha256:2826b8cab953a52824e73ecc0414e6da3b5b5fbcd2e89cdb23390a62a5f8f6e5",
+        "artifactHash": null
+      },
+      "creditAuditor": true,
+      "now": "2026-09-24T12:00:00Z",
+      "expectDisplay": "status-unknown",
+      "expectError": "status_rollback",
+      "expectHighStakesOK": false
+    },
+    {
+      "name": "status-stale",
+      "covers": "§5.5 stale list is never active",
+      "attestation": "att-active.json",
+      "manifest": "auditor-manifest.json",
+      "status": [
+        "status-stale.json"
+      ],
+      "target": {
+        "kind": "deployment",
+        "source": "https://discovery.example.net/manifest.json",
+        "revision": "sha256:2826b8cab953a52824e73ecc0414e6da3b5b5fbcd2e89cdb23390a62a5f8f6e5",
+        "artifactHash": null
+      },
+      "creditAuditor": true,
+      "now": "2026-09-24T12:00:00Z",
+      "expectDisplay": "status-unknown",
+      "expectError": "status_unavailable",
+      "expectHighStakesOK": false
+    },
+    {
+      "name": "status-absent",
+      "covers": "§12 status_unavailable degrades honestly",
+      "attestation": "att-active.json",
+      "manifest": "auditor-manifest.json",
+      "target": {
+        "kind": "deployment",
+        "source": "https://discovery.example.net/manifest.json",
+        "revision": "sha256:2826b8cab953a52824e73ecc0414e6da3b5b5fbcd2e89cdb23390a62a5f8f6e5",
+        "artifactHash": null
+      },
+      "creditAuditor": true,
+      "now": "2026-09-24T12:00:00Z",
+      "expectDisplay": "status-unknown",
+      "expectError": "status_unavailable",
+      "expectHighStakesOK": false
+    },
+    {
+      "name": "status-wrong-key",
+      "covers": "profile §5 delegated status key",
+      "attestation": "att-active.json",
+      "manifest": "auditor-manifest.json",
+      "status": [
+        "status-wrong-key.json"
+      ],
+      "target": {
+        "kind": "deployment",
+        "source": "https://discovery.example.net/manifest.json",
+        "revision": "sha256:2826b8cab953a52824e73ecc0414e6da3b5b5fbcd2e89cdb23390a62a5f8f6e5",
+        "artifactHash": null
+      },
+      "creditAuditor": true,
+      "now": "2026-09-24T12:00:00Z",
+      "expectDisplay": "status-unknown",
+      "expectError": "status_list_invalid",
+      "expectHighStakesOK": false
+    },
+    {
+      "name": "subject-response-shown",
+      "covers": "§5.7.5 reply served and displayed beside",
+      "attestation": "att-active.json",
+      "manifest": "auditor-manifest.json",
+      "status": [
+        "status-response.json"
+      ],
+      "responses": [
+        "response.json"
+      ],
+      "target": {
+        "kind": "deployment",
+        "source": "https://discovery.example.net/manifest.json",
+        "revision": "sha256:2826b8cab953a52824e73ecc0414e6da3b5b5fbcd2e89cdb23390a62a5f8f6e5",
+        "artifactHash": null
+      },
+      "creditAuditor": true,
+      "now": "2026-09-24T12:00:00Z",
+      "expectDisplay": "attested",
+      "expectError": "",
+      "expectHighStakesOK": true
+    },
+    {
+      "name": "uncredited-issuer-shown",
+      "covers": "§7.7 issuer-trust filtering",
+      "attestation": "att-active.json",
+      "manifest": "auditor-manifest.json",
+      "status": [
+        "status-fresh.json"
+      ],
+      "target": {
+        "kind": "deployment",
+        "source": "https://discovery.example.net/manifest.json",
+        "revision": "sha256:2826b8cab953a52824e73ecc0414e6da3b5b5fbcd2e89cdb23390a62a5f8f6e5",
+        "artifactHash": null
+      },
+      "creditAuditor": false,
+      "now": "2026-09-24T12:00:00Z",
+      "expectDisplay": "uncredited",
+      "expectError": "issuer_untrusted",
+      "expectHighStakesOK": false
+    },
+    {
+      "name": "uncredited-issuer-omitted",
+      "covers": "§7.7 issuer-trust filtering",
+      "attestation": "att-active.json",
+      "manifest": "auditor-manifest.json",
+      "status": [
+        "status-fresh.json"
+      ],
+      "target": {
+        "kind": "deployment",
+        "source": "https://discovery.example.net/manifest.json",
+        "revision": "sha256:2826b8cab953a52824e73ecc0414e6da3b5b5fbcd2e89cdb23390a62a5f8f6e5",
+        "artifactHash": null
+      },
+      "creditAuditor": false,
+      "omitUncredited": true,
+      "now": "2026-09-24T12:00:00Z",
+      "expectDisplay": "no-attestation",
+      "expectError": "issuer_untrusted",
+      "expectHighStakesOK": false
+    },
+    {
+      "name": "foreign-signer",
+      "covers": "§6 signature by the manifest operator",
+      "attestation": "att-foreign.json",
+      "manifest": "auditor-manifest.json",
+      "status": [
+        "status-fresh.json"
+      ],
+      "target": {
+        "kind": "deployment",
+        "source": "https://discovery.example.net/manifest.json",
+        "revision": "sha256:2826b8cab953a52824e73ecc0414e6da3b5b5fbcd2e89cdb23390a62a5f8f6e5",
+        "artifactHash": null
+      },
+      "creditAuditor": true,
+      "now": "2026-09-24T12:00:00Z",
+      "expectDisplay": "no-attestation",
+      "expectError": "attestation_invalid",
+      "expectHighStakesOK": false
+    },
+    {
+      "name": "build-exact",
+      "covers": "§14 near-miss vectors",
+      "attestation": "att-build.json",
+      "manifest": "auditor-manifest.json",
+      "status": [
+        "status-fresh.json"
+      ],
+      "target": {
+        "kind": "build",
+        "source": "https://github.com/example/app",
+        "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "artifactHash": "sha256:1287543280241d95e51703af9b0ef1d1fa114265508a43474515e0c23c0e5196"
+      },
+      "creditAuditor": true,
+      "now": "2026-09-24T12:00:00Z",
+      "expectDisplay": "attested",
+      "expectError": "",
+      "expectHighStakesOK": true
+    },
+    {
+      "name": "build-right-repo-wrong-revision",
+      "covers": "§14 near-miss vectors",
+      "attestation": "att-build.json",
+      "manifest": "auditor-manifest.json",
+      "status": [
+        "status-fresh.json"
+      ],
+      "target": {
+        "kind": "build",
+        "source": "https://github.com/example/app",
+        "revision": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "artifactHash": "sha256:1287543280241d95e51703af9b0ef1d1fa114265508a43474515e0c23c0e5196"
+      },
+      "creditAuditor": true,
+      "now": "2026-09-24T12:00:00Z",
+      "expectDisplay": "no-attestation",
+      "expectError": "artifact_mismatch",
+      "expectHighStakesOK": false
+    },
+    {
+      "name": "build-right-revision-wrong-build",
+      "covers": "§14 near-miss vectors",
+      "attestation": "att-build.json",
+      "manifest": "auditor-manifest.json",
+      "status": [
+        "status-fresh.json"
+      ],
+      "target": {
+        "kind": "build",
+        "source": "https://github.com/example/app",
+        "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "artifactHash": "sha256:fd60c930b23e830b21a5570e474e260058b286bab1b51ff6fbbdd304b71dc657"
+      },
+      "creditAuditor": true,
+      "now": "2026-09-24T12:00:00Z",
+      "expectDisplay": "no-attestation",
+      "expectError": "artifact_mismatch",
+      "expectHighStakesOK": false
+    },
+    {
+      "name": "build-fork-same-bytes",
+      "covers": "§13.1 bytes, not brands",
+      "attestation": "att-build.json",
+      "manifest": "auditor-manifest.json",
+      "status": [
+        "status-fresh.json"
+      ],
+      "target": {
+        "kind": "build",
+        "source": "https://github.com/fork/app",
+        "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "artifactHash": "sha256:1287543280241d95e51703af9b0ef1d1fa114265508a43474515e0c23c0e5196"
+      },
+      "creditAuditor": true,
+      "now": "2026-09-24T12:00:00Z",
+      "expectDisplay": "no-attestation",
+      "expectError": "artifact_mismatch",
+      "expectHighStakesOK": false
+    }
+  ],
+  "clock": "2026-09-24T12:00:00Z",
+  "invalid": [
+    {
+      "name": "notified-after-publication",
+      "covers": "§5.7.3",
+      "kind": "attestation",
+      "file": "invalid-notified-after-publication.json",
+      "expectOK": false
+    },
+    {
+      "name": "unsolicited-without-disclosure",
+      "covers": "§5.7.3",
+      "kind": "attestation",
+      "file": "invalid-unsolicited-without-disclosure.json",
+      "expectOK": false
+    },
+    {
+      "name": "unsolicited-with-order",
+      "covers": "§5.7.1",
+      "kind": "attestation",
+      "file": "invalid-unsolicited-with-order.json",
+      "expectOK": false
+    },
+    {
+      "name": "clear-without-scale",
+      "covers": "§5.4.3",
+      "kind": "attestation",
+      "file": "invalid-clear-without-scale.json",
+      "expectOK": false
+    },
+    {
+      "name": "judgment-without-expiry",
+      "covers": "§5.4.5",
+      "kind": "attestation",
+      "file": "invalid-judgment-without-expiry.json",
+      "expectOK": false
+    },
+    {
+      "name": "no-relationships",
+      "covers": "§5.4.4",
+      "kind": "attestation",
+      "file": "invalid-no-relationships.json",
+      "expectOK": false
+    },
+    {
+      "name": "bucket-off-scale",
+      "covers": "§5.4.3",
+      "kind": "attestation",
+      "file": "invalid-bucket-off-scale.json",
+      "expectOK": false
+    },
+    {
+      "name": "case-variant-key",
+      "covers": "profile §4 strict keys",
+      "kind": "attestation",
+      "file": "invalid-case-variant-key.json",
+      "expectOK": false
+    },
+    {
+      "name": "order-all-signatures",
+      "covers": "§5.3",
+      "kind": "order",
+      "file": "order.json",
+      "expectOK": true
+    },
+    {
+      "name": "order-contingent-fee",
+      "covers": "§5.3.1, acceptance 7",
+      "kind": "order",
+      "file": "invalid-order-contingent-fee.json",
+      "expectOK": false
+    },
+    {
+      "name": "response-by-subject",
+      "covers": "§5.7.5",
+      "kind": "response",
+      "file": "response.json",
+      "context": "att-active.json",
+      "expectOK": true
+    },
+    {
+      "name": "response-forged",
+      "covers": "§5.7.5",
+      "kind": "response",
+      "file": "response-forged.json",
+      "context": "att-active.json",
+      "expectOK": false
+    }
+  ],
+  "keySeeds": "sha256(\"onym-audit fixture key: \" + label)",
+  "profile": "onym:audit-profile:static-ed25519-v1"
+}
