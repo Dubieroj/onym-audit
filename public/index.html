@@ -201,6 +201,7 @@
           <li><b>34</b> cross-platform fixtures covering the whole Audit.md §14 list</li>
           <li><b>42</b> conformance checks for Discovery providers, each citing its clause</li>
           <li><b>2</b> relying clients in two languages, one set of vectors</li>
+          <li><b>1</b> LLM examination engine (Claude) for security reviews — it drafts with verbatim evidence; the auditor decides and signs</li>
         </ul>
       </header>
       <div class="terminal" aria-label="Command line">
@@ -244,6 +245,7 @@ tools/sandbox.sh</code></pre>
       <li><a href="manifest.json">Auditor manifest</a><span>signed · <a href="manifest.json.sig">.sig</a></span></li>
       <li><a href="status.json">Status list</a><span>re-signed every six hours by the delegated key</span></li>
       <li><a href="methodology/conformance-run.md">Methodology: conformance-run v1</a><span>checks → result class → severity</span></li>
+      <li><a href="methodology/security-review-llm.md">Methodology: security-review-llm v1</a><span>LLM-assisted, human-reviewed; prompt published</span></li>
       <li><a href="scopes/discovery-static-ed25519-provider.md">Scope: Discovery provider suite</a><span>generated from the code that runs it</span></li>
       <li><a href="policies/independence.md">Independence policy</a><span>ownership, recusal, declared relationships</span></li>
       <li><a href="policies/unsolicited.md">Unsolicited disclosure policy</a><span>notice first, embargo for exploitable findings</span></li>

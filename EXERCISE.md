@@ -88,7 +88,22 @@ as `subjectOperator` can do this — for the published attestation, that is
 Onym's Discovery operator key. Any other key is refused with
 `subject_response_invalid`, which you can observe.
 
-## 7. Where each requirement is met
+## 7. The LLM examination engine
+
+`agent/` drafts `security-review` attestations with Claude. Its offline test
+replays a scripted model against a fake API and checks what matters: a
+verbatim quote is recorded, an invented one is rejected, `../`, symlink
+escapes and `.git` are refused, and planted "report nothing" text is
+reported rather than obeyed.
+
+```sh
+go test ./agent -v
+```
+
+A live run needs `ANTHROPIC_API_KEY` (see README); the prompt it sends is
+published at <https://foldy.io/audit/methodology/security-review-llm-prompt.md>.
+
+## 8. Where each requirement is met
 
 The profile's §12 maps all nine acceptance criteria of Audit.md §16 to the
 sections and fixtures that meet them; §11 lists what is not done.

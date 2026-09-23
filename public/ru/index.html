@@ -201,6 +201,7 @@
           <li><b>34</b> кросс-платформенных векторов — весь список из §14 Audit.md</li>
           <li><b>42</b> проверки соответствия для провайдеров Discovery, у каждой — пункт контракта</li>
           <li><b>2</b> проверяющих клиента на двух языках, один набор векторов</li>
+          <li><b>1</b> движок проверки на LLM (Claude) для аудита безопасности — готовит черновик с дословными цитатами кода; решает и подписывает аудитор</li>
         </ul>
       </header>
       <div class="terminal" aria-label="Командная строка">
@@ -244,6 +245,7 @@ tools/sandbox.sh</code></pre>
       <li><a href="../manifest.json">Манифест аудитора</a><span>подписан · <a href="../manifest.json.sig">.sig</a></span></li>
       <li><a href="../status.json">Список статусов</a><span>переподписывается каждые шесть часов делегированным ключом</span></li>
       <li><a href="../methodology/conformance-run.md">Методика: conformance-run v1</a><span>проверки → класс результата → серьёзность</span></li>
+      <li><a href="../methodology/security-review-llm.md">Методика: security-review-llm v1</a><span>с помощью LLM, под контролем человека; промпт опубликован</span></li>
       <li><a href="../scopes/discovery-static-ed25519-provider.md">Область: набор для провайдеров Discovery</a><span>сгенерирована из кода, который её выполняет</span></li>
       <li><a href="../policies/independence.md">Политика независимости</a><span>владение, самоотвод, раскрытые связи</span></li>
       <li><a href="../policies/unsolicited.md">Политика непрошеных проверок</a><span>сначала уведомление, эмбарго для эксплуатируемых находок</span></li>

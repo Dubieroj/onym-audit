@@ -196,7 +196,10 @@
    "d_superseded": "superseded",
    "d_revoked": "revoked",
    "d_no-attestation": "does not apply"
-  }
+  },
+  "proof_4": "LLM examination engine (Claude) for security reviews — it drafts with verbatim evidence; the auditor decides and signs",
+  "d_method2": "Methodology: security-review-llm v1",
+  "d_method2_s": "LLM-assisted, human-reviewed; prompt published"
  },
  "ru": {
   "title": "Onym Auditor · Dimitrii",
@@ -394,7 +397,10 @@
    "d_superseded": "заменена",
    "d_revoked": "отозвана",
    "d_no-attestation": "не применяется"
-  }
+  },
+  "proof_4": "движок проверки на LLM (Claude) для аудита безопасности — готовит черновик с дословными цитатами кода; решает и подписывает аудитор",
+  "d_method2": "Методика: security-review-llm v1",
+  "d_method2_s": "с помощью LLM, под контролем человека; промпт опубликован"
  },
  "cnr": {
   "title": "Onym Auditor · Dimitrii",
@@ -592,6 +598,9 @@
    "d_superseded": "zamijenjena",
    "d_revoked": "opozvana",
    "d_no-attestation": "ne primjenjuje se"
-  }
+  },
+  "proof_4": "LLM mehanizam za pregled (Claude) za bezbjednosne revizije — priprema nacrt s doslovnim citatima koda; odlučuje i potpisuje revizor",
+  "d_method2": "Metodologija: security-review-llm v1",
+  "d_method2_s": "uz pomoć LLM-a, uz ljudsku provjeru; prompt objavljen"
  }
 }

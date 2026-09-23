@@ -27,6 +27,7 @@ showed **"Audit report: Pending — no audits yet"**.
 | `conformance/discovery/` | A black-box conformance suite for Discovery providers: 42 checks, each citing its clause (Discovery-Static-Ed25519, Discovery.md §14.1) — the examination behind this auditor's first attestation; its scope document is generated from the code |
 | `tools/sandbox.sh` | The whole lifecycle on your machine in one command: issue, reply, order, supersede, revoke, byte drift |
 | [`EXERCISE.md`](EXERCISE.md) | How to exercise the submission — no credentials needed |
+| `agent/` | An **LLM examination engine** (Claude, via the Anthropic Go SDK) for the `security-review` methodology: read-only tools confined to a repository checked out at an exact commit; every finding must quote the lines it rests on and is checked mechanically against the pinned bytes; the prompt is published and its digest recorded; the auditor reviews, drops with reasons, and signs |
 | `server/`, `cmd/onym-audit` | The auditor CLI and the online server (status re-signing, `POST orders`, `POST responses`) |
 | `public/` | The published tree: manifest, profile, policies, methodology, scope, severity scale, privacy profile, landing page (EN, RU, CNR) |
 | `web/` | The landing's single template and its strings in all three languages — `python3 tools/build_landing.py` renders `public/{,ru/,cnr/}index.html`; `--check` fails on drift |
@@ -85,6 +86,17 @@ bin/onym-audit publish -root public -config config.json -key keys/auditor.key -s
 bin/onym-audit attest  -root public -config config.json -key keys/auditor.key -in draft.json
 bin/onym-audit revoke  -root public -config config.json -key keys/auditor.key -id <id> -reason new-information
 deploy/deploy.sh
+```
+
+LLM-assisted security review (needs `ANTHROPIC_API_KEY` in your environment):
+
+```sh
+bin/onym-audit agent-review -repo https://github.com/<org>/<repo> -commit <sha> -scope "…" -out review/
+# read review/summary.md, then:
+bin/onym-audit draft-review -root public -config config.json -findings review/findings.json -id <id> \
+  -subject onym:component:<id> -subject-operator onym:key:<hex> -relationships none \
+  -contact mailto:<security contact> -notified-at <time> [-drop F2:reason] -out draft.json
+bin/onym-audit attest -root public -config config.json -key keys/auditor.key -in draft.json
 ```
 
 A subject answers an attestation with a signed reply, which the server

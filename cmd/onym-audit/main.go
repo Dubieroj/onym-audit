@@ -17,12 +17,17 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"syscall"
 	"time"
 
+	"github.com/anthropics/anthropic-sdk-go"
+
+	"onym-audit/agent"
 	"onym-audit/audit"
 	"onym-audit/canon"
 	"onym-audit/conformance/discovery"
@@ -57,6 +62,11 @@ Anyone:
   conformance-discovery -scope-doc                   print the suite's scope document
   draft-conformance -root DIR -config FILE -report FILE -id ID -contact C -notified-at T
                     -relationships TEXT [-observations FILE] -out DRAFT.json
+
+LLM-assisted security review (drafts only; the auditor reviews and signs):
+  agent-review -repo URL -commit SHA -scope TEXT|-scope-file FILE -out DIR [-model M] [-effort E]
+  draft-review -root DIR -config FILE -findings DIR/findings.json -id ID -relationships TEXT
+               -contact C -notified-at T -subject ID -subject-operator KEY [-drop F2:reason ...] -out DRAFT.json
 `
 
 func main() {
@@ -70,6 +80,7 @@ func main() {
 		"countersign": countersign, "offer": offer, "status": status, "serve": serve, "verify": verify,
 		"respond": respond, "sign-order": signOrder, "fixtures": fixtures,
 		"conformance-discovery": conformanceDiscovery, "draft-conformance": draftConformance,
+		"agent-review": agentReview, "draft-review": draftReview,
 	}
 	run, ok := cmds[os.Args[1]]
 	if !ok {
@@ -449,6 +460,7 @@ func verify(args []string) error {
 	manifest := fs.String("manifest", "", "auditor manifest URI or file")
 	att := fs.String("attestation", "", "attestation URI or file")
 	target := fs.String("target", "", "HTTPS URI of the component manifest you are about to use")
+	targetCommit := fs.String("target-commit", "", "for source attestations: the full commit id of the repository named by -target")
 	targetFile := fs.String("target-file", "", "local copy of the component manifest's bytes (then -target is only its identity URI)")
 	pinned := fs.String("target-document", "", "URI or file of the further served document you are about to use (e.g. the current catalog snapshot), when the attestation pins one")
 	statusRef := fs.String("status", "", "status list URI or file (default: the manifest's statusEndpoint)")
@@ -468,6 +480,13 @@ func verify(args []string) error {
 	if in.Attestation, err = fetch(*att, 256<<10); err != nil {
 		return err
 	}
+	if *targetCommit != "" {
+		if err := urirule.Check(*target); err != nil {
+			return err
+		}
+		in.Target = audit.Target{Kind: audit.KindSource, Source: *target, Revision: *targetCommit}
+		return verifyWith(in, *statusRef, *credit, *respFile, *asJSON, now)
+	}
 	src := *target
 	if *targetFile != "" {
 		if err := urirule.Check(*target); err != nil {
@@ -486,7 +505,11 @@ func verify(args []string) error {
 		}
 	}
 	in.Target = audit.DeploymentTarget(*target, tb, pb)
-	for _, k := range strings.Split(*credit, ",") {
+	return verifyWith(in, *statusRef, *credit, *respFile, *asJSON, now)
+}
+
+func verifyWith(in audit.Input, statusRef, credit, respFile string, asJSON bool, now time.Time) error {
+	for _, k := range strings.Split(credit, ",") {
 		if k != "" {
 			in.Trust.Credited[sig.Key(strings.TrimSpace(k))] = true
 		}
@@ -495,7 +518,7 @@ func verify(args []string) error {
 	if err != nil {
 		return err
 	}
-	sref := *statusRef
+	sref := statusRef
 	if sref == "" {
 		sref = m.StatusEndpoint
 	}
@@ -517,15 +540,15 @@ func verify(args []string) error {
 			}
 		}
 	}
-	if *respFile != "" {
-		b, err := os.ReadFile(*respFile)
+	if respFile != "" {
+		b, err := os.ReadFile(respFile)
 		if err != nil {
 			return err
 		}
 		in.Responses[sig.Digest(b)] = b
 	}
 	d := audit.Verify(in)
-	if *asJSON {
+	if asJSON {
 		b, _ := json.MarshalIndent(d, "", "  ")
 		fmt.Println(string(b))
 		return nil
@@ -863,3 +886,288 @@ func oneOfStr(v string, set ...string) bool {
 	}
 	return false
 }
+
+func git(dir string, args ...string) (string, error) {
+	cmd := exec.Command("git", args...)
+	cmd.Dir = dir
+	cmd.Env = append(os.Environ(), "GIT_TERMINAL_PROMPT=0")
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("git %s: %v: %s", strings.Join(args, " "), err, strings.TrimSpace(string(out)))
+	}
+	return strings.TrimSpace(string(out)), nil
+}
+
+// checkout fetches exactly one commit into dir and proves HEAD is it.
+func checkout(repo, commit, dir string) error {
+	if err := urirule.Check(repo); err != nil {
+		return err
+	}
+	if !regexp.MustCompile(`^[0-9a-f]{40}$`).MatchString(commit) {
+		return errors.New("-commit must be a full 40-character commit id")
+	}
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return err
+	}
+	for _, args := range [][]string{{"init", "-q"}, {"remote", "add", "origin", repo}, {"fetch", "-q", "--depth", "1", "origin", commit}, {"checkout", "-q", "--detach", "FETCH_HEAD"}} {
+		if _, err := git(dir, args...); err != nil {
+			return err
+		}
+	}
+	head, err := git(dir, "rev-parse", "HEAD")
+	if err != nil {
+		return err
+	}
+	if head != commit {
+		return fmt.Errorf("checked out %s, not %s", head, commit)
+	}
+	return nil
+}
+
+// AgentReport is the findings document of one LLM-assisted review.
+type AgentReport struct {
+	FindingsVersion int             `json:"findingsVersion"`
+	Methodology     string          `json:"methodology"`
+	Engine          map[string]any  `json:"engine"`
+	Artifact        audit.Artifact  `json:"artifact"`
+	Scope           string          `json:"scope"`
+	Coverage        agent.Coverage  `json:"coverage"`
+	Findings        []agent.Finding `json:"findings"`
+	Rejected        []agent.Finding `json:"rejectedByEvidenceCheck"`
+	AuditorReview   map[string]any  `json:"auditorReview"`
+	StopReason      string          `json:"stopReason"`
+	Iterations      int             `json:"iterations"`
+	Transcript      audit.DocRef    `json:"transcript"`
+}
+
+func agentReview(args []string) error {
+	fs := flag.NewFlagSet("agent-review", flag.ExitOnError)
+	repo := fs.String("repo", "", "repository HTTPS URL")
+	commit := fs.String("commit", "", "full commit id to examine")
+	scope := fs.String("scope", "", "what is in scope, in plain words")
+	scopeFile := fs.String("scope-file", "", "file holding the scope")
+	out := fs.String("out", "", "output directory")
+	model := fs.String("model", agent.DefaultModel, "Claude model")
+	effort := fs.String("effort", agent.DefaultEffort, "effort: low|medium|high|xhigh|max")
+	maxIter := fs.Int("max-iterations", agent.DefaultMaxIterations, "cap on model turns")
+	fs.Parse(args)
+	if err := need(fs, "repo", "commit", "out"); err != nil {
+		return err
+	}
+	if *scopeFile != "" {
+		b, err := os.ReadFile(*scopeFile)
+		if err != nil {
+			return err
+		}
+		*scope = string(b)
+	}
+	if strings.TrimSpace(*scope) == "" {
+		return errors.New("state the scope with -scope or -scope-file")
+	}
+	if os.Getenv("ANTHROPIC_API_KEY") == "" && os.Getenv("ANTHROPIC_AUTH_TOKEN") == "" {
+		return errors.New("no Claude API credentials: export ANTHROPIC_API_KEY in your own terminal (never paste it into a chat or a file in this repository)")
+	}
+	work := filepath.Join(*out, "workspace")
+	if err := checkout(*repo, *commit, work); err != nil {
+		return err
+	}
+	fmt.Printf("examining %s at %s with %s (effort %s)…\n", *repo, *commit, *model, *effort)
+	res, err := agent.Review(context.Background(), anthropic.NewClient(), agent.Config{
+		Model: *model, Effort: *effort, MaxIterations: *maxIter,
+		RepoDir: work, Source: *repo, Revision: *commit, Scope: *scope,
+	})
+	if err != nil {
+		return err
+	}
+	tpath := filepath.Join(*out, "transcript.json")
+	if err := site.WriteAtomic(tpath, res.Transcript); err != nil {
+		return err
+	}
+	rep := AgentReport{
+		FindingsVersion: 1, Methodology: agent.Version,
+		Engine:   map[string]any{"model": *model, "effort": *effort, "maxIterations": *maxIter, "systemPrompt": agent.PromptDigest(), "tools": []string{"list_files", "read_file", "search", "report_finding", "finish"}},
+		Artifact: audit.Artifact{Kind: audit.KindSource, Source: *repo, Revision: *commit},
+		Scope:    *scope, Coverage: res.Coverage, Findings: res.Findings, Rejected: res.Rejected,
+		AuditorReview: map[string]any{"state": "pending"},
+		StopReason:    res.StopReason, Iterations: res.Iterations,
+		Transcript: audit.DocRef{URI: "https://transcript.invalid/pending-publication", Digest: sig.Digest(res.Transcript)},
+	}
+	b, err := json.MarshalIndent(rep, "", "  ")
+	if err != nil {
+		return err
+	}
+	if err := site.WriteAtomic(filepath.Join(*out, "findings.json"), append(b, '\n')); err != nil {
+		return err
+	}
+	var sum strings.Builder
+	fmt.Fprintf(&sum, "# Agent review — for the auditor\n\n%s at `%s`\n\nProposed result: **%s** · stop: %s · turns: %d\n\n", *repo, *commit, res.ResultClass(), res.StopReason, res.Iterations)
+	fmt.Fprintf(&sum, "Coverage (%s): %s\n\n- examined: %s\n- not examined: %s\n\n", map[bool]string{true: "complete", false: "partial"}[res.Coverage.Complete], res.Coverage.Summary, strings.Join(res.Coverage.Examined, ", "), strings.Join(res.Coverage.NotExamined, "; "))
+	for _, f := range res.Findings {
+		fmt.Fprintf(&sum, "## %s · %s · %s\n\n`%s:%d-%d` · confidence %s\n\n```\n%s\n```\n\n%s\n\nFix: %s\n\n", f.ID, strings.ToUpper(f.Severity), f.Title, f.Path, f.LineStart, f.LineEnd, f.Confidence, f.Quote, f.Description, f.Recommendation)
+	}
+	if len(res.Rejected) > 0 {
+		fmt.Fprintf(&sum, "## Rejected by the evidence check (%d)\n\n", len(res.Rejected))
+		for _, f := range res.Rejected {
+			fmt.Fprintf(&sum, "- %s — %s\n", f.Title, f.Rejection)
+		}
+	}
+	sum.WriteString("\n## Before you sign\n\n1. Open every finding at its cited lines in the workspace and decide whether you stand behind it.\n2. Drop what you do not, with a reason: each `draft-review -drop F2:reason` is recorded in the published report.\n3. Notify the subject through its published security contact; record where and when.\n4. Run `draft-review`, read the draft, then `attest`.\n")
+	if err := site.WriteAtomic(filepath.Join(*out, "summary.md"), []byte(sum.String())); err != nil {
+		return err
+	}
+	fmt.Printf("\n%d verified finding(s), %d rejected; proposed result %s\nread %s before anything else\n", len(res.Findings), len(res.Rejected), res.ResultClass(), filepath.Join(*out, "summary.md"))
+	return nil
+}
+
+func draftReview(args []string) error {
+	fs := flag.NewFlagSet("draft-review", flag.ExitOnError)
+	root := fs.String("root", "", "site root")
+	config := fs.String("config", "", "auditor config")
+	findingsPath := fs.String("findings", "", "findings.json written by agent-review")
+	id := fs.String("id", "", "attestation id")
+	rel := fs.String("relationships", "", "declared relationships with the subject")
+	contact := fs.String("contact", "", "subject contact the findings were sent to")
+	notified := fs.String("notified-at", "", "when the subject was notified (RFC 3339 UTC)")
+	subject := fs.String("subject", "", "subject component id (onym:component:...)")
+	subjectOp := fs.String("subject-operator", "", "subject operator key (onym:key:...), whose signed reply will be accepted")
+	var drops multiFlag
+	fs.Var(&drops, "drop", "ID:reason for a finding the auditor does not stand behind (repeatable)")
+	out := fs.String("out", "", "draft to write")
+	fs.Parse(args)
+	if err := need(fs, "root", "config", "findings", "id", "relationships", "contact", "notified-at", "subject", "subject-operator", "out"); err != nil {
+		return err
+	}
+	c, _, err := loadAll(*root, *config, "")
+	if err != nil {
+		return err
+	}
+	b, err := os.ReadFile(*findingsPath)
+	if err != nil {
+		return err
+	}
+	var rep AgentReport
+	if err := json.Unmarshal(b, &rep); err != nil {
+		return err
+	}
+	tb, err := os.ReadFile(filepath.Join(filepath.Dir(*findingsPath), "transcript.json"))
+	if err != nil {
+		return err
+	}
+	if sig.Digest(tb) != rep.Transcript.Digest {
+		return errors.New("transcript.json does not match the digest in findings.json")
+	}
+	// The auditor's overrides are recorded, never silent.
+	dropped := []map[string]string{}
+	reasons := map[string]string{}
+	for _, d := range drops {
+		k, why, ok := strings.Cut(d, ":")
+		if !ok || strings.TrimSpace(why) == "" {
+			return fmt.Errorf("-drop %q: give a reason as ID:reason", d)
+		}
+		reasons[k] = strings.TrimSpace(why)
+	}
+	kept := []agent.Finding{}
+	for _, f := range rep.Findings {
+		if why, ok := reasons[f.ID]; ok {
+			dropped = append(dropped, map[string]string{"id": f.ID, "title": f.Title, "reason": why})
+			delete(reasons, f.ID)
+			continue
+		}
+		kept = append(kept, f)
+	}
+	for k := range reasons {
+		return fmt.Errorf("-drop names %s, which is not a finding", k)
+	}
+	rep.Findings = kept
+	rep.AuditorReview = map[string]any{"state": "reviewed", "reviewedBy": c.DisplayName, "dropped": dropped}
+	// Publish the transcript and the report, content-addressed.
+	thex := strings.TrimPrefix(sig.Digest(tb), "sha256:")
+	tpath := "reports/" + thex + "-transcript.json"
+	if err := site.WriteAtomic(filepath.Join(*root, tpath), tb); err != nil {
+		return err
+	}
+	rep.Transcript = audit.DocRef{URI: c.BaseURI + tpath, Digest: sig.Digest(tb)}
+	rb, err := audit.CanonicalOf(rep)
+	if err != nil {
+		return err
+	}
+	rhex := strings.TrimPrefix(sig.Digest(rb), "sha256:")
+	rpath := "reports/" + rhex + ".json"
+	if err := site.WriteAtomic(filepath.Join(*root, rpath), rb); err != nil {
+		return err
+	}
+	scopeDoc := fmt.Sprintf("# Scope: security-review of %s at %s\n\nMethodology `security-review-llm-v1`.\n\n%s\n", rep.Artifact.Source, rep.Artifact.Revision, rep.Scope)
+	spath := "scopes/security-review-" + rep.Artifact.Revision[:12] + ".md"
+	if err := site.WriteAtomic(filepath.Join(*root, spath), []byte(scopeDoc)); err != nil {
+		return err
+	}
+	ref := func(p string) (audit.DocRef, error) { return site.Ref(*root, c, p) }
+	meth, err := ref("methodology/security-review-llm.md")
+	if err != nil {
+		return err
+	}
+	scopeRef, err := ref(spath)
+	if err != nil {
+		return err
+	}
+	scale, err := ref(site.SeverityPath)
+	if err != nil {
+		return err
+	}
+	unsol, err := ref(site.UnsolicitedPath)
+	if err != nil {
+		return err
+	}
+	auditorKey, err := manifestOperator(*root)
+	if err != nil {
+		return err
+	}
+	// The result follows the reviewed findings, not the agent's proposal.
+	class := (&agent.Result{Findings: kept, Coverage: rep.Coverage, StopReason: rep.StopReason}).ResultClass()
+	summary := map[string]int{}
+	for _, f := range kept {
+		summary[f.Severity]++
+	}
+	excl := append([]string{
+		"anything outside the stated scope",
+		"runtime behaviour: the review reads source at one commit and executes nothing",
+		"dependencies not vendored in the repository",
+		"defects the examination did not find: an LLM-assisted review can miss issues",
+	}, rep.Coverage.NotExamined...)
+	now := time.Now()
+	a := audit.Attestation{
+		AttestationVersion: 1, AttestationID: *id,
+		Subject: *subject, SubjectOperator: sig.Key(*subjectOp),
+		Artifact:         rep.Artifact,
+		MethodologyClass: audit.SecurityReview, Methodology: meth, Scope: scopeRef,
+		ScopeSummary: "LLM-assisted security review (" + rep.Engine["model"].(string) + ", human-reviewed): " + firstLine(rep.Scope),
+		Exclusions:   excl, Result: class, SeverityScale: &scale, SeverityFloor: strPtr("low"),
+		FindingsReport: &audit.DocRef{URI: c.BaseURI + rpath, Digest: sig.Digest(rb)}, FindingsSummary: summary,
+		Engagement: "unsolicited", Sponsor: auditorKey, SponsorName: c.DisplayName + " (self-funded)", Relationships: *rel,
+		Unsolicited: &audit.UnsolicitedDisclosure{Policy: unsol.Digest, SubjectContact: *contact, SubjectNotifiedAt: *notified},
+		IssuedAt:    sig.FormatTime(now), ExpiresAt: strPtr(sig.FormatTime(now.Add(180 * 24 * time.Hour))),
+	}
+	db, err := json.MarshalIndent(a, "", "  ")
+	if err != nil {
+		return err
+	}
+	fmt.Printf("report %s%s\nresult %s, %v, %d dropped by the auditor\n", c.BaseURI, rpath, class, summary, len(dropped))
+	return site.WriteAtomic(*out, append(db, '\n'))
+}
+
+func firstLine(s string) string {
+	s = strings.TrimSpace(s)
+	if i := strings.IndexByte(s, '\n'); i >= 0 {
+		s = s[:i]
+	}
+	if len(s) > 160 {
+		s = s[:160] + "…"
+	}
+	return s
+}
+
+// multiFlag collects a repeatable string flag.
+type multiFlag []string
+
+func (m *multiFlag) String() string     { return strings.Join(*m, "; ") }
+func (m *multiFlag) Set(v string) error { *m = append(*m, v); return nil }

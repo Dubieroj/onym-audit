@@ -4,8 +4,23 @@
   "displayName": "Dimitrii",
   "contact": "mailto:dubieroj@gmail.com",
   "validUntil": "2027-09-24T00:00:00Z",
-  "offers": ["conformance-run-discovery"],
+  "offers": [
+    "conformance-run-discovery"
+  ],
   "methodologies": [
-    {"class": "conformance-run", "specification": "methodology/conformance-run.md", "scopesOffered": ["discovery.static-ed25519.provider"]}
+    {
+      "class": "conformance-run",
+      "specification": "methodology/conformance-run.md",
+      "scopesOffered": [
+        "discovery.static-ed25519.provider"
+      ]
+    },
+    {
+      "class": "security-review",
+      "specification": "methodology/security-review-llm.md",
+      "scopesOffered": [
+        "source"
+      ]
+    }
   ]
 }
