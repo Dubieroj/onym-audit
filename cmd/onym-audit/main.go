@@ -38,6 +38,7 @@ Auditor (offline, holds the auditor key):
                                                      sign profile.json and manifest.json
   attest      -root DIR -config FILE -key FILE -in DRAFT.json
                                                      sign and publish an attestation
+  offer       -root DIR -config FILE -key FILE -in DRAFT.json   sign and publish an engagement offer
   revoke      -root DIR -config FILE -key FILE -id ID -reason REASON [-detail-uri U -detail FILE]
   countersign -in ORDER.json -key FILE -out FILE     accept a reviewed order (auditor role)
 
@@ -60,7 +61,7 @@ func main() {
 	}
 	cmds := map[string]func([]string) error{
 		"keygen": keygen, "publish": publish, "attest": attest, "revoke": revoke,
-		"countersign": countersign, "status": status, "serve": serve, "verify": verify,
+		"countersign": countersign, "offer": offer, "status": status, "serve": serve, "verify": verify,
 		"respond": respond, "sign-order": signOrder, "fixtures": fixtures,
 		"conformance-discovery": conformanceDiscovery,
 	}
@@ -212,6 +213,41 @@ func attest(args []string) error {
 	}
 	fmt.Printf("%s%s\n%s\n", c.BaseURI, "attestations/"+a.AttestationID+".json", sig.Digest(raw))
 	return nil
+}
+
+func offer(args []string) error {
+	fs := flag.NewFlagSet("offer", flag.ExitOnError)
+	root := fs.String("root", "", "site root")
+	config := fs.String("config", "", "auditor config")
+	key := fs.String("key", "", "auditor key")
+	in := fs.String("in", "", "offer draft (JSON, unsigned)")
+	fs.Parse(args)
+	if err := need(fs, "root", "config", "key", "in"); err != nil {
+		return err
+	}
+	c, k, err := loadAll(*root, *config, *key)
+	if err != nil {
+		return err
+	}
+	b, err := os.ReadFile(*in)
+	if err != nil {
+		return err
+	}
+	var o audit.Offer
+	dec := json.NewDecoder(strings.NewReader(string(b)))
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(&o); err != nil {
+		return err
+	}
+	o.Auditor, o.AuditorKey, o.Signature = c.ComponentID, site.KeyOf(k), ""
+	raw, err := audit.SignDoc(o, k)
+	if err != nil {
+		return err
+	}
+	if _, err := audit.ParseOffer(raw); err != nil {
+		return err
+	}
+	return site.WriteSigned(filepath.Join(*root, "offers", o.OfferID+".json"), raw)
 }
 
 func revoke(args []string) error {

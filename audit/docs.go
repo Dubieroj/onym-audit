@@ -448,3 +448,69 @@ func ParseOrderRequest(raw []byte, auditorComponent string) (*AuditOrder, error)
 	}
 	return &o, nil
 }
+
+// OfferFee is an offer's price. Amount is in minor units of Currency; both
+// are null for pro-bono. There is no field for a result-dependent price.
+type OfferFee struct {
+	Model    string  `json:"model"`
+	Amount   *int    `json:"amount"`
+	Currency *string `json:"currency"`
+}
+
+// Offer is an engagement offer (Audit.md §11: auditors publish engagement
+// offers as SeatOffers), served at offers/<offerId>.json.
+type Offer struct {
+	OfferVersion     int        `json:"offerVersion"`
+	OfferID          string     `json:"offerId"`
+	Auditor          string     `json:"auditor"`
+	AuditorKey       sig.Key    `json:"auditorKey"`
+	MethodologyClass string     `json:"methodologyClass"`
+	Scope            DocRef     `json:"scope"`
+	Fee              OfferFee   `json:"fee"`
+	TimelineDays     int        `json:"timelineDays"`
+	Disclosure       Disclosure `json:"disclosure"`
+	ValidUntil       string     `json:"validUntil"`
+	Signature        string     `json:"signature,omitempty"`
+}
+
+var offerShape = &shape{
+	required: []string{"offerVersion", "offerId", "auditor", "auditorKey", "methodologyClass", "scope", "fee", "timelineDays", "disclosure", "validUntil", "signature"},
+	nested: map[string]*shape{
+		"scope":      docRefShape,
+		"fee":        {required: []string{"model", "amount", "currency"}},
+		"disclosure": {required: []string{"findingsToSubjectFirst", "embargoDays", "attestationPublication", "failPublication"}},
+	},
+}
+
+// ParseOffer checks an offer's schema, fee model, and signature.
+func ParseOffer(raw []byte) (*Offer, error) {
+	var o Offer
+	if err := decodeStrict(raw, offerShape, &o); err != nil {
+		return nil, err
+	}
+	if o.OfferVersion != 1 || !offerIDRE.MatchString(o.OfferID) || !componentRE.MatchString(o.Auditor) || !oneOf(o.MethodologyClass, MethodologyClasses...) {
+		return nil, fmt.Errorf("%w: offer fields", canon.ErrMalformed)
+	}
+	if err := o.Scope.validate("scope"); err != nil {
+		return nil, err
+	}
+	switch o.Fee.Model {
+	case "pro-bono":
+		if o.Fee.Amount != nil || o.Fee.Currency != nil {
+			return nil, fmt.Errorf("%w: pro-bono carries no amount", canon.ErrMalformed)
+		}
+	case "fixed-verdict-independent":
+		if o.Fee.Amount == nil || *o.Fee.Amount < 0 || o.Fee.Currency == nil || len(*o.Fee.Currency) != 3 {
+			return nil, fmt.Errorf("%w: a fixed fee needs amount and ISO currency", canon.ErrMalformed)
+		}
+	default:
+		return nil, fmt.Errorf("%w: fee model %q not admitted", canon.ErrMalformed, o.Fee.Model)
+	}
+	if _, err := sig.ParseTime(o.ValidUntil); err != nil {
+		return nil, err
+	}
+	if err := sig.Verify(raw, "signature", o.AuditorKey); err != nil {
+		return nil, err
+	}
+	return &o, nil
+}

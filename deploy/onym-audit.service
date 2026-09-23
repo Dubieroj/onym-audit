@@ -1,0 +1,21 @@
+[Unit]
+Description=Onym audit seat: status re-signing and write endpoints
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=onym-audit
+Group=onym-audit
+ExecStart=/usr/local/bin/onym-audit serve -root /var/lib/onym-audit/site -config /etc/onym-audit/config.json -status-key /etc/onym-audit/status.key -inbox /var/lib/onym-audit/inbox -listen 127.0.0.1:8787
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/onym-audit
+ReadOnlyPaths=/etc/onym-audit
+
+[Install]
+WantedBy=multi-user.target

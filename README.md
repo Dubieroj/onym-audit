@@ -1,0 +1,101 @@
+# onym-audit
+
+A working **audit & attestation seat** for the [Onym](https://onym.foundation)
+network, built for [Sobor 2026](https://sobor.io): the first concrete
+implementation profile of
+[`audit/Audit.md`](https://github.com/onymchat/onym-system/blob/main/audit/Audit.md),
+a reference auditor, a relying-client verifier in two languages, a
+conformance suite, and a live instance.
+
+> An auditor examines exact bytes under a declared scope and signs what it
+> found. The attestation is one institution's visible opinion — never a
+> license, a gate, or a substitute for the reader's own trust decision.
+> — Audit.md
+
+Before this, the seat had a contract and no code, and the Onym iOS app
+showed **"Audit report: Pending — no audits yet"**.
+
+## What is here
+
+| Path | What it is |
+|---|---|
+| [`public/profile/Audit-Static-Ed25519.md`](public/profile/Audit-Static-Ed25519.md) | **The implementation profile** (Audit.md §15 said none existed): documents, signing, serving, freshness, verification, errors, fixtures, gaps, and a line-by-line map to Audit.md §16's acceptance criteria |
+| `canon/`, `sig/`, `urirule/` | Canonical JSON, Ed25519, and URI rules — shared with Discovery-Static-Ed25519 and proven **byte-identical** to the Rust reference (`onym-discovery`) on its published vectors |
+| `audit/` | Every boundary object of Audit.md §5 with strict decoding, the signed status list, and the relying-client `verify` of §6–§7 |
+| `fixtures/` | 34 byte-pinned cross-platform fixtures (22 decision cases, 12 parse cases) covering the whole Audit.md §14 list — `cases.json` states every expected outcome |
+| `public/verify.js` | A **second, independent** relying client in JavaScript (WebCrypto), passing the same reference vectors and fixtures — `node tools/verify-js-test.mjs` |
+| `conformance/discovery/` | A black-box conformance suite for Discovery providers (Discovery-Static-Ed25519), the methodology behind this auditor's first attestation |
+| `server/`, `cmd/onym-audit` | The auditor CLI and the online server (status re-signing, `POST orders`, `POST responses`) |
+| `public/` | The published tree: manifest, profile, policies, methodology, scope, severity scale, privacy profile, web page |
+| `deploy/` | systemd unit, nginx snippet, idempotent deploy script |
+
+## Design in five decisions
+
+1. **Bytes, not brands.** An attestation binds a git commit, a build hash,
+   or a deployment's signed-manifest digest — plus, for a deployment, the
+   one served document its result depends on (a catalog snapshot). When the
+   bytes change, the attestation stops matching: a `fail` cannot follow a
+   fixed deployment, nor a `clear` a broken one.
+2. **The auditor key stays offline.** A delegated `statusKey`, named in the
+   manifest, re-signs the status list every 6 hours on the server. It can
+   refresh freshness but cannot mint, alter, or revoke an attestation.
+3. **No per-attestation status query.** One signed list covers every
+   attestation, so checking status never tells the auditor which component
+   a user is about to rely on (Audit.md §7.8).
+4. **Verdict-independent fees are the only expressible fees.** The fee model
+   is a closed set; a contingent fee fails to parse (acceptance criterion 7).
+5. **Absence is absence.** An unattested component renders as unattested,
+   never as failed; an adverse result renders exactly where a favorable one
+   would; an uncredited issuer is labelled or omitted by the user's choice.
+
+## Run it
+
+```sh
+go test ./...                      # all packages, incl. byte-pinned fixtures
+node tools/verify-js-test.mjs      # the JavaScript client against the same vectors
+go build -o bin/onym-audit ./cmd/onym-audit
+bin/onym-audit fixtures -dir fixtures
+```
+
+Verify a live attestation as a relying client:
+
+```sh
+bin/onym-audit verify \
+  -manifest    https://…/manifest.json \
+  -attestation https://…/attestations/<id>.json \
+  -target      <component manifest URL> \
+  -target-document <pinned document URL, if the attestation names one> \
+  -credit      <operator key you choose to credit>
+```
+
+Operate an auditor:
+
+```sh
+bin/onym-audit keygen  -out keys/auditor.key         # stays on your machine
+bin/onym-audit keygen  -out keys/status.key          # goes to the server
+bin/onym-audit publish -root public -config config.json -key keys/auditor.key -status-key keys/status.key
+bin/onym-audit attest  -root public -config config.json -key keys/auditor.key -in draft.json
+bin/onym-audit revoke  -root public -config config.json -key keys/auditor.key -id <id> -reason new-information
+deploy/deploy.sh
+```
+
+A subject answers an attestation with a signed reply, which the server
+publishes beside it:
+
+```sh
+bin/onym-audit respond -attestation <url> -key <subject operator key> -id <response id> -text "…" -out reply.json
+curl --data-binary @reply.json https://…/responses
+```
+
+## Honest limits
+
+See the profile's §11. In short: one author wrote both relying clients;
+no shipping Onym client consumes attestations yet (Discovery's `evidence`
+field is deferred to its v2, and this profile's attestation is the
+candidate shape); key rotation is out of scope for v1; one host; only the
+`conformance-run` methodology is written.
+
+## License
+
+MIT. `testdata/discovery-reference/` holds unmodified MIT-licensed fixtures
+from `onymchat/onym-discovery` (see its `SOURCE.md`).

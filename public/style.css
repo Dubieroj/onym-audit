@@ -1,0 +1,40 @@
+:root {
+  --bg: #f6f5f2; --fg: #16161a; --muted: #5d5d66; --line: #d9d7d0; --card: #ffffff;
+  --accent: #1f4fd6; --fail: #b3261e; --ok: #1b6e3a; --warn: #8a5a00;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #111114; --fg: #ececf1; --muted: #9a9aa6; --line: #2a2a31; --card: #18181d; --accent: #8fb0ff; --fail: #ff8a80; --ok: #7bd49a; --warn: #f0c060; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { max-width: 860px; margin: 0 auto; padding: 48px 16px 80px; }
+a { color: var(--accent); }
+h1 { font-size: clamp(28px, 5vw, 40px); line-height: 1.1; margin: 8px 0 12px; letter-spacing: -0.02em; }
+h2 { font-size: 20px; margin: 48px 0 8px; }
+h3 { font-size: 17px; margin: 10px 0 4px; word-break: break-word; }
+.eyebrow { text-transform: uppercase; letter-spacing: .08em; font-size: 12px; color: var(--muted); margin: 0; }
+.lede { font-size: 18px; color: var(--muted); max-width: 62ch; }
+.hint, .note { color: var(--muted); font-size: 14px; }
+.bad { color: var(--fail); }
+.facts, .kv { display: grid; gap: 6px; margin: 20px 0 0; }
+.facts div, .kv div { display: grid; grid-template-columns: 140px 1fr; gap: 12px; }
+dt { color: var(--muted); font-size: 14px; }
+dd { margin: 0; font-size: 14px; word-break: break-all; }
+.kv dd { word-break: break-word; }
+.credit { display: flex; gap: 8px; align-items: center; font-size: 14px; margin: 12px 0; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; margin: 12px 0; }
+.cardhead { display: flex; gap: 8px; flex-wrap: wrap; }
+.result, .state { font-size: 12px; font-weight: 600; letter-spacing: .04em; padding: 2px 8px; border-radius: 999px; border: 1px solid currentColor; }
+.r-fail { color: var(--fail); } .r-clear { color: var(--ok); } .r-findings-noted, .r-inconclusive { color: var(--warn); }
+.state { color: var(--muted); }
+.s-attested { color: var(--ok); } .s-revoked, .s-expired { color: var(--fail); }
+.who { margin: 0 0 8px; color: var(--muted); font-size: 14px; }
+.links a { font-size: 14px; }
+.reply { margin: 10px 0 0; padding: 8px 12px; border-left: 3px solid var(--accent); color: var(--fg); font-size: 14px; }
+pre { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 12px; overflow-x: auto; font-size: 13px; }
+code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.docs li { margin: 4px 0; }
+@media (max-width: 560px) {
+  .facts div, .kv div { grid-template-columns: 1fr; gap: 0; }
+}

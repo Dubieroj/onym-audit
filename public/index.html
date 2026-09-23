@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Onym Auditor</title>
+<meta name="description" content="An independent audit seat on the Onym network: signed, expiring, revocable attestations about exact bytes.">
+<link rel="stylesheet" href="style.css">
+<script type="module" src="app.js"></script>
+</head>
+<body>
+<main>
+  <header>
+    <p class="eyebrow">Onym network · audit &amp; attestation seat</p>
+    <h1 id="who">Onym Auditor</h1>
+    <p class="lede">Signed, expiring, revocable opinions about <em>exact bytes</em> — each one naming who examined what, how, and at whose expense. An attestation is one auditor's visible opinion, never a licence or a gate.</p>
+    <dl class="facts" id="facts">
+      <div><dt>Operator key</dt><dd id="opkey">…</dd></div>
+      <div><dt>Status list</dt><dd id="statusline">…</dd></div>
+      <div><dt>Profile</dt><dd><a href="profile/Audit-Static-Ed25519.md">onym:audit-profile:static-ed25519-v1</a></dd></div>
+    </dl>
+  </header>
+
+  <section>
+    <h2>Attestations</h2>
+    <p class="hint">Everything below is verified in your browser: the manifest and each attestation against the operator key, the status list against the delegated status key. Nothing on this page is trusted because this server says so.</p>
+    <label class="credit"><input type="checkbox" id="credit"> I credit this auditor (otherwise results show as from an uncredited issuer)</label>
+    <div id="atts"><p class="hint">Loading…</p></div>
+  </section>
+
+  <section>
+    <h2>Check it yourself</h2>
+    <p>From a terminal, with the reference client:</p>
+    <pre><code>go install ./cmd/onym-audit   # from the source repository
+onym-audit verify -manifest MANIFEST_URL \
+  -attestation ATTESTATION_URL \
+  -target COMPONENT_MANIFEST_URL [-target-document PINNED_DOCUMENT_URL] \
+  -credit OPERATOR_KEY</code></pre>
+    <p>Or compare digests by hand: an attestation applies only while <code>sha256</code> of the component's manifest (and of the pinned document, if any) equals what it names.</p>
+    <pre><code>curl -s COMPONENT_MANIFEST_URL | shasum -a 256</code></pre>
+  </section>
+
+  <section class="docs">
+    <h2>Documents this auditor is bound by</h2>
+    <ul>
+      <li><a href="manifest.json">Auditor manifest</a> (<a href="manifest.json.sig">.sig</a>)</li>
+      <li><a href="methodology/conformance-run.md">Methodology: conformance-run v1</a></li>
+      <li><a href="scopes/discovery-static-ed25519-provider.md">Scope: Discovery provider suite</a></li>
+      <li><a href="policies/independence.md">Independence policy</a> · <a href="policies/unsolicited.md">Unsolicited disclosure policy</a> · <a href="policies/liability.md">Liability terms</a></li>
+      <li><a href="severity-v1.json">Severity scale</a> · <a href="privacy.md">Privacy profile</a></li>
+      <li><a href="status.json">Signed status list</a> · subjects reply by <code>POST responses</code> (a signed SubjectResponse)</li>
+    </ul>
+  </section>
+</main>
+</body>
+</html>
