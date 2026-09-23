@@ -1,6 +1,6 @@
 # Unsolicited examination and disclosure policy
 
-Auditor: AUDITOR_NAME (`AUDITOR_COMPONENT`). Version 1, 24 September 2026.
+Auditor: Dimitrii (`onym:component:dimitrii-audit`). Version 1, 24 September 2026.
 
 Pinned by digest in the auditor manifest and in every unsolicited
 attestation (Onym Audit.md §5.7).

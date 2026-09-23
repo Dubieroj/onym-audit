@@ -2,3 +2,7 @@
 /bin/
 *.key
 .DS_Store
+/public/status.json
+/public/status.json.sig
+/public/responses/
+/dist/

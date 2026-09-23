@@ -1,6 +1,6 @@
 # Methodology: conformance-run v1
 
-Auditor: AUDITOR_NAME (`AUDITOR_COMPONENT`). Version 1, 24 September 2026.
+Auditor: Dimitrii (`onym:component:dimitrii-audit`). Version 1, 24 September 2026.
 Methodology class `conformance-run` (Onym Audit.md §2): *a component passed
 a named, versioned conformance suite.*
 

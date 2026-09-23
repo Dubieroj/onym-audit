@@ -1,0 +1,11 @@
+{
+  "baseUri": "https://foldy.io/audit/",
+  "componentId": "onym:component:dimitrii-audit",
+  "displayName": "Dimitrii",
+  "contact": "mailto:dubieroj@gmail.com",
+  "validUntil": "2027-09-24T00:00:00Z",
+  "offers": ["conformance-run-discovery"],
+  "methodologies": [
+    {"class": "conformance-run", "specification": "methodology/conformance-run.md", "scopesOffered": ["discovery.static-ed25519.provider"]}
+  ]
+}

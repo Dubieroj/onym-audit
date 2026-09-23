@@ -49,12 +49,14 @@ mv -f /usr/local/bin/onym-audit.upload /usr/local/bin/onym-audit
 chmod 755 /usr/local/bin/onym-audit
 REMOTE
 
-rsync -rlt --chmod=D755,F644 --exclude status.json --exclude status.json.sig --exclude responses/ \
+rsync -rlt --exclude status.json --exclude status.json.sig --exclude responses/ \
     public/ "$DEPLOY_HOST:/var/lib/onym-audit/site/"
 
 ssh "$DEPLOY_HOST" SITE_CONF="$SITE_CONF" 'bash -s' <<'REMOTE'
 set -euo pipefail
 chown -R onym-audit:onym-audit /var/lib/onym-audit/site
+find /var/lib/onym-audit/site -type d -exec chmod 755 {} +
+find /var/lib/onym-audit/site -type f -exec chmod 644 {} +
 if ! grep -q "snippets/onym-audit.conf" "$SITE_CONF"; then
     mkdir -p /root/nginx-backups
     BACKUP="/root/nginx-backups/$(basename "$SITE_CONF").$(date +%Y%m%d-%H%M%S)"

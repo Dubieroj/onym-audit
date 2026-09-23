@@ -1,6 +1,6 @@
 ---
 status: draft
-proposed: AUDITOR_NAME, with Claude
+proposed: Dimitrii, with Claude
 date: 24.09.2026
 ---
 

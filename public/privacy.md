@@ -1,6 +1,6 @@
 # Privacy profile
 
-Auditor: AUDITOR_NAME (`AUDITOR_COMPONENT`). Version 1, 24 September 2026.
+Auditor: Dimitrii (`onym:component:dimitrii-audit`). Version 1, 24 September 2026.
 
 - **Static files** (manifest, attestations, status list, reports) are served
   without cookies, accounts, or per-user URLs. The host keeps **no access
