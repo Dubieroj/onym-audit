@@ -19,9 +19,15 @@ type Target struct {
 }
 
 // DeploymentTarget binds a deployed component by its signed manifest's URI
-// and exact bytes (profile §4.4).
-func DeploymentTarget(manifestURI string, manifestBytes []byte) Target {
-	return Target{Kind: KindDeployment, Source: manifestURI, Revision: sig.Digest(manifestBytes)}
+// and exact bytes, plus the exact bytes of the one further served document
+// the attestation pins, if any (profile §4.4).
+func DeploymentTarget(manifestURI string, manifestBytes, pinned []byte) Target {
+	t := Target{Kind: KindDeployment, Source: manifestURI, Revision: sig.Digest(manifestBytes)}
+	if pinned != nil {
+		d := sig.Digest(pinned)
+		t.ArtifactHash = &d
+	}
+	return t
 }
 
 // Trust is the relying party's issuer policy (Audit.md §7.7): which auditor
@@ -216,10 +222,12 @@ func matches(a Artifact, t Target) bool {
 	if a.Kind != t.Kind || a.Source != t.Source || a.Revision != t.Revision {
 		return false
 	}
+	// Strict for every kind: a deployment attestation that pinned the
+	// served document it examined (e.g. a catalog snapshot) applies only
+	// while that exact document is served — opinions must not follow
+	// bytes silently (Audit.md §3.4, §13.7).
 	if (a.ArtifactHash == nil) != (t.ArtifactHash == nil) {
-		// A deployment attestation may pin extra examined bytes; the
-		// manifest digest is decisive for deployments.
-		return a.Kind == KindDeployment && t.ArtifactHash == nil
+		return false
 	}
 	return a.ArtifactHash == nil || *a.ArtifactHash == *t.ArtifactHash
 }

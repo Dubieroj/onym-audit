@@ -41,6 +41,66 @@
       "expectHighStakesOK": false
     },
     {
+      "name": "deployment-pinned-document-served",
+      "covers": "§6 exact match incl. pinned served document",
+      "attestation": "att-pinned-snapshot.json",
+      "manifest": "auditor-manifest.json",
+      "status": [
+        "status-fresh.json"
+      ],
+      "target": {
+        "kind": "deployment",
+        "source": "https://discovery.example.net/manifest.json",
+        "revision": "sha256:2826b8cab953a52824e73ecc0414e6da3b5b5fbcd2e89cdb23390a62a5f8f6e5",
+        "artifactHash": "sha256:9aeac730c3a4e4105b677ed974e81a438cc4b5e31f4020148beea46fd70a46bd"
+      },
+      "creditAuditor": true,
+      "now": "2026-09-24T12:00:00Z",
+      "expectDisplay": "attested",
+      "expectError": "",
+      "expectHighStakesOK": true
+    },
+    {
+      "name": "deployment-pinned-document-replaced",
+      "covers": "§3.4 opinions do not follow bytes",
+      "attestation": "att-pinned-snapshot.json",
+      "manifest": "auditor-manifest.json",
+      "status": [
+        "status-fresh.json"
+      ],
+      "target": {
+        "kind": "deployment",
+        "source": "https://discovery.example.net/manifest.json",
+        "revision": "sha256:2826b8cab953a52824e73ecc0414e6da3b5b5fbcd2e89cdb23390a62a5f8f6e5",
+        "artifactHash": "sha256:f84f325d53cd7f880a578b0ee024cb3a519e2e41fa5b42a010ee215c35aeea64"
+      },
+      "creditAuditor": true,
+      "now": "2026-09-24T12:00:00Z",
+      "expectDisplay": "no-attestation",
+      "expectError": "artifact_mismatch",
+      "expectHighStakesOK": false
+    },
+    {
+      "name": "deployment-pinned-document-unknown",
+      "covers": "§13.7 mismatch means silence",
+      "attestation": "att-pinned-snapshot.json",
+      "manifest": "auditor-manifest.json",
+      "status": [
+        "status-fresh.json"
+      ],
+      "target": {
+        "kind": "deployment",
+        "source": "https://discovery.example.net/manifest.json",
+        "revision": "sha256:2826b8cab953a52824e73ecc0414e6da3b5b5fbcd2e89cdb23390a62a5f8f6e5",
+        "artifactHash": null
+      },
+      "creditAuditor": true,
+      "now": "2026-09-24T12:00:00Z",
+      "expectDisplay": "no-attestation",
+      "expectError": "artifact_mismatch",
+      "expectHighStakesOK": false
+    },
+    {
       "name": "adverse-result-rendered",
       "covers": "§7.5 fail rendered like favorable results",
       "attestation": "att-fail.json",

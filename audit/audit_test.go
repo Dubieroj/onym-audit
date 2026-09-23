@@ -130,7 +130,7 @@ func pub(t *testing.T, raw []byte, name string) Published {
 func (w *world) input(att, status []byte) Input {
 	return Input{
 		Attestation: att, Manifest: w.manifest, Status: status,
-		Target: DeploymentTarget(w.subjectManifestURI, w.subjectManifest),
+		Target: DeploymentTarget(w.subjectManifestURI, w.subjectManifest, nil),
 		Trust:  Trust{Credited: map[sig.Key]bool{w.m.Operator: true}},
 		State:  &StatusState{}, Now: t0,
 	}

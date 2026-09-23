@@ -177,6 +177,12 @@ func GenerateFixtures() (map[string][]byte, []FixtureCase, []FixtureInvalid, err
 		a.Artifact = Artifact{Kind: KindBuild, Source: "https://github.com/example/app", Revision: commit, ArtifactHash: &build}
 		a.MethodologyClass, a.ExpiresAt = BuildProvenance, nil
 	}), g.auditor)
+	snap1, snap2 := []byte(`{"sequence":4}`), []byte(`{"sequence":5}`)
+	g.files["subject-snapshot-4.json"], g.files["subject-snapshot-5.json"] = snap1, snap2
+	g.put("att-pinned-snapshot.json", g.attestation("att-pinned-snapshot-01", func(a *Attestation) {
+		d := sig.Digest(snap1)
+		a.Artifact.ArtifactHash = &d
+	}), g.auditor)
 	foreign := g.attestation("att-foreign-00000001", nil)
 	foreign.AuditorKey = g.key(g.other)
 	g.put("att-foreign.json", foreign, g.other)
@@ -190,7 +196,7 @@ func GenerateFixtures() (map[string][]byte, []FixtureCase, []FixtureInvalid, err
 	g.put("response-forged.json", forged, g.other)
 
 	active := g.published("att-active.json")
-	g.status("status-fresh.json", t0, active, g.published("att-fail.json"), g.published("att-embargo.json"), g.published("att-build.json"))
+	g.status("status-fresh.json", t0, active, g.published("att-fail.json"), g.published("att-embargo.json"), g.published("att-build.json"), g.published("att-pinned-snapshot.json"))
 	g.status("status-older.json", t0.Add(-time.Hour), active)
 	g.status("status-stale.json", t0.Add(-72*time.Hour), active)
 	g.status("status-superseded.json", t0, active, g.published("att-successor.json"))
@@ -261,12 +267,15 @@ func GenerateFixtures() (map[string][]byte, []FixtureCase, []FixtureInvalid, err
 		g.files["invalid-order-contingent-fee.json"] = b
 	}
 
-	deploy := DeploymentTarget(g.subjectURI, g.subjectBytes)
+	deploy := DeploymentTarget(g.subjectURI, g.subjectBytes, nil)
 	buildT := Target{Kind: KindBuild, Source: "https://github.com/example/app", Revision: commit, ArtifactHash: &build}
 	now := sig.FormatTime(t0)
 	cases := []FixtureCase{
 		{Name: "active-fresh-credited", Covers: "§6 verify, §7.1–7.2", Attestation: "att-active.json", Status: []string{"status-fresh.json"}, Target: deploy, CreditAuditor: true, ExpectDisplay: ShowAttested, ExpectHighOK: true},
 		{Name: "deployment-manifest-drift", Covers: "§7.3 hash mismatch → no attestation", Attestation: "att-active.json", Status: []string{"status-fresh.json"}, Target: Target{Kind: KindDeployment, Source: g.subjectURI, Revision: sig.Digest([]byte("other manifest"))}, CreditAuditor: true, ExpectDisplay: ShowNone, ExpectError: "artifact_mismatch"},
+		{Name: "deployment-pinned-document-served", Covers: "§6 exact match incl. pinned served document", Attestation: "att-pinned-snapshot.json", Status: []string{"status-fresh.json"}, Target: DeploymentTarget(g.subjectURI, g.subjectBytes, snap1), CreditAuditor: true, ExpectDisplay: ShowAttested, ExpectHighOK: true},
+		{Name: "deployment-pinned-document-replaced", Covers: "§3.4 opinions do not follow bytes", Attestation: "att-pinned-snapshot.json", Status: []string{"status-fresh.json"}, Target: DeploymentTarget(g.subjectURI, g.subjectBytes, snap2), CreditAuditor: true, ExpectDisplay: ShowNone, ExpectError: "artifact_mismatch"},
+		{Name: "deployment-pinned-document-unknown", Covers: "§13.7 mismatch means silence", Attestation: "att-pinned-snapshot.json", Status: []string{"status-fresh.json"}, Target: deploy, CreditAuditor: true, ExpectDisplay: ShowNone, ExpectError: "artifact_mismatch"},
 		{Name: "adverse-result-rendered", Covers: "§7.5 fail rendered like favorable results", Attestation: "att-fail.json", Status: []string{"status-fresh.json"}, Target: deploy, CreditAuditor: true, ExpectDisplay: ShowAttested, ExpectHighOK: true},
 		{Name: "embargoed-report", Covers: "§5.6 counts without report under embargo", Attestation: "att-embargo.json", Status: []string{"status-fresh.json"}, Target: deploy, CreditAuditor: true, ExpectDisplay: ShowAttested, ExpectHighOK: true},
 		{Name: "superseded", Covers: "§5.5 supersession display", Attestation: "att-active.json", Status: []string{"status-superseded.json"}, Target: deploy, CreditAuditor: true, ExpectDisplay: ShowSuperseded, ExpectError: "attestation_superseded"},

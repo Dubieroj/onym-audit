@@ -405,3 +405,46 @@ func SignOrder(raw []byte, role string, priv ed25519.PrivateKey) ([]byte, error)
 	obj["signatures"] = sigs
 	return canon.Encode(obj)
 }
+
+// ParseOrderRequest checks an order as it arrives at accept-order: the
+// subject and the sponsor have signed, the auditor has not yet. The auditor
+// countersigns only after reviewing it against its independence policy
+// (Audit.md §8.4).
+func ParseOrderRequest(raw []byte, auditorComponent string) (*AuditOrder, error) {
+	var o AuditOrder
+	if err := decodeStrict(raw, orderShape, &o); err != nil {
+		return nil, err
+	}
+	if o.Auditor != auditorComponent {
+		return nil, fmt.Errorf("%w: order is addressed to %q", canon.ErrMalformed, o.Auditor)
+	}
+	if o.OrderVersion != 1 || !idRE.MatchString(o.OrderID) || !componentRE.MatchString(o.Subject) {
+		return nil, fmt.Errorf("%w: orderVersion/orderId/subject", canon.ErrMalformed)
+	}
+	if err := o.Artifact.validate(); err != nil {
+		return nil, fmt.Errorf("%w: %v", canon.ErrMalformed, err)
+	}
+	if !oneOf(o.MethodologyCls, MethodologyClasses...) || !oneOf(o.Fee.Model, FeeModels...) {
+		return nil, fmt.Errorf("%w: methodologyClass or fee model not admitted", canon.ErrMalformed)
+	}
+	if err := o.Scope.validate("scope"); err != nil {
+		return nil, fmt.Errorf("%w: %v", canon.ErrMalformed, err)
+	}
+	signed := map[string]bool{}
+	for _, s := range o.Signatures {
+		if !oneOf(s.Role, "subject", "sponsor") {
+			return nil, fmt.Errorf("%w: unexpected %q signature at intake", canon.ErrMalformed, s.Role)
+		}
+		if err := sig.VerifyDetached(raw, s.Signature, s.Key, "signatures"); err != nil {
+			return nil, fmt.Errorf("%s signature: %w", s.Role, err)
+		}
+		if s.Role == "sponsor" && s.Key != o.Sponsor {
+			return nil, fmt.Errorf("sponsor signature key differs from sponsor")
+		}
+		signed[s.Role] = true
+	}
+	if !signed["subject"] || !signed["sponsor"] {
+		return nil, fmt.Errorf("%w: an order arrives signed by its subject and its sponsor", canon.ErrMalformed)
+	}
+	return &o, nil
+}
