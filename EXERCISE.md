@@ -139,7 +139,11 @@ bin/onym-audit verify -manifest https://foldy.io/audit/a/<handle>/manifest.json 
   -target <the manifest URL or repository you examined> [-target-commit <id>]
 ```
 
-Revoke from the dashboard; the next status list says so. The **Library** tab
+In the **Customer** tab the same phrase orders from any auditor (each order
+signed with its own key derived from the phrase) or publishes a request to
+every auditor or one Stellar address; auditors answer from their
+dashboard, and choosing an answer places the order. Revoke from the
+dashboard; the next status list says so. The **Library** tab
 lists every attestation on the hub, verifies each in your browser, and finds
 one by its number (`#att=<id>` links to it). The hub's terms
 are at <https://foldy.io/audit/hub/terms.md>.

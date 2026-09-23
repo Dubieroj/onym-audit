@@ -68,7 +68,7 @@ type Hub struct {
 
 // New prepares the hub's directories.
 func New(root, publicRoot, publicBase string) (*Hub, error) {
-	for _, d := range []string{"tenants", "keys", "claims", "inbox", "held"} {
+	for _, d := range []string{"tenants", "keys", "claims", "inbox", "held", "requests"} {
 		if err := os.MkdirAll(filepath.Join(root, d), 0o700); err != nil {
 			return nil, err
 		}
@@ -139,6 +139,11 @@ func (h *Hub) Handler() http.Handler {
 	mux.HandleFunc("GET /hub/api/auditors", h.auditors)
 	mux.HandleFunc("GET /hub/api/library", h.library)
 	mux.HandleFunc("GET /hub/api/seat", h.seat)
+	mux.HandleFunc("GET /hub/api/requests", h.publicRequests)
+	mux.HandleFunc("POST /hub/api/requests", h.postRequest)
+	mux.HandleFunc("POST /hub/api/requests/for", h.requestsFor)
+	mux.HandleFunc("POST /hub/api/requests/{id}/responses", h.respond)
+	mux.HandleFunc("POST /hub/api/requests/{id}/mine", h.responses)
 	mux.HandleFunc("POST /hub/api/a/{slug}/order-status", h.orderStatus)
 	mux.HandleFunc("GET /hub/api/a/{slug}/export", h.export)
 	mux.HandleFunc("POST /hub/api/a/{slug}/inbox", h.inbox)

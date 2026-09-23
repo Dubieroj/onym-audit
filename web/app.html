@@ -64,6 +64,7 @@
   <section id="v-onboard" class="view" hidden>
     <p class="kicker">{{s_ob_kicker}}</p>
     <h1>{{s_ob_h}}</h1>
+    <p id="ob-invited" class="warn-box" hidden></p>
     <form id="ob-form" class="order-form" novalidate>
       <fieldset>
         <legend>{{s_ob_you}}</legend>
@@ -109,6 +110,7 @@
       <div><dt>{{s_d_key}}</dt><dd class="mono" id="d-key"></dd></div>
     </dl>
     <ol class="pipeline" id="d-pipe">
+      <li data-step="requests"><b id="pipe-requests">·</b><span>{{s_pipe_requests}}</span></li>
       <li data-step="orders"><b id="pipe-orders">·</b><span>{{s_pipe_orders}}</span></li>
       <li data-step="held"><b id="pipe-held">·</b><span>{{s_pipe_held}}</span></li>
       <li data-step="published"><b id="pipe-published">·</b><span>{{s_pipe_published}}</span></li>
@@ -118,6 +120,9 @@
       <button class="btn btn-ink" data-go="audit">{{s_d_new}}</button>
       <button class="btn btn-line" id="d-export">{{s_d_export}}</button>
     </p>
+    <h2 class="sub-h">{{s_d_requests}}</h2>
+    <p class="hint">{{s_d_requests_h}}</p>
+    <div id="d-requests" class="entries"></div>
     <h2 class="sub-h">{{s_d_orders}}</h2>
     <div id="d-orders" class="entries"></div>
     <details class="order-form offers-box" id="d-offers">
@@ -200,6 +205,26 @@
     <p class="lede">{{s_c_lede}}</p>
     <h2 class="sub-h">{{s_c_mine}}</h2>
     <div id="c-mine" class="entries"></div>
+    <h2 class="sub-h">{{s_c_requests}}</h2>
+    <p class="hint">{{s_c_requests_h}}</p>
+    <div id="c-reqs" class="entries"></div>
+    <p class="cta"><button class="btn btn-line" id="c-new-rfp" type="button">{{s_c_new_rfp}}</button></p>
+    <form id="c-rfp" class="order-form solo" hidden novalidate>
+      <label>{{s_r_to}}<input id="r-to" class="mono" placeholder="G…" autocomplete="off" spellcheck="false"></label>
+      <p class="hint">{{s_r_to_h}}</p>
+      <div id="r-kinds" class="row-inline"></div>
+      <div data-rkind="source build">
+        <label>{{s_c_repo}}<input id="r-repo" type="url" placeholder="https://github.com/org/repo" autocomplete="off" spellcheck="false" class="mono"></label>
+        <label>{{s_c_commit}}<input id="r-commit" placeholder="40 hex" autocomplete="off" spellcheck="false" class="mono"></label>
+      </div>
+      <div data-rkind="build"><label>{{s_c_file}}<input id="r-file" type="url" placeholder="https://…/app.apk" autocomplete="off" spellcheck="false" class="mono"></label></div>
+      <div data-rkind="deployment discovery"><label>{{s_c_manifest}}<input id="r-manifest" type="url" placeholder="https://…/manifest.json" autocomplete="off" spellcheck="false" class="mono"></label></div>
+      <label>{{s_c_component}}<input id="r-component" placeholder="onym:component:…" autocomplete="off" spellcheck="false" class="mono"></label>
+      <label>{{s_c_scope}}<textarea id="r-scope" rows="4" maxlength="7000"></textarea></label>
+      <p class="hint">{{s_r_note}}</p>
+      <p id="r-error" class="form-error" role="alert" hidden></p>
+      <button class="btn btn-ink" type="submit" id="r-submit">{{s_r_submit}}</button>
+    </form>
     <h2 class="sub-h">{{s_c_auditors}}</h2>
     <div class="lib-bar">
       <input id="c-q" type="search" placeholder="{{s_c_search}}" aria-label="{{s_c_search}}" autocomplete="off" spellcheck="false">

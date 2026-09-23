@@ -45,6 +45,12 @@ func (h *Hub) offer(slug string, m *audit.AuditorManifest, id string) (*audit.Of
 	for _, o := range m.Offers {
 		listed = listed || o == id
 	}
+	// An offer made for a request is not listed in the manifest; it stands
+	// while its request is open.
+	if strings.HasPrefix(id, "rsp-") {
+		q, err := h.loadRequest(requestOf(id))
+		listed = err == nil && h.open(q)
+	}
 	if !listed {
 		return nil, fmt.Errorf("this auditor offers no %q", id)
 	}
@@ -136,6 +142,7 @@ func (h *Hub) postOrder(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
+	h.closeRequest(o.Fee.OfferID)
 	reply(w, 202, map[string]string{"orderId": o.OrderID, "state": "queued-for-review", "digest": sig.Digest(raw)})
 }
 

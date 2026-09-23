@@ -1,7 +1,7 @@
 # Onym audit hub — terms
 
 Operated by Dimitrii (dubieroj@gmail.com) at `https://foldy.io/audit/hub/`.
-Version 2, 23 September 2026 (adds orders).
+Version 3, 24 September 2026 (adds requests for proposals).
 
 ## What the hub is
 
@@ -56,6 +56,17 @@ embargoes failures is held — the countersigned order is published at once,
 the attestation and its report when the embargo ends (checked every six
 hours). The hub takes no part in payment and handles no money; a fixed fee
 is settled between orderer and auditor, and can never depend on the result.
+
+## Requests for proposals
+
+An orderer may publish a request — exact bytes, a subject, a scope — to
+every auditor, or address it to one Stellar account. A public request is
+public; an addressed one is shown only to a request signed by its
+addressee's key. Auditors answer with an offer made for that request, and
+only the request's own key can read the answers. Choosing one places an
+ordinary order under that offer and closes the request. Requests expire
+after at most 30 days. No contact details are part of a request: the email
+is given with the order, to the chosen auditor only.
 
 ## Shared documents
 

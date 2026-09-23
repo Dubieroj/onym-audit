@@ -51,6 +51,16 @@ func call(h http.Handler, method, path string, body any) (int, map[string]any) {
 	return rec.Code, out
 }
 
+func callRaw(h http.Handler, method, path string, body any) []byte {
+	var buf bytes.Buffer
+	if body != nil {
+		json.NewEncoder(&buf).Encode(body)
+	}
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, httptest.NewRequest(method, path, &buf))
+	return rec.Body.Bytes()
+}
+
 func shared(p, content string) audit.DocRef {
 	return audit.DocRef{URI: pubBase + p, Digest: sig.Digest([]byte(content))}
 }

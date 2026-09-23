@@ -257,6 +257,10 @@ type Artifact struct {
 
 var artifactShape = &shape{required: []string{"kind", "source", "revision", "artifactHash"}}
 
+// Validate checks an artifact binding on its own, for documents outside
+// this package that pin one (the hub's requests for proposals).
+func (a Artifact) Validate() error { return a.validate() }
+
 func (a Artifact) validate() error {
 	switch a.Kind {
 	case KindSource, KindBuild:

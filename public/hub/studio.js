@@ -6,7 +6,7 @@
 // IndexedDB; the phrase is not stored and the hub never sees a key. Every
 // document is built to the static-Ed25519 profile and signed here.
 import { parseStrict, canonical, plain, digest, fingerprint, verifySig, verifyAttestation } from "../verify.js";
-import { normalize, check, generate, derive, orderKey, accountOfKey } from "../onym-id.js";
+import { normalize, check, generate, derive, orderKey, accountOfKey, keyOfAccount } from "../onym-id.js";
 import { RE as ORE, auditors as orderAuditors, load as loadAuditor, kindsOf, feeText, pin, subjectOf, newOrderID, sign as signOrder, send as sendOrder } from "../order-core.js";
 
 const $ = (id) => document.getElementById(id);
@@ -90,7 +90,9 @@ const forgetIdentity = () => idbDo("readwrite", (s) => s.delete("me"));
 // The orders placed from this browser, each tagged with the identity that
 // placed it: per-order keys make them unlinkable, so only this list ties
 // them together, and it never leaves the browser.
-const myOrders = () => idbDo("readonly", (s) => s.getAll(), "orders").then((all) => (all || []).filter((o) => o.account === me.account));
+const myOrders = () => idbDo("readonly", (s) => s.getAll(), "orders").then((all) => (all || []).filter((o) => o.account === me.account && o.orderId));
+const myRequests = () => idbDo("readonly", (s) => s.getAll(), "orders").then((all) => (all || []).filter((o) => o.account === me.account && o.requestId));
+const saveRequest = (q) => idbDo("readwrite", (s) => s.put(q, q.requestId), "orders");
 const saveOrder = (o) => idbDo("readwrite", (s) => s.put(o, o.orderId), "orders");
 
 
@@ -178,7 +180,13 @@ function show(v) {
   if (v === "login") listAuditors();
   if (v === "library") library();
   if (v === "customer") customer();
-  if (v === "onboard") $("ob-account").textContent = me.account;
+  if (v === "onboard") {
+    $("ob-account").textContent = me.account;
+    requestsFor().then((rs) => {
+      $("ob-invited").hidden = !rs.length;
+      $("ob-invited").textContent = t("invited", { n: rs.length });
+    }, () => {});
+  }
   whoChip();
 }
 const home = () => show(!me ? "login" : wantTab === "customer" ? "customer" : me.slug ? "dash" : "onboard");
@@ -354,6 +362,7 @@ async function dash() {
   $("d-page").textContent = me.base.replace(/^https:\/\//, "");
   $("d-key").textContent = `${await fingerprint(me.key)} (${me.key})`;
   loadOrders().catch((e) => $("d-orders").replaceChildren(el("p", { class: "bad", text: e.message })));
+  loadRequests().catch((e) => $("d-requests").replaceChildren(el("p", { class: "bad", text: e.message })));
   const box = $("d-atts");
   box.replaceChildren(el("p", { class: "muted", text: t("loading") }));
   try {
@@ -896,6 +905,8 @@ let AUD = null, cAud = null, cOffer = null, cKind = null;
 
 async function customer() {
   $("c-form").hidden = true;
+  $("c-rfp").hidden = true;
+  renderRequests().catch((e) => $("c-reqs").replaceChildren(el("p", { class: "bad", text: e.message })));
   renderMine().catch((e) => $("c-mine").replaceChildren(el("p", { class: "bad", text: e.message })));
   $("c-list").replaceChildren(el("p", { class: "muted", text: t("loading") }));
   AUD = await orderAuditors(ROOT);
@@ -1040,6 +1051,170 @@ async function orderState(o, lib) {
   const req = { action: "order-status", orderId: o.orderId, sponsor: key, issuedAt: nowISO() };
   const res = await api(`a/${o.slug}/order-status`, { request: JSON.parse(await signDoc(req, priv)) });
   return { state: res.queued ? "queued" : "gone" };
+}
+
+// ---------------------------------------------------------------- requests for proposals
+
+const REQ_KINDS = ["source", "deployment", "discovery", "build"];
+let rKind = "source";
+const requestID = () => "req-" + [...crypto.getRandomValues(new Uint8Array(20))].map((x) => "abcdefghijklmnopqrstuvwxyz0123456789"[x % 36]).join("");
+const classOf = (kind) => (kind === "discovery" ? "conformance-run" : "security-review");
+
+// A request signed by the holder's key for it, or by the auditor's key.
+async function ask(path, fields, priv) {
+  return api(path, { request: JSON.parse(await signDoc({ ...fields, issuedAt: nowISO() }, priv)) });
+}
+const requestsFor = () => ask("requests/for", { action: "requests-for", key: me.key }, me.priv);
+
+$("c-new-rfp").addEventListener("click", () => {
+  $("r-kinds").replaceChildren(...REQ_KINDS.map((k) => el("label", { class: "radio" }, el("input", { type: "radio", name: "r-kind", value: k, checked: k === rKind, onchange: () => pickRKind(k) }), " ", t("k_" + k))));
+  pickRKind(rKind);
+  $("r-error").hidden = true;
+  $("c-rfp").hidden = false;
+  $("c-rfp").scrollIntoView({ behavior: "smooth" });
+});
+function pickRKind(k) {
+  rKind = k;
+  for (const d of document.querySelectorAll("[data-rkind]")) d.hidden = !d.dataset.rkind.split(" ").includes(k);
+}
+$("r-manifest").addEventListener("change", async () => {
+  const id = await subjectOf(ROOT, $("r-manifest").value.trim()).catch(() => null);
+  if (id && !$("r-component").value) $("r-component").value = id;
+});
+
+// A request pins the exact bytes now, so every auditor answers about the
+// same thing; it is signed with a key of its own, derived from the phrase.
+$("c-rfp").addEventListener("submit", guard(async (ev) => {
+  ev.preventDefault();
+  const err = $("r-error");
+  err.hidden = true;
+  const bad = (m) => { err.textContent = m; err.hidden = false; };
+  const toG = $("r-to").value.trim();
+  const to = toG ? keyOfAccount(toG) : null;
+  if (toG && !to) return bad(t("e_account"));
+  const component = $("r-component").value.trim();
+  if (!ORE.component.test(component)) return bad(t("err_component"));
+  if (!$("r-scope").value.trim()) return bad(t("err_scope"));
+  const btn = $("r-submit");
+  btn.disabled = true;
+  try {
+    const f = { repo: $("r-repo").value, commit: $("r-commit").value, file: $("r-file").value, manifestUrl: $("r-manifest").value };
+    const { artifact, preface } = await pin(ROOT, rKind, f, true, t, (m) => (btn.textContent = m));
+    const requestId = requestID();
+    const { priv, key } = await orderKey(me.seedKey, requestId);
+    const q = {
+      requestVersion: 1, requestId, to, subject: component, methodologyClass: classOf(rKind), artifact,
+      scopeText: preface + $("r-scope").value.trim() + "\n", requester: key, issuedAt: nowISO(), expiresAt: addDays(14),
+    };
+    await api("requests", { request: JSON.parse(await signDoc(q, priv)) });
+    await saveRequest({ ...q, account: me.account, createdAt: q.issuedAt });
+    $("c-rfp").hidden = true;
+    toast(t("r_sent"));
+    renderRequests();
+  } catch (e) {
+    bad(e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = t("r_submit");
+  }
+}));
+
+async function renderRequests() {
+  const box = $("c-reqs");
+  const mine = (await myRequests()).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  if (!mine.length) return box.replaceChildren(el("p", { class: "empty", text: t("r_none") }));
+  box.replaceChildren(...mine.map((q) => {
+    const list = el("div", {}, el("p", { class: "small muted", text: t("loading") }));
+    loadResponses(q, list).catch((e) => list.replaceChildren(el("p", { class: "small bad", text: e.message })));
+    return el("article", { class: "entry" },
+      el("div", { class: "entry-side" }, el("span", { class: "stamp", text: t("r_stamp") }), el("span", { class: "state", text: q.to ? t("r_to", { who: accountOfKey(q.to).slice(0, 6) + "…" }) : t("r_public") })),
+      el("div", {}, el("h3", { text: q.subject }),
+        el("p", { class: "who", text: `${t("m_" + q.methodologyClass)} · ${q.artifact.kind} · ${t("r_until", { date: q.expiresAt.slice(0, 10) })}` }),
+        el("p", { class: "small mono", text: `${q.requestId} · ${q.artifact.source} @ ${q.artifact.revision}` }), list));
+  }));
+}
+
+// loadResponses shows the auditors who answered, to the request's own key;
+// choosing one orders under the offer it made.
+async function loadResponses(q, box) {
+  const { priv } = await orderKey(me.seedKey, q.requestId);
+  const res = await ask(`requests/${q.requestId}/mine`, { action: "responses", requestId: q.requestId }, priv);
+  if (!res.responses.length) return box.replaceChildren(el("p", { class: "small muted", text: res.open ? t("r_waiting") : t("r_closed") }));
+  box.replaceChildren(...res.responses.map((r) => {
+    const o = r.offer;
+    const email = el("input", { type: "email", placeholder: "you@example.org", autocomplete: "email" });
+    const terms = el("input", { type: "checkbox" });
+    const go = el("button", { class: "btn btn-ink small-btn", type: "button", text: t("r_choose"), disabled: !res.open, onclick: guard(() => chooseResponse(q, r, email.value.trim(), terms.checked, go)) });
+    return el("div", { class: "response" },
+      el("p", {}, el("b", {}, el("a", { href: r.page, target: "_blank", rel: "noopener", text: r.name })), ` · ${r.fingerprint} · ${t("c_facts", { orders: r.completedOrders, customers: r.customers, atts: "–" })}`),
+      el("p", { class: "small", text: `${feeText(o, t)} · ${t("due_days", { n: o.timelineDays })} · ${t("fee_same")} · ${t("embargo_days", { n: o.disclosure.embargoDays })}` }),
+      res.open ? el("p", { class: "row-inline" }, email, el("label", { class: "check small" }, terms, " ", t("r_accept")), go) : null);
+  }));
+}
+
+async function chooseResponse(q, r, email, accepted, btn) {
+  if (!ORE.email.test(email)) throw new Error(t("err_email"));
+  if (!accepted) throw new Error(t("err_checks"));
+  btn.disabled = true;
+  try {
+    // The auditor and its offer are verified here, as for any order.
+    const a = await loadAuditor({ slug: r.slug, base: new URL(`a/${r.slug}/`, ROOT).href, endpoint: new URL(`a/${r.slug}/orders`, ROOT).href, only: [] });
+    const offerText = canonText(r.offer);
+    const o = plain(parseStrict(offerText));
+    if (o.auditorKey !== a.manifest.operator || o.auditor !== a.manifest.componentId || !(await verifySig(offerText, o.auditorKey))) throw new Error(t("r_bad_offer"));
+    const orderId = newOrderID();
+    const { priv, key } = await orderKey(me.seedKey, orderId);
+    const signed = await signOrder({ auditor: a, offer: o, artifact: q.artifact, scopeText: q.scopeText, component: q.subject, orderId, key, priv });
+    const reply = await sendOrder(a.endpoint, signed, q.scopeText, email).catch((e) => { throw new Error(t("err_server", { err: e.message })); });
+    await saveOrder({ orderId, account: me.account, auditor: a.manifest.displayName, slug: r.slug, base: a.base, subject: q.subject, kind: q.artifact.kind, source: q.artifact.source, createdAt: nowISO(), digest: reply.digest });
+    toast(t("c_sent", { id: orderId }));
+    customer();
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// The auditor's side: open public requests and those addressed to this
+// key; answering signs an offer made for that request alone.
+async function loadRequests() {
+  const box = $("d-requests");
+  const [pub, mine] = await Promise.all([api("requests"), requestsFor()]);
+  const all = [...mine, ...pub];
+  $("pipe-requests").textContent = all.length;
+  if (!all.length) return box.replaceChildren(el("p", { class: "empty", text: t("rq_none") }));
+  const m = plain(parseStrict(await getText(me.base + "manifest.json")));
+  const classes = new Set(m.methodologies.map((x) => x.class));
+  box.replaceChildren(...await Promise.all(all.map(async (q) => {
+    const oid = "rsp-" + q.requestId.slice(4);
+    const answered = await fetch(loc(me.base + `offers/${oid}.json`), { method: "HEAD", cache: "no-cache" }).then((r) => r.ok, () => false);
+    const action = el("div", {});
+    if (answered) action.append(el("p", { class: "small ok-line", text: t("rq_answered") }));
+    else if (!classes.has(q.methodologyClass)) action.append(el("p", { class: "small muted", text: t("rq_not_offered") }));
+    else action.append(el("button", { class: "btn btn-ink small-btn", text: t("rq_answer"), onclick: () => respondForm(q, action) }));
+    return el("article", { class: "entry" },
+      el("div", { class: "entry-side" }, el("span", { class: "stamp", text: q.to ? t("rq_to_you") : t("r_public") }), el("span", { class: "state", text: t("rq_responses", { n: q.responses }) })),
+      el("div", {}, el("h3", { text: q.subject }),
+        el("p", { class: "who", text: `${t("m_" + q.methodologyClass)} · ${q.artifact.kind} · ${t("r_until", { date: q.expiresAt.slice(0, 10) })}` }),
+        el("p", { class: "small mono", text: `${q.artifact.source} @ ${q.artifact.revision}${q.artifact.artifactHash ? " · " + q.artifact.artifactHash : ""}` }),
+        el("pre", { class: "quote", text: q.scopeText }), action));
+  })));
+}
+
+function respondForm(q, box) {
+  const holder = el("div");
+  const fee = feeFields(holder, "rq-" + q.requestId);
+  const send = el("button", { class: "btn btn-ink small-btn", type: "button", text: t("rq_send"), onclick: guard(async () => {
+    const f = fee.read();
+    const spec = await sharedRef(q.methodologyClass === "conformance-run" ? "hub/methodology/conformance-run-v1.md" : "hub/methodology/manual-review-v1.md");
+    const offer = {
+      offerVersion: 1, offerId: "rsp-" + q.requestId.slice(4), auditor: me.componentId, auditorKey: me.key, methodologyClass: q.methodologyClass, scope: spec,
+      fee: { model: f.model, amount: f.amount, currency: f.currency }, timelineDays: f.days, disclosure: DISCLOSURE[q.methodologyClass], validUntil: addDays(30),
+    };
+    await api(`requests/${q.requestId}/responses`, { slug: me.slug, offer: JSON.parse(await signDoc(offer, me.priv)) });
+    toast(t("rq_sent"));
+    loadRequests();
+  }) });
+  box.replaceChildren(el("div", { class: "respond-box" }, holder, send));
 }
 
 // ---------------------------------------------------------------- library
