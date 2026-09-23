@@ -24,6 +24,7 @@ test -f public/manifest.json || { echo "run onym-audit publish first" >&2; exit 
 
 go test ./...
 node tools/verify-js-test.mjs >/dev/null
+node tools/onym-id-test.mjs >/dev/null
 python3 tools/build_landing.py --check
 mkdir -p dist
 GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o dist/onym-audit ./cmd/onym-audit

@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="sr-Latn-ME">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Onym revizija · aplikacija</title>
+<meta name="description" content="Prijavite se Onym identitetom namijenjenim reviziji, pregledajte bilo šta u mreži Onym, primajte narudžbe i pregledajte sve presude — sve se potpisuje i provjerava u vašem pregledaču.">
+<meta name="color-scheme" content="light dark">
+<link rel="alternate" hreflang="en" href="https://foldy.io/audit/app/">
+<link rel="alternate" hreflang="ru" href="https://foldy.io/audit/ru/app/">
+<link rel="alternate" hreflang="sr-Latn-ME" href="https://foldy.io/audit/cnr/app/">
+<link rel="alternate" hreflang="x-default" href="https://foldy.io/audit/app/">
+<link rel="stylesheet" href="../../style.css">
+<script type="module" src="../../hub/studio.js"></script>
+</head>
+<body class="studio">
+<div class="grain" aria-hidden="true"></div>
+<header class="masthead">
+  <div class="wrap masthead-row">
+    <a class="brand" href="../">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span class="brand-text"><b>Onym revizija</b> <span class="muted">· aplikacija</span></span>
+    </a>
+    <nav class="tabs" aria-label="Odjeljci">
+      <button type="button" data-tab="auditor">Revizor</button>
+      <button type="button" data-tab="library">Biblioteka</button>
+    </nav>
+    <span id="who" class="who-chip" hidden></span>
+    <div class="langs" role="navigation" aria-label="Jezik"><a href="../../app/" hreflang="en" lang="en">EN</a><a href="../../ru/app/" hreflang="ru" lang="ru">RU</a><a href="../../cnr/app/" hreflang="sr-Latn-ME" lang="sr-Latn-ME" aria-current="page">CNR</a></div>
+  </div>
+</header>
+
+<main class="wrap studio-main">
+  <!-- Sign in with an auditor phrase -->
+  <section id="v-login" class="view" hidden>
+    <p class="kicker">Prijava</p>
+    <h1>Vaš identitet revizora</h1>
+    <p class="lede">Revizor je poseban Onym identitet: dvanaest riječi iz kojih se ključ revizora i Stellar adresa izvode tačno kao u Onym aplikacijama. Dodajte iste riječi u Onym aplikaciju kao drugi nalog i vidjećete istu adresu.</p>
+    <p class="warn-box" role="note">Nikad ovdje ne unosite frazu svog glavnog Onym naloga. Ta fraza je cijeli vaš identitet — poruke, grupe i ključevi — a ključ revizora je javan i povezao bi vaš revizorski rad s prepiskom. Koristite frazu napravljenu samo za reviziju.</p>
+    <div class="choice-grid login-choices">
+      <button type="button" class="choice" id="login-new"><b>Napravi identitet revizora</b><span>Dvanaest novih riječi, napravljenih u ovom pregledaču. Zapišite ih.</span></button>
+      <button type="button" class="choice" id="login-have"><b>Imam frazu revizora</b><span>Unesite dvanaest riječi napravljenih za reviziju.</span></button>
+    </div>
+    <form id="login-form" class="order-form solo" hidden novalidate>
+      <label>Vaših dvanaest riječi<textarea id="login-phrase" rows="3" class="mono" autocomplete="off" autocapitalize="off" spellcheck="false"></textarea></label>
+      <p id="login-error" class="form-error" role="alert" hidden></p>
+      <button class="btn btn-ink" type="submit" id="login-go">Prijavi se</button>
+    </form>
+    <p class="small muted">Fraza ne napušta stranicu i ne čuva se: pregledač čuva samo ključeve koji se ne mogu izvući. Ništa se ne upisuje u Stellar mrežu i novac nije potreban.</p>
+    <h2 class="sub-h">Revizori na ovom hubu</h2>
+    <ul id="auditor-list" class="docs"></ul>
+  </section>
+
+  <!-- A new phrase, shown once -->
+  <section id="v-newphrase" class="view" hidden>
+    <p class="kicker">Novi identitet</p>
+    <h1>Zapišite ovih dvanaest riječi</h1>
+    <ol id="np-words" class="phrase-grid"></ol>
+    <p class="warn-box">One su jedini način da se ponovo prijavite — ovdje ili na drugom uređaju. Niko ih ne može vratiti: ni hub, ni Onym.</p>
+    <dl class="terms solo"><div><dt>Stellar adresa</dt><dd class="mono" id="np-account"></dd></div></dl>
+    <label class="check"><input type="checkbox" id="np-saved"> <span>Zapisao sam riječi po redu</span></label>
+    <p class="cta"><button class="btn btn-ink" id="np-continue" disabled>Nastavi</button></p>
+  </section>
+
+  <!-- Onboarding -->
+  <section id="v-onboard" class="view" hidden>
+    <p class="kicker">Prvi korak</p>
+    <h1>Vaš identitet revizora</h1>
+    <form id="ob-form" class="order-form" novalidate>
+      <fieldset>
+        <legend>Ko odgovara za atestacije</legend>
+        <p class="hint">Stellar adresa: <code id="ob-account"></code></p>
+        <label>Javno ime<input id="ob-name" required maxlength="80" autocomplete="name"></label>
+        <label>Adresa<input id="ob-slug" required pattern="[a-z][a-z0-9-]{2,31}" class="mono" autocomplete="off" spellcheck="false"></label>
+        <p class="hint">Vaša stranica: <code id="ob-url">foldy.io/audit/a/…/</code></p>
+        <label>Kontakt email<input id="ob-email" type="email" required autocomplete="email"></label>
+        <p class="hint">Objavljuje se u manifestu da bi vas subjekti mogli kontaktirati.</p>
+      </fieldset>
+      <fieldset>
+        <legend>Šta ćete pregledati</legend>
+        <label class="check"><input type="checkbox" id="ob-m-manual" checked> <span>Ručna bezbjednosna revizija — repozitorijumi, servirani dokumenti, build-ovi</span></label>
+        <label class="check"><input type="checkbox" id="ob-m-conf" checked> <span>Provjere usklađenosti — skup za Discovery provajdere, izvršava ga hub</span></label>
+      </fieldset>
+      <fieldset>
+        <legend>Narudžbe</legend>
+        <label class="check"><input type="checkbox" id="ob-orders" checked> <span>Primam narudžbe: svako može kod mene naručiti pregled pod uslovima ispod</span></label>
+        <div id="ob-fee"></div>
+      </fieldset>
+      <fieldset>
+        <legend>Vaše politike</legend>
+        <p class="hint">Popunjene iz šablona. Obavezuju vas i objavljuju se po hešu — pročitajte ih i izmijenite ono što radite drugačije.</p>
+        <details><summary>Politika nezavisnosti</summary><textarea id="ob-p-independence" rows="10"></textarea></details>
+        <details><summary>Politika nenaručenih pregleda</summary><textarea id="ob-p-unsolicited" rows="10"></textarea></details>
+        <details><summary>Uslovi odgovornosti</summary><textarea id="ob-p-liability" rows="10"></textarea></details>
+        <details><summary>Profil privatnosti</summary><textarea id="ob-p-privacy" rows="8"></textarea></details>
+      </fieldset>
+      <label class="check"><input id="ob-terms" type="checkbox" required> <span>Pročitao sam pravila huba i potpisivaću samo ono iza čega stojim.</span></label>
+      <p id="ob-error" class="form-error" role="alert" hidden></p>
+      <button class="btn btn-ink" type="submit" id="ob-submit">Objavi manifest</button>
+      <p class="small muted">Manifest i politike potpisuju se ključem revizora u ovom pregledaču; šalju se samo potpisani dokumenti.</p>
+    </form>
+  </section>
+
+  <!-- Dashboard -->
+  <section id="v-dash" class="view" hidden>
+    <p class="kicker">Vaš revizor</p>
+    <h1 id="d-name"></h1>
+    <dl class="terms">
+      <div><dt>Javna stranica</dt><dd><a id="d-page" target="_blank" rel="noopener"></a></dd></div>
+      <div><dt>Stellar adresa</dt><dd class="mono" id="d-account"></dd></div>
+      <div><dt>Ključ</dt><dd class="mono" id="d-key"></dd></div>
+    </dl>
+    <ol class="pipeline" id="d-pipe">
+      <li data-step="orders"><b id="pipe-orders">·</b><span>novih narudžbi</span></li>
+      <li data-step="held"><b id="pipe-held">·</b><span>zadržano po embargu</span></li>
+      <li data-step="published"><b id="pipe-published">·</b><span>važećih atestacija</span></li>
+      <li data-step="revoked"><b id="pipe-revoked">·</b><span>opozvano</span></li>
+    </ol>
+    <p class="cta">
+      <button class="btn btn-ink" data-go="audit">Pregledaj nešto</button>
+      <button class="btn btn-line" id="d-export">Izvezi moje stablo</button>
+    </p>
+    <h2 class="sub-h">Narudžbe</h2>
+    <div id="d-orders" class="entries"></div>
+    <details class="order-form offers-box" id="d-offers">
+      <summary>Vaše ponude i cijena</summary>
+      <p class="hint">Čuvanje potpisuje nove ponude i ponovo potpisuje manifest. Narudžbe koje već čekaju zadržavaju uslove pod kojima su potpisane.</p>
+      <div id="d-fee"></div>
+      <p class="cta"><button class="btn btn-ink" id="d-offers-save" type="button">Potpiši i objavi ponude</button> <button class="link-btn" id="d-offers-off" type="button">Prestani primati narudžbe</button></p>
+    </details>
+    <h2 class="sub-h">Vaše atestacije</h2>
+    <div id="d-atts" class="entries"></div>
+    <p class="small muted"><button class="link-btn" id="d-forget">Odjavi se iz ovog pregledača</button></p>
+  </section>
+
+  <!-- New audit -->
+  <section id="v-audit" class="view" hidden>
+    <p class="kicker">Novi pregled</p>
+    <h1>Šta pregledate?</h1>
+    <div id="a-order-banner" class="keybox" hidden></div>
+    <div class="steps" id="a-steps"></div>
+
+    <div class="step" id="a-step1">
+      <h2 class="sub-h">1 · Izaberite predmet</h2>
+      <div class="choice-grid">
+        <button class="choice" data-kind="source"><b>Repozitorijum</b><span>Kod na tačnom komitu (GitHub). Označite linije da zapišete nalaze.</span></button>
+        <button class="choice" data-kind="deployment"><b>Servis u radu</b><span>Bilo koja Onym komponenta po URL-u manifesta: kurir, skladište, notar, moderacija, backup.</span></button>
+        <button class="choice" data-kind="discovery"><b>Discovery katalog</b><span>Pokreće skup od 42 provjere usklađenosti nad provajderom.</span></button>
+        <button class="choice" data-kind="build"><b>Build aplikacije</b><span>Objavljeni fajl (APK, IPA…) vezan hešom za izvorni komit.</span></button>
+      </div>
+    </div>
+
+    <div class="step" id="a-step2" hidden>
+      <h2 class="sub-h">2 · Pregledajte predmet</h2>
+      <form id="a-target" class="order-form inline-form"></form>
+      <div id="a-inspect"></div>
+    </div>
+
+    <div class="step" id="a-step3" hidden>
+      <h2 class="sub-h">3 · Nalazi i obuhvat</h2>
+      <p class="hint">Svaki nalaz citira tačne bajtove na kojima počiva. Jasno navedite šta ste pregledali, a šta ne.</p>
+      <div id="a-findings" class="entries"></div>
+      <form id="a-finding-form" class="order-form" hidden></form>
+      <h3>Obuhvat</h3>
+      <div class="order-form cov-form">
+        <label>Šta je pregled pokazao — u dvije rečenice<textarea id="a-cov-sum" rows="2"></textarea></label>
+        <label>Pregledano (jedno po liniji)<textarea id="a-cov-ex" rows="2"></textarea></label>
+        <label>Nije pregledano i zašto (jedno po liniji)<textarea id="a-cov-nx" rows="2"></textarea></label>
+        <label class="check"><input type="checkbox" id="a-cov-complete"> <span>Pregledao sam cijeli navedeni obim</span></label>
+      </div>
+    </div>
+
+    <div class="step" id="a-step4" hidden>
+      <h2 class="sub-h">4 · Potpiši i objavi</h2>
+      <div class="order-form">
+        <p>Rezultat: <b id="a-result" class="stamp"></b></p>
+        <label>Komponenta subjekta<input id="a-subject" class="mono" placeholder="onym:component:…"></label>
+        <label>Ključ operatora subjekta<input id="a-subject-key" class="mono" placeholder="onym:key:…"></label>
+        <p class="hint">Popunjava se iz manifesta kad ga ima. Samo ovim ključem može se potpisati odgovor na vašu atestaciju.</p>
+        <label>Vaše veze sa subjektom<input id="a-rel" value="none"></label>
+        <div id="a-unsol">
+          <label>Kontakt subjekta koji ste obavijestili<input id="a-contact" placeholder="mailto:security@…"></label>
+          <label>Obaviješten u (UTC)<input id="a-notified" class="mono"></label>
+          <p class="hint">Nenaručeni pregledi objavljuju se tek nakon obavještenja subjekta — vidi vašu politiku.</p>
+        </div>
+        <div id="a-comm" hidden>
+          <p class="hint">Naručeni pregled. Narudžba traži da nalazi stignu do naručioca prije bilo kakve objave: preuzmite izvještaj i pošaljite mu ga.</p>
+          <p class="cta"><button type="button" class="btn btn-line" id="a-report-dl">Preuzmi izvještaj s nalazima</button> <a id="a-comm-contact" class="mono small"></a></p>
+          <label class="check"><input type="checkbox" id="a-sent"> <span>Poslao sam nalaze naručiocu</span></label>
+        </div>
+        <p id="a-error" class="form-error" role="alert" hidden></p>
+        <button class="btn btn-ink" id="a-publish">Potpiši mojim ključem i objavi</button>
+      </div>
+      <div id="a-done" class="order-done solo" hidden></div>
+    </div>
+  </section>
+
+  <!-- Library -->
+  <section id="v-library" class="view" hidden>
+    <p class="kicker">Biblioteka</p>
+    <h1>Sve presude, provjerene u vašem pregledaču</h1>
+    <p class="lede">Sve atestacije ovog huba od svih revizora. Tražite po broju, komponenti ili revizoru. Neuspjesi i opozivi prikazani su isto kao povoljni rezultati.</p>
+    <div class="lib-bar">
+      <input id="lib-q" type="search" placeholder="broj, komponenta, revizor ili repozitorijum" aria-label="broj, komponenta, revizor ili repozitorijum" autocomplete="off" spellcheck="false">
+      <div class="row-inline" id="lib-filters" role="group">
+        <button type="button" class="chip on" data-f="all">Sve</button>
+        <button type="button" class="chip" data-f="clear">Čisto</button>
+        <button type="button" class="chip" data-f="findings-noted">Ima nalaza</button>
+        <button type="button" class="chip" data-f="fail">Neuspjeh</button>
+        <button type="button" class="chip" data-f="inconclusive">Neodređeno</button>
+        <button type="button" class="chip" data-f="revoked">Opozvane</button>
+      </div>
+    </div>
+    <p class="small muted" id="lib-count"></p>
+    <div id="lib-list" class="entries"></div>
+    <p class="small muted">Indeks, a ne autoritet: obuhvata revizore ovog huba, a kome vjerovati odlučujete vi.</p>
+  </section>
+</main>
+
+<footer class="colophon"><div class="wrap">
+  <p class="small muted">Hub je zamjenjiva podrazumijevana opcija: atestacije su potpisani bajtovi nezavisni od lokacije. <a href="../../hub/terms.md">Pravila huba</a> · <a href="../../profile/Audit-Static-Ed25519.md">Profil</a></p>
+</div></footer>
+<div id="toast" class="toast" hidden role="status"></div>
+<script type="application/json" id="strings">{"tpl_independence":"# Politika nezavisnosti\n\nRevizor: {name} (`onym:component:{slug}`).\n\nNe posjedujem, ne upravljam niti primam plaćanje od komponente koju pregledam. Svaka veza sa subjektom — vlasništvo, upravljanje, zaposlenje ili plaćanje — navodi se u polju `relationships` svake atestacije o njemu, a izuzimam se od komponenti koje posjedujem, kojima upravljam ili s kojima se takmičim.\n\nNaknada ne zavisi od rezultata. Za nenaručeni pregled ne primam ništa od subjekta i nikad ne prikrivam, ublažavam niti odlažem atestaciju ni za šta.\n","tpl_unsolicited":"# Politika nenaručenih pregleda i objave\n\nRevizor: {name} (`onym:component:{slug}`).\n\n1. Bez poziva pregledam samo ono što je javno dostupno tačno u heširanim bajtovima.\n2. Prije objave šaljem nalaze na objavljeni bezbjednosni kontakt subjekta i upisujem kontakt i vrijeme u atestaciju.\n3. Nalaz koji trećima omogućava da sada obmanu ili naštete korisnicima je pod embargom do 90 dana: atestacija kruži samo s brojevima nalaza.\n4. Uočljiva neusklađenost koja napadaču ne daje ništa novo objavljuje se najranije 12 sati nakon obavještenja.\n5. Subjekt u svakom trenutku može objaviti potpisani odgovor pored atestacije; ja ga ne mogu mijenjati.\n6. Ponuda da se atestacija prikrije, ublaži ili odloži za bilo šta krši ovu politiku.\n","tpl_liability":"# Uslovi odgovornosti\n\nRevizor: {name} (`onym:component:{slug}`).\n\nAtestacija je stručno mišljenje po imenovanoj metodologiji o tačnim bajtovima u jednom trenutku. Odgovaram za primjenu metodologije kako je napisana, za potpunost obima, izuzetaka, sponzora i veza, i za opoziv onoga iza čega više ne stojim. Ne odgovaram za ono van obima, za druge revizije i instalacije niti za odluku čitaoca da se osloni. Atestacija nije sertifikat, licenca niti garancija. Nenaručene i besplatne atestacije ne nose finansijsku odgovornost.\n","tpl_privacy":"# Profil privatnosti\n\nRevizor: {name} (`onym:component:{slug}`).\n\nMoje dokumente servira Onym hub revizora — bez kolačića, dnevnika pristupa i upita statusa za pojedinačne atestacije. Odgovori subjekata se objavljuju; to im je svrha. O čitaocima svojih atestacija ne čuvam nikakve podatke.\nKontakt naveden uz narudžbu vidim samo ja i hub koji je drži u redu, i koristi se samo za tu narudžbu. Sa huba se briše kad preuzmem ili odbijem narudžbu.\n","n_atts":"atestacija: {n}","no_auditors":"Još nema revizora — budite prvi.","working":"Radim…","ob_submit":"Objavi manifest","e_name":"Unesite javno ime.","e_slug":"Adresa je 3–32 mala slova, cifre ili crtice i počinje slovom.","e_email":"Unesite ispravan email.","e_methods":"Izaberite bar jednu vrstu pregleda.","e_terms":"Potvrdite pravila da biste nastavili.","e_crypto":"Ovaj pregledač ne može da pravi Ed25519 ključeve. Koristite noviji Chrome, Safari ili Firefox.","loading":"Učitavam…","e_status":"Vaša lista statusa ne prolazi provjeru.","no_atts":"Još nema atestacija. Pregledajte nešto!","l_att":"atestacija","l_report":"izvještaj","revoke":"Opozovi","confirm_revoke":"Opozvati {id}? Opoziv je trajan i objavljuje se s razlogom.","revoked":"Opozvano. Lista statusa to već pokazuje.","f_scope":"Obim — šta tačno pregledate","f_scope_ph":"npr. provjera potpisa u src/verify.rs","f_repo":"Repozitorijum","f_repo_h":"GitHub repozitorijumi se pregledaju direktno s GitHub-a.","f_commit":"Komit","f_manifest":"URL manifesta","f_manifest_h":"Potpisani manifest komponente, npr. https://relayer.onym.app/manifest.json","f_provider":"URL manifesta provajdera","f_provider_h":"npr. https://discovery.onym.app/manifest.json","f_file":"URL fajla build-a","inspect":"Pregledaj","e_scope":"Navedite obim.","e_github":"Unesite adresu oblika https://github.com/org/repo.","e_commit":"Komit je puni identifikator od 40 znakova.","e_tree":"GitHub nije vratio stablo fajlova: {err}","e_https":"Unesite https:// adresu bez porta, parametara i fragmenta.","c_served":"servira se (HTTP {status})","c_cookies":"bez kolačića","c_json":"strogi JSON","c_sig_ok":"potpis se slaže s ključem operatora {fp}","c_sig_bad":"potpis se NE slaže s ključem operatora","c_unsigned":"nema potpisa operatora","c_valid":"važi do {until}","c_not_json":"ovo nije JSON dokument","running_suite":"Pokrećem skup provjera na hubu (do minut)…","suite_result":"Rezultat skupa:","suite_counts":"prošlo {pass} od {n}","hashing":"Hub preuzima build i računa heš…","hashed":"Heš ({size}):","filter":"filter fajlova","pick_file":"Izaberite fajl lijevo.","select_hint":"Kliknite liniju, pa sa Shift drugu da označite dokaz, i opišite nalaz ispod.","ff_at":"Dokaz: {where}","ff_sev":"Ozbiljnost","ff_title_l":"Naslov","ff_title":"jedna linija koja imenuje nedostatak","ff_desc_l":"Opis","ff_desc":"šta ne valja, zašto je bitno, kako se do toga dolazi","ff_rec_l":"Ispravka","ff_rec":"šta bi to ispravilo","ff_add":"Dodaj nalaz","e_finding":"Dajte nalazu naslov i opis.","finding_added":"Nalaz dodat.","no_fail_checks":"Nema neuspjelih provjera.","no_findings":"Još nema nalaza.","from_suite":"iz skupa provjera · {clause}","remove":"ukloni","e_subject":"Subjekt je onym:component:<ime>.","e_subject_key":"Ključ operatora je onym:key:<64 hex>.","e_contact":"Navedite mailto: ili https:// kontakt koji ste obavijestili.","e_notified":"Vrijeme obavještenja u obliku 2026-09-24T10:00:00Z, ne u budućnosti.","e_rel":"Navedite veze („none“ ako ih nema).","e_coverage":"Ukratko opišite ishod pregleda.","confirm_publish":"Potpisati i objaviti atestaciju s rezultatom {result}? Atestacije su nepromjenljive — ispravke su opozivi ili nove atestacije.","published_kicker":"Objavljeno","published_h":"Vaša atestacija je objavljena","see_page":"Moja stranica","to_dash":"Nazad na mog revizora","f_owner":"URL manifesta subjekta (opciono)","f_owner_h":"Potpisani manifest komponente kojoj ovo pripada. Imenuje subjekt i jedini ključ kojim se može odgovoriti na vašu atestaciju.","fee_probono":"Besplatno","fee_fixed_l":"Fiksna cijena — ista bez obzira na rezultat","fee_amount":"Iznos","fee_currency":"Valuta (ISO kod)","fee_days":"Izvještaj u roku od (dana)","fee_h":"Naknada nikad ne zavisi od rezultata: profil za to nema polje. Nalazi prvo idu naručiocu; neuspjeh se zadržava 90 dana (neuspjeh provjere usklađenosti 7) i zatim objavljuje — hub to sprovodi.","e_days":"Rok izvještaja je od 1 do 365 dana.","e_fee":"Unesite cijenu i troslovni kod valute, npr. 150.00 EUR.","order_link":"naruči","orders_off":"Ne primate narudžbe. Objavite ponudu ispod i svako vas može angažovati.","held_row":"{id} je zadržana po embargu narudžbe do {date}; hub je tada objavljuje.","order_stamp":"NARUDŽBA","due":"rok {date}","m_security-review":"Bezbjednosna revizija","m_conformance-run":"Provjera usklađenosti","sponsor_fp":"plaća {fp}","received":"primljena {date}","take":"Preuzmi narudžbu","decline":"Odbij","confirm_decline":"Odbiti narudžbu {id}? Uklanja se iz reda; pišite naručiocu sami.","declined":"Narudžba odbijena.","no_orders":"Još nema narudžbi. Vaša stranica svima prikazuje dugme za narudžbu.","offers_saved":"Ponude potpisane i objavljene.","confirm_offers_off":"Prestati primati narudžbe? Manifest se ponovo potpisuje bez ponuda; narudžbe koje čekaju ostaju dok ih ne preuzmete ili odbijete.","offers_stopped":"Više ne primate narudžbe.","order_banner":"Narudžba {id}.","order_banner_h":"Pregledate tačno bajtove koje fiksira; potpisivanjem atestacije potpisujete i narudžbu.","e_order_changed":"Ovo nisu bajtovi koje narudžba fiksira — servis ili fajl su se promijenili nakon narudžbe. Odbijte je i tražite novu.","e_sent":"Prvo pošaljite nalaze naručiocu, pa označite polje.","held_kicker":"Potpisano i zadržano","held_h":"Zadržano po embargu narudžbe do {date}","e_phrase_checksum":"Ove riječi ne čine ispravnu frazu: jedna je pogrešna ili nije na mjestu.","e_phrase_length":"Fraza ima 12 riječi (ili 15, 18, 21, 24).","e_phrase_word":"„{w}“ nije riječ sa liste fraza.","registered":"Vi ste revizor. Vaša stranica je objavljena.","confirm_logout":"Odjaviti se? Ključevi se uklanjaju iz ovog pregledača; dvanaest riječi vas ponovo prijavljuju.","lib_count":"{n} od {all}","lib_none":"Ništa ne odgovara.","lib_empty":"Još nema atestacija.","lib_checking":"provjeravam potpise…","lib_ok":"✓ potpisi provjereni u vašem pregledaču","lib_state":"✗ {state} {err}","lib_link":"link"}</script>
+</body>
+</html>

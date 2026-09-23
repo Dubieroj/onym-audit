@@ -18,29 +18,45 @@
       <span class="brand-mark" aria-hidden="true"></span>
       <span class="brand-text"><b>{{s_brand}}</b> <span class="muted">· {{s_brand_sub}}</span></span>
     </a>
+    <nav class="tabs" aria-label="{{s_tabs}}">
+      <button type="button" data-tab="auditor">{{s_tab_auditor}}</button>
+      <button type="button" data-tab="library">{{s_tab_library}}</button>
+    </nav>
     <span id="who" class="who-chip" hidden></span>
     <div class="langs" role="navigation" aria-label="{{lang_label}}">{{switcher}}</div>
   </div>
 </header>
 
 <main class="wrap studio-main">
-  <!-- Welcome -->
-  <section id="v-welcome" class="view" hidden>
-    <p class="kicker">{{s_kicker}}</p>
-    <h1>{{s_h1}}</h1>
-    <p class="lede">{{s_lede}}</p>
-    <ol class="order-steps">
-      <li>{{s_w1}}</li>
-      <li>{{s_w2}}</li>
-      <li>{{s_w3}}</li>
-    </ol>
-    <p class="cta">
-      <button class="btn btn-ink" data-go="onboard">{{s_become}}</button>
-      <label class="btn btn-line file-btn">{{s_restore}}<input type="file" id="restore-file" accept=".json,application/json" hidden></label>
-    </p>
-    <p class="small muted">{{s_welcome_note}}</p>
+  <!-- Sign in with an auditor phrase -->
+  <section id="v-login" class="view" hidden>
+    <p class="kicker">{{s_login_kicker}}</p>
+    <h1>{{s_login_h}}</h1>
+    <p class="lede">{{s_login_lede}}</p>
+    <p class="warn-box" role="note">{{s_login_warn}}</p>
+    <div class="choice-grid login-choices">
+      <button type="button" class="choice" id="login-new"><b>{{s_login_new}}</b><span>{{s_login_new_h}}</span></button>
+      <button type="button" class="choice" id="login-have"><b>{{s_login_have}}</b><span>{{s_login_have_h}}</span></button>
+    </div>
+    <form id="login-form" class="order-form solo" hidden novalidate>
+      <label>{{s_login_phrase}}<textarea id="login-phrase" rows="3" class="mono" autocomplete="off" autocapitalize="off" spellcheck="false"></textarea></label>
+      <p id="login-error" class="form-error" role="alert" hidden></p>
+      <button class="btn btn-ink" type="submit" id="login-go">{{s_login_go}}</button>
+    </form>
+    <p class="small muted">{{s_login_note}}</p>
     <h2 class="sub-h">{{s_auditors_h}}</h2>
     <ul id="auditor-list" class="docs"></ul>
+  </section>
+
+  <!-- A new phrase, shown once -->
+  <section id="v-newphrase" class="view" hidden>
+    <p class="kicker">{{s_np_kicker}}</p>
+    <h1>{{s_np_h}}</h1>
+    <ol id="np-words" class="phrase-grid"></ol>
+    <p class="warn-box">{{s_np_keep}}</p>
+    <dl class="terms solo"><div><dt>{{s_np_account}}</dt><dd class="mono" id="np-account"></dd></div></dl>
+    <label class="check"><input type="checkbox" id="np-saved"> <span>{{s_np_saved}}</span></label>
+    <p class="cta"><button class="btn btn-ink" id="np-continue" disabled>{{s_np_continue}}</button></p>
   </section>
 
   <!-- Onboarding -->
@@ -50,6 +66,7 @@
     <form id="ob-form" class="order-form" novalidate>
       <fieldset>
         <legend>{{s_ob_you}}</legend>
+        <p class="hint">{{s_np_account}}: <code id="ob-account"></code></p>
         <label>{{s_ob_name}}<input id="ob-name" required maxlength="80" autocomplete="name"></label>
         <label>{{s_ob_slug}}<input id="ob-slug" required pattern="[a-z][a-z0-9-]{2,31}" class="mono" autocomplete="off" spellcheck="false"></label>
         <p class="hint">{{s_ob_slug_h}} <code id="ob-url">foldy.io/audit/a/…/</code></p>
@@ -79,14 +96,6 @@
       <button class="btn btn-ink" type="submit" id="ob-submit">{{s_ob_submit}}</button>
       <p class="small muted">{{s_ob_submit_h}}</p>
     </form>
-    <div id="ob-done" class="order-done solo" hidden>
-      <p class="kicker">{{s_ob_done_kicker}}</p>
-      <h2>{{s_ob_done_h}}</h2>
-      <p class="warn">{{s_ob_done_keep}}</p>
-      <p class="cta"><a class="btn btn-ink" id="ob-dl" download>{{s_ob_done_dl}}</a></p>
-      <label class="check"><input type="checkbox" id="ob-saved"> <span>{{s_ob_done_saved}}</span></label>
-      <p class="cta"><button class="btn btn-line" id="ob-continue" disabled>{{s_ob_done_continue}}</button></p>
-    </div>
   </section>
 
   <!-- Dashboard -->
@@ -95,11 +104,17 @@
     <h1 id="d-name"></h1>
     <dl class="terms">
       <div><dt>{{s_d_page}}</dt><dd><a id="d-page" target="_blank" rel="noopener"></a></dd></div>
+      <div><dt>{{s_np_account}}</dt><dd class="mono" id="d-account"></dd></div>
       <div><dt>{{s_d_key}}</dt><dd class="mono" id="d-key"></dd></div>
     </dl>
+    <ol class="pipeline" id="d-pipe">
+      <li data-step="orders"><b id="pipe-orders">·</b><span>{{s_pipe_orders}}</span></li>
+      <li data-step="held"><b id="pipe-held">·</b><span>{{s_pipe_held}}</span></li>
+      <li data-step="published"><b id="pipe-published">·</b><span>{{s_pipe_published}}</span></li>
+      <li data-step="revoked"><b id="pipe-revoked">·</b><span>{{s_pipe_revoked}}</span></li>
+    </ol>
     <p class="cta">
       <button class="btn btn-ink" data-go="audit">{{s_d_new}}</button>
-      <button class="btn btn-line" id="d-backup">{{s_d_backup}}</button>
       <button class="btn btn-line" id="d-export">{{s_d_export}}</button>
     </p>
     <h2 class="sub-h">{{s_d_orders}}</h2>
@@ -112,7 +127,7 @@
     </details>
     <h2 class="sub-h">{{s_d_atts}}</h2>
     <div id="d-atts" class="entries"></div>
-    <p class="small muted"><button class="link-btn" id="d-forget">{{s_d_forget}}</button></p>
+    <p class="small muted"><button class="link-btn" id="d-forget">{{s_d_logout}}</button></p>
   </section>
 
   <!-- New audit -->
@@ -175,6 +190,27 @@
       </div>
       <div id="a-done" class="order-done solo" hidden></div>
     </div>
+  </section>
+
+  <!-- Library -->
+  <section id="v-library" class="view" hidden>
+    <p class="kicker">{{s_lib_kicker}}</p>
+    <h1>{{s_lib_h}}</h1>
+    <p class="lede">{{s_lib_lede}}</p>
+    <div class="lib-bar">
+      <input id="lib-q" type="search" placeholder="{{s_lib_search}}" aria-label="{{s_lib_search}}" autocomplete="off" spellcheck="false">
+      <div class="row-inline" id="lib-filters" role="group">
+        <button type="button" class="chip on" data-f="all">{{s_lib_all}}</button>
+        <button type="button" class="chip" data-f="clear">{{s_lib_clear}}</button>
+        <button type="button" class="chip" data-f="findings-noted">{{s_lib_noted}}</button>
+        <button type="button" class="chip" data-f="fail">{{s_lib_fail}}</button>
+        <button type="button" class="chip" data-f="inconclusive">{{s_lib_inconclusive}}</button>
+        <button type="button" class="chip" data-f="revoked">{{s_lib_revoked}}</button>
+      </div>
+    </div>
+    <p class="small muted" id="lib-count"></p>
+    <div id="lib-list" class="entries"></div>
+    <p class="small muted">{{s_lib_note}}</p>
   </section>
 </main>
 

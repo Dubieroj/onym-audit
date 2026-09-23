@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Render the public pages in every language from web/*.html + web/i18n.json.
 
-  python3 tools/build_landing.py          # write public/{,ru/,cnr/}{,order/,hub/}index.html
+  python3 tools/build_landing.py          # write public/{,ru/,cnr/}{,order/,app/}index.html
                                           # and public/hub/auditor.html
   python3 tools/build_landing.py --check  # non-zero if the committed pages are stale
 
@@ -21,8 +21,11 @@ LANGS = [  # code, path, BCP 47 tag, switcher label
 PAGES = [  # template, page path under the language, the JS strings key
     ("landing.html", "", "js"),
     ("order.html", "order/", "order_js"),
-    ("studio.html", "hub/", "studio_js"),
+    ("app.html", "app/", "studio_js"),
 ]
+# Old addresses that now live elsewhere: a small page per language that
+# sends the reader on (relative, so it works under any prefix).
+REDIRECTS = [("hub/", "../app/")]
 # Pages rendered once, in English, at a fixed path. The hosted auditor page is
 # served as a/<name>/, two levels below the shared tree.
 SINGLE = [  # template, output path under public/, the JS strings key, root
@@ -63,6 +66,12 @@ def main():
         for code, lpath, tag, _ in LANGS:
             out = render(template, strings, code, lpath, tag, ppath, jskey)
             outputs.append((ROOT / "public" / lpath / ppath / "index.html", out))
+    for old, new in REDIRECTS:
+        for code, lpath, tag, _ in LANGS:
+            outputs.append((ROOT / "public" / lpath / old / "index.html",
+                f'<!doctype html>\n<html lang="{tag}">\n<meta charset="utf-8">\n<title>Onym audit</title>\n'
+                f'<meta http-equiv="refresh" content="0; url={new}">\n<link rel="canonical" href="{new}">\n'
+                f'<p><a href="{new}">{new}</a></p>\n</html>\n'))
     for tname, dpath, jskey, root in SINGLE:
         template = (ROOT / "web" / tname).read_text()
         outputs.append((ROOT / "public" / dpath, render(template, strings, "en", "", "en", "", jskey, root)))

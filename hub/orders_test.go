@@ -277,3 +277,44 @@ func commissioned(t *testing.T, alice ed25519.PrivateKey, attID string, orderRaw
 	}
 	return raw, map[string]string{"orders/" + o.OrderID + ".json": string(full), "scopes/order-" + o.OrderID + ".md": scope}
 }
+
+func TestLibraryAndOrderStats(t *testing.T) {
+	h, srv, alice := orderingHub(t)
+	scope := "src/\n"
+	o := order(t, "ord-0000000000000009", scope, nil)
+	call(srv, "POST", "/a/alice/orders", map[string]any{"order": o, "scopeText": scope, "contact": "mailto:bob@example.org"})
+	// An unsolicited, then revoked attestation stays in the library as revoked.
+	a, adocs := attestation(t, "alice", "alice-att-0000000021", alice)
+	if code, out := call(srv, "POST", "/hub/api/a/alice/publish", map[string]any{"attestation": a, "docs": adocs}); code != 201 {
+		t.Fatalf("publish %d %v", code, out)
+	}
+	c2, d2 := commissioned(t, alice, "alice-att-0000000022", o, scope, audit.Clear)
+	if code, out := call(srv, "POST", "/hub/api/a/alice/publish", map[string]any{"attestation": c2, "docs": d2}); code != 201 {
+		t.Fatalf("publish commissioned %d %v", code, out)
+	}
+	rv := audit.Revocation{RevocationVersion: 1, AttestationID: "alice-att-0000000021", Auditor: "onym:component:alice", AuditorKey: pub(alice), IssuedAt: "2026-09-24T11:00:00Z", StatusEpoch: h.Now().Unix(), EffectiveFrom: "2026-09-24T11:00:00Z", Reason: "withdrawal"}
+	rvRaw, _ := audit.SignDoc(rv, alice)
+	call(srv, "POST", "/hub/api/a/alice/revoke", map[string]any{"revocation": json.RawMessage(rvRaw)})
+
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, httptest.NewRequest("GET", "/hub/api/library", nil))
+	var lib []libraryEntry
+	if err := json.Unmarshal(rec.Body.Bytes(), &lib); err != nil {
+		t.Fatal(err)
+	}
+	states := map[string]string{}
+	for _, e := range lib {
+		states[e.AttestationID] = e.State
+	}
+	if states["alice-att-0000000021"] != audit.Revoked || states["alice-att-0000000022"] != "active" {
+		t.Errorf("library states %v", states)
+	}
+
+	rec = httptest.NewRecorder()
+	srv.ServeHTTP(rec, httptest.NewRequest("GET", "/hub/api/auditors", nil))
+	var auds []map[string]any
+	json.Unmarshal(rec.Body.Bytes(), &auds)
+	if len(auds) != 1 || auds[0]["completedOrders"] != float64(1) || auds[0]["customers"] != float64(1) || auds[0]["operator"] != string(pub(alice)) {
+		t.Errorf("auditors %v", auds)
+	}
+}

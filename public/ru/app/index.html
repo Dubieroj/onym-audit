@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Аудит Onym · приложение</title>
+<meta name="description" content="Войдите личностью Onym, заведённой для аудита, проверяйте что угодно в сети Onym, принимайте заказы и смотрите все вердикты — всё подписывается и проверяется в вашем браузере.">
+<meta name="color-scheme" content="light dark">
+<link rel="alternate" hreflang="en" href="https://foldy.io/audit/app/">
+<link rel="alternate" hreflang="ru" href="https://foldy.io/audit/ru/app/">
+<link rel="alternate" hreflang="sr-Latn-ME" href="https://foldy.io/audit/cnr/app/">
+<link rel="alternate" hreflang="x-default" href="https://foldy.io/audit/app/">
+<link rel="stylesheet" href="../../style.css">
+<script type="module" src="../../hub/studio.js"></script>
+</head>
+<body class="studio">
+<div class="grain" aria-hidden="true"></div>
+<header class="masthead">
+  <div class="wrap masthead-row">
+    <a class="brand" href="../">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span class="brand-text"><b>Аудит Onym</b> <span class="muted">· приложение</span></span>
+    </a>
+    <nav class="tabs" aria-label="Разделы">
+      <button type="button" data-tab="auditor">Аудитор</button>
+      <button type="button" data-tab="library">Библиотека</button>
+    </nav>
+    <span id="who" class="who-chip" hidden></span>
+    <div class="langs" role="navigation" aria-label="Язык"><a href="../../app/" hreflang="en" lang="en">EN</a><a href="../../ru/app/" hreflang="ru" lang="ru" aria-current="page">RU</a><a href="../../cnr/app/" hreflang="sr-Latn-ME" lang="sr-Latn-ME">CNR</a></div>
+  </div>
+</header>
+
+<main class="wrap studio-main">
+  <!-- Sign in with an auditor phrase -->
+  <section id="v-login" class="view" hidden>
+    <p class="kicker">Вход</p>
+    <h1>Ваша личность аудитора</h1>
+    <p class="lede">Аудитор — это отдельная личность Onym: двенадцать слов, из которых ключ аудитора и Stellar-адрес выводятся ровно так же, как в приложениях Onym. Добавьте эти слова в приложение Onym вторым аккаунтом — и увидите тот же адрес.</p>
+    <p class="warn-box" role="note">Никогда не вводите здесь фразу своего основного аккаунта Onym. Эта фраза — вся ваша личность: сообщения, группы и ключи, а ключ аудитора публичен и связал бы вашу работу аудитора с перепиской. Используйте фразу, созданную только для аудита.</p>
+    <div class="choice-grid login-choices">
+      <button type="button" class="choice" id="login-new"><b>Создать личность аудитора</b><span>Двенадцать новых слов, созданных в этом браузере. Запишите их.</span></button>
+      <button type="button" class="choice" id="login-have"><b>У меня есть фраза аудитора</b><span>Введите двенадцать слов, созданных для аудита.</span></button>
+    </div>
+    <form id="login-form" class="order-form solo" hidden novalidate>
+      <label>Ваши двенадцать слов<textarea id="login-phrase" rows="3" class="mono" autocomplete="off" autocapitalize="off" spellcheck="false"></textarea></label>
+      <p id="login-error" class="form-error" role="alert" hidden></p>
+      <button class="btn btn-ink" type="submit" id="login-go">Войти</button>
+    </form>
+    <p class="small muted">Фраза не покидает страницу и не сохраняется: браузер хранит только ключи, которые нельзя извлечь. В сеть Stellar ничего не записывается, деньги не нужны.</p>
+    <h2 class="sub-h">Аудиторы на этом хабе</h2>
+    <ul id="auditor-list" class="docs"></ul>
+  </section>
+
+  <!-- A new phrase, shown once -->
+  <section id="v-newphrase" class="view" hidden>
+    <p class="kicker">Новая личность</p>
+    <h1>Запишите эти двенадцать слов</h1>
+    <ol id="np-words" class="phrase-grid"></ol>
+    <p class="warn-box">Это единственный способ войти снова — здесь или на другом устройстве. Их никто не восстановит: ни хаб, ни Onym.</p>
+    <dl class="terms solo"><div><dt>Stellar-адрес</dt><dd class="mono" id="np-account"></dd></div></dl>
+    <label class="check"><input type="checkbox" id="np-saved"> <span>Я записал слова по порядку</span></label>
+    <p class="cta"><button class="btn btn-ink" id="np-continue" disabled>Продолжить</button></p>
+  </section>
+
+  <!-- Onboarding -->
+  <section id="v-onboard" class="view" hidden>
+    <p class="kicker">Шаг первый</p>
+    <h1>Ваша личность аудитора</h1>
+    <form id="ob-form" class="order-form" novalidate>
+      <fieldset>
+        <legend>Кто отвечает за аттестации</legend>
+        <p class="hint">Stellar-адрес: <code id="ob-account"></code></p>
+        <label>Публичное имя<input id="ob-name" required maxlength="80" autocomplete="name"></label>
+        <label>Адрес<input id="ob-slug" required pattern="[a-z][a-z0-9-]{2,31}" class="mono" autocomplete="off" spellcheck="false"></label>
+        <p class="hint">Ваша страница: <code id="ob-url">foldy.io/audit/a/…/</code></p>
+        <label>Email для связи<input id="ob-email" type="email" required autocomplete="email"></label>
+        <p class="hint">Публикуется в манифесте, чтобы проверяемые могли с вами связаться.</p>
+      </fieldset>
+      <fieldset>
+        <legend>Что вы будете проверять</legend>
+        <label class="check"><input type="checkbox" id="ob-m-manual" checked> <span>Ручная проверка безопасности — репозитории, опубликованные документы, сборки</span></label>
+        <label class="check"><input type="checkbox" id="ob-m-conf" checked> <span>Прогоны соответствия — набор проверок для провайдеров Discovery, выполняется хабом</span></label>
+      </fieldset>
+      <fieldset>
+        <legend>Заказы</legend>
+        <label class="check"><input type="checkbox" id="ob-orders" checked> <span>Принимать заказы: любой может заказать у меня проверку на условиях ниже</span></label>
+        <div id="ob-fee"></div>
+      </fieldset>
+      <fieldset>
+        <legend>Ваши политики</legend>
+        <p class="hint">Заполнены по шаблонам. Они вас обязывают и публикуются по хешу — прочтите и поправьте то, что делаете иначе.</p>
+        <details><summary>Политика независимости</summary><textarea id="ob-p-independence" rows="10"></textarea></details>
+        <details><summary>Политика непрошеных проверок</summary><textarea id="ob-p-unsolicited" rows="10"></textarea></details>
+        <details><summary>Условия ответственности</summary><textarea id="ob-p-liability" rows="10"></textarea></details>
+        <details><summary>Профиль приватности</summary><textarea id="ob-p-privacy" rows="8"></textarea></details>
+      </fieldset>
+      <label class="check"><input id="ob-terms" type="checkbox" required> <span>Я прочитал правила хаба и буду подписывать только то, за что ручаюсь.</span></label>
+      <p id="ob-error" class="form-error" role="alert" hidden></p>
+      <button class="btn btn-ink" type="submit" id="ob-submit">Опубликовать манифест</button>
+      <p class="small muted">Манифест и политики подписываются ключом аудитора в этом браузере; отправляются только подписанные документы.</p>
+    </form>
+  </section>
+
+  <!-- Dashboard -->
+  <section id="v-dash" class="view" hidden>
+    <p class="kicker">Ваш аудитор</p>
+    <h1 id="d-name"></h1>
+    <dl class="terms">
+      <div><dt>Публичная страница</dt><dd><a id="d-page" target="_blank" rel="noopener"></a></dd></div>
+      <div><dt>Stellar-адрес</dt><dd class="mono" id="d-account"></dd></div>
+      <div><dt>Ключ</dt><dd class="mono" id="d-key"></dd></div>
+    </dl>
+    <ol class="pipeline" id="d-pipe">
+      <li data-step="orders"><b id="pipe-orders">·</b><span>новых заказов</span></li>
+      <li data-step="held"><b id="pipe-held">·</b><span>придержано по эмбарго</span></li>
+      <li data-step="published"><b id="pipe-published">·</b><span>действующих аттестаций</span></li>
+      <li data-step="revoked"><b id="pipe-revoked">·</b><span>отозвано</span></li>
+    </ol>
+    <p class="cta">
+      <button class="btn btn-ink" data-go="audit">Проверить что-нибудь</button>
+      <button class="btn btn-line" id="d-export">Выгрузить моё дерево</button>
+    </p>
+    <h2 class="sub-h">Заказы</h2>
+    <div id="d-orders" class="entries"></div>
+    <details class="order-form offers-box" id="d-offers">
+      <summary>Ваши предложения и цена</summary>
+      <p class="hint">При сохранении подписываются новые предложения и переподписывается манифест. Уже поступившие заказы остаются на тех условиях, на которых были подписаны.</p>
+      <div id="d-fee"></div>
+      <p class="cta"><button class="btn btn-ink" id="d-offers-save" type="button">Подписать и опубликовать предложения</button> <button class="link-btn" id="d-offers-off" type="button">Перестать принимать заказы</button></p>
+    </details>
+    <h2 class="sub-h">Ваши аттестации</h2>
+    <div id="d-atts" class="entries"></div>
+    <p class="small muted"><button class="link-btn" id="d-forget">Выйти из этого браузера</button></p>
+  </section>
+
+  <!-- New audit -->
+  <section id="v-audit" class="view" hidden>
+    <p class="kicker">Новая проверка</p>
+    <h1>Что вы проверяете?</h1>
+    <div id="a-order-banner" class="keybox" hidden></div>
+    <div class="steps" id="a-steps"></div>
+
+    <div class="step" id="a-step1">
+      <h2 class="sub-h">1 · Выберите объект</h2>
+      <div class="choice-grid">
+        <button class="choice" data-kind="source"><b>Репозиторий</b><span>Код на точном коммите (GitHub). Выделяйте строки, чтобы записать находки.</span></button>
+        <button class="choice" data-kind="deployment"><b>Работающий сервис</b><span>Любой компонент Onym по URL манифеста: курьер, хранилище, нотариус, модерация, бэкап.</span></button>
+        <button class="choice" data-kind="discovery"><b>Каталог Discovery</b><span>Запускает набор из 42 проверок соответствия против провайдера.</span></button>
+        <button class="choice" data-kind="build"><b>Сборка приложения</b><span>Опубликованный файл (APK, IPA…), привязанный хешем к исходному коммиту.</span></button>
+      </div>
+    </div>
+
+    <div class="step" id="a-step2" hidden>
+      <h2 class="sub-h">2 · Изучите объект</h2>
+      <form id="a-target" class="order-form inline-form"></form>
+      <div id="a-inspect"></div>
+    </div>
+
+    <div class="step" id="a-step3" hidden>
+      <h2 class="sub-h">3 · Находки и покрытие</h2>
+      <p class="hint">Каждая находка цитирует точные байты, на которых основана. Честно укажите, что проверяли, а что нет.</p>
+      <div id="a-findings" class="entries"></div>
+      <form id="a-finding-form" class="order-form" hidden></form>
+      <h3>Покрытие</h3>
+      <div class="order-form cov-form">
+        <label>Что показала проверка — в двух предложениях<textarea id="a-cov-sum" rows="2"></textarea></label>
+        <label>Проверено (по одному на строку)<textarea id="a-cov-ex" rows="2"></textarea></label>
+        <label>Не проверено и почему (по одному на строку)<textarea id="a-cov-nx" rows="2"></textarea></label>
+        <label class="check"><input type="checkbox" id="a-cov-complete"> <span>Я проверил всю заявленную область</span></label>
+      </div>
+    </div>
+
+    <div class="step" id="a-step4" hidden>
+      <h2 class="sub-h">4 · Подписать и опубликовать</h2>
+      <div class="order-form">
+        <p>Результат: <b id="a-result" class="stamp"></b></p>
+        <label>Проверяемый компонент<input id="a-subject" class="mono" placeholder="onym:component:…"></label>
+        <label>Ключ оператора проверяемого<input id="a-subject-key" class="mono" placeholder="onym:key:…"></label>
+        <p class="hint">Подставляется из манифеста, если он есть. Только этим ключом можно подписать ответ на вашу аттестацию.</p>
+        <label>Ваши связи с проверяемым<input id="a-rel" value="none"></label>
+        <div id="a-unsol">
+          <label>Контакт проверяемого, который вы уведомили<input id="a-contact" placeholder="mailto:security@…"></label>
+          <label>Когда уведомили (UTC)<input id="a-notified" class="mono"></label>
+          <p class="hint">Непрошеные проверки публикуются только после уведомления проверяемого — см. вашу политику.</p>
+        </div>
+        <div id="a-comm" hidden>
+          <p class="hint">Проверка по заказу. Заказ требует, чтобы находки попали к заказчику до любой публикации: скачайте отчёт и отправьте ему.</p>
+          <p class="cta"><button type="button" class="btn btn-line" id="a-report-dl">Скачать отчёт с находками</button> <a id="a-comm-contact" class="mono small"></a></p>
+          <label class="check"><input type="checkbox" id="a-sent"> <span>Я отправил находки заказчику</span></label>
+        </div>
+        <p id="a-error" class="form-error" role="alert" hidden></p>
+        <button class="btn btn-ink" id="a-publish">Подписать моим ключом и опубликовать</button>
+      </div>
+      <div id="a-done" class="order-done solo" hidden></div>
+    </div>
+  </section>
+
+  <!-- Library -->
+  <section id="v-library" class="view" hidden>
+    <p class="kicker">Библиотека</p>
+    <h1>Все вердикты, проверенные в вашем браузере</h1>
+    <p class="lede">Все аттестации этого хаба от всех аудиторов. Ищите по номеру, компоненту или аудитору. Провалы и отзывы показаны точно так же, как хорошие результаты.</p>
+    <div class="lib-bar">
+      <input id="lib-q" type="search" placeholder="номер, компонент, аудитор или репозиторий" aria-label="номер, компонент, аудитор или репозиторий" autocomplete="off" spellcheck="false">
+      <div class="row-inline" id="lib-filters" role="group">
+        <button type="button" class="chip on" data-f="all">Все</button>
+        <button type="button" class="chip" data-f="clear">Чисто</button>
+        <button type="button" class="chip" data-f="findings-noted">Есть находки</button>
+        <button type="button" class="chip" data-f="fail">Провал</button>
+        <button type="button" class="chip" data-f="inconclusive">Не определено</button>
+        <button type="button" class="chip" data-f="revoked">Отозваны</button>
+      </div>
+    </div>
+    <p class="small muted" id="lib-count"></p>
+    <div id="lib-list" class="entries"></div>
+    <p class="small muted">Это указатель, а не авторитет: он охватывает аудиторов этого хаба, а кому доверять — решаете вы.</p>
+  </section>
+</main>
+
+<footer class="colophon"><div class="wrap">
+  <p class="small muted">Хаб — заменяемый вариант по умолчанию: аттестации — подписанные байты, не привязанные к месту. <a href="../../hub/terms.md">Правила хаба</a> · <a href="../../profile/Audit-Static-Ed25519.md">Профиль</a></p>
+</div></footer>
+<div id="toast" class="toast" hidden role="status"></div>
+<script type="application/json" id="strings">{"tpl_independence":"# Политика независимости\n\nАудитор: {name} (`onym:component:{slug}`).\n\nЯ не владею, не управляю и не получаю оплату ни от одного компонента, который проверяю. Любая связь с проверяемым — владение, управление, работа или оплата — указывается в поле `relationships` каждой аттестации о нём, и я беру самоотвод от компонентов, которыми владею, управляю или с которыми конкурирую.\n\nОплата не зависит от результата. За непрошеную проверку я ничего не принимаю от проверяемого и никогда не скрываю, не смягчаю и не откладываю аттестацию ни за что.\n","tpl_unsolicited":"# Политика непрошеных проверок и раскрытия\n\nАудитор: {name} (`onym:component:{slug}`).\n\n1. Без приглашения я проверяю только то, что публично доступно ровно в хешированных байтах.\n2. До публикации я отправляю находки на опубликованный контакт безопасности проверяемого и записываю контакт и время в аттестацию.\n3. Находка, которая позволяет третьим лицам обмануть или навредить пользователям сейчас, находится под эмбарго до 90 дней: аттестация публикуется только со счётчиками.\n4. Наблюдаемое несоответствие, которое ничего не даёт атакующему, публикуется не раньше чем через 12 часов после уведомления.\n5. Проверяемый может в любой момент опубликовать подписанный ответ рядом с аттестацией; я не могу его изменить.\n6. Предложение скрыть, смягчить или отложить аттестацию за что-либо нарушает эту политику.\n","tpl_liability":"# Условия ответственности\n\nАудитор: {name} (`onym:component:{slug}`).\n\nАттестация — профессиональное мнение по названной методике о конкретных байтах на определённый момент. Я отвечаю за применение методики как написано, за полноту области, исключений, спонсора и связей и за отзыв того, за что больше не ручаюсь. Я не отвечаю за то, что вне области, за другие ревизии и развёртывания и за решение читателя положиться на аттестацию. Аттестация — не сертификат, не лицензия и не гарантия. Непрошеные и бесплатные аттестации не несут финансовой ответственности.\n","tpl_privacy":"# Профиль приватности\n\nАудитор: {name} (`onym:component:{slug}`).\n\nМои документы отдаёт хаб аудиторов Onym — без cookies, журналов доступа и запросов статуса по отдельным аттестациям. Ответы проверяемых публикуются — в этом их смысл. О читателях моих аттестаций я не храню никаких данных.\nКонтакт, указанный в заказе, видим только мне и хабу, который держит очередь, и используется только для этого заказа. С хаба он удаляется, когда я беру или отклоняю заказ.\n","n_atts":"аттестаций: {n}","no_auditors":"Аудиторов пока нет — станьте первым.","working":"Работаю…","ob_submit":"Опубликовать манифест","e_name":"Укажите публичное имя.","e_slug":"Адрес — 3–32 строчные латинские буквы, цифры или дефисы, начинается с буквы.","e_email":"Укажите корректный email.","e_methods":"Выберите хотя бы один вид проверки.","e_terms":"Подтвердите правила, чтобы продолжить.","e_crypto":"Этот браузер не умеет создавать ключи Ed25519. Используйте свежий Chrome, Safari или Firefox.","loading":"Загружаю…","e_status":"Ваш список статусов не проходит проверку.","no_atts":"Аттестаций пока нет. Проверьте что-нибудь!","l_att":"аттестация","l_report":"отчёт","revoke":"Отозвать","confirm_revoke":"Отозвать {id}? Отзыв необратим и публикуется с причиной.","revoked":"Отозвано. Список статусов это уже отражает.","f_scope":"Область — что именно вы проверяете","f_scope_ph":"например, проверка подписей в src/verify.rs","f_repo":"Репозиторий","f_repo_h":"Репозитории GitHub просматриваются прямо с GitHub.","f_commit":"Коммит","f_manifest":"URL манифеста","f_manifest_h":"Подписанный манифест компонента, например https://relayer.onym.app/manifest.json","f_provider":"URL манифеста провайдера","f_provider_h":"например https://discovery.onym.app/manifest.json","f_file":"URL файла сборки","inspect":"Изучить","e_scope":"Укажите область.","e_github":"Укажите адрес вида https://github.com/org/repo.","e_commit":"Коммит — полный идентификатор из 40 символов.","e_tree":"GitHub не вернул дерево файлов: {err}","e_https":"Укажите https:// адрес без порта, параметров и фрагмента.","c_served":"отдаётся (HTTP {status})","c_cookies":"без cookies","c_json":"строгий JSON","c_sig_ok":"подпись сходится с ключом оператора {fp}","c_sig_bad":"подпись НЕ сходится с ключом оператора","c_unsigned":"подписи оператора нет","c_valid":"действует до {until}","c_not_json":"это не JSON-документ","running_suite":"Запускаю набор проверок на хабе (до минуты)…","suite_result":"Результат набора:","suite_counts":"пройдено {pass} из {n}","hashing":"Хаб скачивает сборку и считает хеш…","hashed":"Хеш ({size}):","filter":"фильтр файлов","pick_file":"Выберите файл слева.","select_hint":"Кликните строку, затем с Shift — другую, чтобы выделить доказательство, и опишите находку ниже.","ff_at":"Доказательство: {where}","ff_sev":"Серьёзность","ff_title_l":"Заголовок","ff_title":"одна строка, называющая дефект","ff_desc_l":"Описание","ff_desc":"что не так, почему это важно, как это достигается","ff_rec_l":"Исправление","ff_rec":"что исправит","ff_add":"Добавить находку","e_finding":"Дайте находке заголовок и описание.","finding_added":"Находка добавлена.","no_fail_checks":"Проваленных проверок нет.","no_findings":"Находок пока нет.","from_suite":"из набора проверок · {clause}","remove":"убрать","e_subject":"Проверяемый — onym:component:<имя>.","e_subject_key":"Ключ оператора — onym:key:<64 hex>.","e_contact":"Укажите mailto: или https:// контакт, который вы уведомили.","e_notified":"Время уведомления — в виде 2026-09-24T10:00:00Z и не в будущем.","e_rel":"Укажите связи («none», если их нет).","e_coverage":"Кратко опишите итог проверки.","confirm_publish":"Подписать и опубликовать аттестацию с результатом {result}? Аттестации неизменяемы — исправления делаются отзывом или новой аттестацией.","published_kicker":"Опубликовано","published_h":"Ваша аттестация опубликована","see_page":"Моя страница","to_dash":"К моему аудитору","f_owner":"URL манифеста проверяемого (необязательно)","f_owner_h":"Подписанный манифест компонента, к которому это относится. Он называет проверяемого и единственный ключ, которым можно ответить на вашу аттестацию.","fee_probono":"Бесплатно","fee_fixed_l":"Фиксированная цена — одинаковая при любом результате","fee_amount":"Сумма","fee_currency":"Валюта (код ISO)","fee_days":"Отчёт в течение (дней)","fee_h":"Цена никогда не зависит от результата: в профиле для этого нет поля. Находки сначала получает заказчик; провал придерживается 90 дней (провал проверки соответствия — 7) и затем публикуется — это обеспечивает хаб.","e_days":"Срок отчёта — от 1 до 365 дней.","e_fee":"Укажите цену и трёхбуквенный код валюты, например 150.00 EUR.","order_link":"заказать","orders_off":"Вы не принимаете заказы. Опубликуйте предложение ниже — и заказать проверку сможет любой.","held_row":"{id} придерживается по эмбарго заказа до {date}; тогда хаб его опубликует.","order_stamp":"ЗАКАЗ","due":"срок {date}","m_security-review":"Проверка безопасности","m_conformance-run":"Проверка соответствия","sponsor_fp":"оплачивает {fp}","received":"получен {date}","take":"Взять заказ","decline":"Отклонить","confirm_decline":"Отклонить заказ {id}? Он уйдёт из очереди; напишите заказчику сами.","declined":"Заказ отклонён.","no_orders":"Заказов пока нет. На вашей странице у всех есть кнопка заказа.","offers_saved":"Предложения подписаны и опубликованы.","confirm_offers_off":"Перестать принимать заказы? Манифест переподпишется без предложений; уже поступившие заказы останутся, пока вы их не возьмёте или не отклоните.","offers_stopped":"Вы больше не принимаете заказы.","order_banner":"Заказ {id}.","order_banner_h":"Вы проверяете ровно те байты, что закреплены в заказе; подписывая аттестацию, вы подписываете и заказ.","e_order_changed":"Это не те байты, что закреплены в заказе: сервис или файл изменились после заказа. Отклоните его и попросите новый.","e_sent":"Сначала отправьте находки заказчику, потом отметьте галочку.","held_kicker":"Подписано и придержано","held_h":"Придержано по эмбарго заказа до {date}","e_phrase_checksum":"Эти слова не складываются в верную фразу: одно из них неверно или стоит не на месте.","e_phrase_length":"Во фразе 12 слов (или 15, 18, 21, 24).","e_phrase_word":"«{w}» — не слово из списка фраз.","registered":"Вы аудитор. Ваша страница опубликована.","confirm_logout":"Выйти? Ключи удалятся из этого браузера; войти снова можно двенадцатью словами.","lib_count":"{n} из {all}","lib_none":"Ничего не найдено.","lib_empty":"Аттестаций пока нет.","lib_checking":"проверяю подписи…","lib_ok":"✓ подписи проверены в вашем браузере","lib_state":"✗ {state} {err}","lib_link":"ссылка"}</script>
+</body>
+</html>

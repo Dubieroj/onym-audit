@@ -137,6 +137,7 @@ func (h *Hub) Handler() http.Handler {
 	mux.HandleFunc("POST /hub/api/digest", h.digest)
 	mux.HandleFunc("POST /hub/api/conformance/discovery", h.conformance)
 	mux.HandleFunc("GET /hub/api/auditors", h.auditors)
+	mux.HandleFunc("GET /hub/api/library", h.library)
 	mux.HandleFunc("GET /hub/api/a/{slug}/export", h.export)
 	mux.HandleFunc("POST /hub/api/a/{slug}/inbox", h.inbox)
 	mux.HandleFunc("POST /a/{slug}/orders", h.postOrder)
@@ -835,7 +836,8 @@ func (h *Hub) auditors(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		atts, _ := filepath.Glob(filepath.Join(h.tenantDir(slug), "attestations", "*.json"))
-		out = append(out, map[string]any{"slug": slug, "name": m.DisplayName, "fingerprint": m.Operator.Fingerprint(), "page": h.base(slug), "attestations": len(atts), "offers": len(m.Offers)})
+		orders, customers := orderStats(h.tenantDir(slug))
+		out = append(out, map[string]any{"slug": slug, "name": m.DisplayName, "operator": m.Operator, "fingerprint": m.Operator.Fingerprint(), "page": h.base(slug), "attestations": len(atts), "offers": len(m.Offers), "completedOrders": orders, "customers": customers})
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i]["slug"].(string) < out[j]["slug"].(string) })
 	reply(w, 200, out)

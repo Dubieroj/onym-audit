@@ -1,9 +1,12 @@
-// Onym audit studio: take the audit seat from a browser. The auditor key is
-// an Ed25519 key kept in this browser's IndexedDB as a non-extractable
-// CryptoKey (plus a backup file the auditor downloads); the hub never sees
-// it. Every document is built to the static-Ed25519 profile, canonicalized
-// by the same code that verifies attestations, and signed here.
-import { parseStrict, canonical, plain, digest, fingerprint, verifySig } from "../verify.js";
+// Onym audit app: an auditor's cabinet and the library of every attestation
+// the hub serves. The holder signs in with a phrase of its own — an Onym
+// identity kept for this role, never their main one — and the auditor key
+// is that identity's Stellar key, derived exactly as the Onym apps derive it
+// (onym-id.js). Only non-extractable keys are kept in this browser's
+// IndexedDB; the phrase is not stored and the hub never sees a key. Every
+// document is built to the static-Ed25519 profile and signed here.
+import { parseStrict, canonical, plain, digest, fingerprint, verifySig, verifyAttestation } from "../verify.js";
+import { normalize, check, generate, derive } from "../onym-id.js";
 
 const $ = (id) => document.getElementById(id);
 const ROOT = new URL("../", import.meta.url); // …/audit/
@@ -11,10 +14,7 @@ const HUB = new URL("hub/api/", ROOT);
 const T = JSON.parse($("strings")?.textContent || "{}");
 const t = (k, v = {}) => (T[k] ?? k).replace(/\{(\w+)\}/g, (_, x) => v[x] ?? "");
 const enc = new TextEncoder();
-const hex = (b) => [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, "0")).join("");
-const unhex = (h) => Uint8Array.from(h.match(/../g).map((b) => parseInt(b, 16)));
 const b64 = (b) => btoa(String.fromCharCode(...new Uint8Array(b)));
-const PKCS8 = unhex("302e020100300506032b657004220420");
 const nowISO = (d = new Date()) => d.toISOString().slice(0, 19) + "Z";
 const addDays = (n) => nowISO(new Date(Date.now() + n * 864e5));
 const rid = (p) => p + [...crypto.getRandomValues(new Uint8Array(18))].map((x) => "abcdefghijkmnpqrstuvwxyz23456789"[x % 32]).join("");
@@ -66,7 +66,7 @@ const getText = async (url) => {
 
 function idb() {
   return new Promise((res, rej) => {
-    const req = indexedDB.open("onym-audit-studio", 1);
+    const req = indexedDB.open("onym-audit-app", 1);
     req.onupgradeneeded = () => req.result.createObjectStore("identity");
     req.onsuccess = () => res(req.result);
     req.onerror = () => rej(req.error);
@@ -85,14 +85,6 @@ const loadIdentity = () => idbDo("readonly", (s) => s.get("me")).catch(() => nul
 const saveIdentity = (v) => idbDo("readwrite", (s) => s.put(v, "me"));
 const forgetIdentity = () => idbDo("readwrite", (s) => s.delete("me"));
 
-async function keyFromSeed(seed) {
-  const pk = new Uint8Array([...PKCS8, ...seed]);
-  const probe = await crypto.subtle.importKey("pkcs8", pk, { name: "Ed25519" }, true, ["sign"]);
-  const jwk = await crypto.subtle.exportKey("jwk", probe);
-  const pub = Uint8Array.from(atob(jwk.x.replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0));
-  const priv = await crypto.subtle.importKey("pkcs8", pk, { name: "Ed25519" }, false, ["sign"]);
-  return { priv, key: "onym:key:" + hex(pub) };
-}
 
 // signDoc returns the published bytes: canonical JSON with the signature
 // field in place, signed over the canonical form without it.
@@ -164,14 +156,26 @@ async function buildOffers(methodologies, fee, id) {
 
 // ---------------------------------------------------------------- views
 
-let me = null; // {slug, key, componentId, name, priv}
-const views = ["welcome", "onboard", "dash", "audit"];
+let me = null; // {priv, key, account, seedKey} and, once registered, {slug, componentId, name, base}
+const views = ["login", "newphrase", "onboard", "dash", "audit", "library"];
 function show(v) {
+  if (["onboard", "dash", "audit"].includes(v) && !me) v = "login";
   for (const x of views) $("v-" + x).hidden = x !== v;
+  const tab = v === "library" ? "library" : "auditor";
+  for (const b of document.querySelectorAll("[data-tab]")) b.classList.toggle("on", b.dataset.tab === tab);
   window.scrollTo(0, 0);
   if (v === "dash") dash();
   if (v === "audit") startAudit();
-  if (v === "welcome") listAuditors();
+  if (v === "login") listAuditors();
+  if (v === "library") library();
+  if (v === "onboard") $("ob-account").textContent = me.account;
+  whoChip();
+}
+const home = () => show(!me ? "login" : me.slug ? "dash" : "onboard");
+for (const b of document.querySelectorAll("[data-tab]")) b.addEventListener("click", () => (b.dataset.tab === "library" ? show("library") : home()));
+async function whoChip() {
+  $("who").hidden = !me;
+  if (me) $("who").textContent = (me.name ? me.name + " · " : "") + me.account.slice(0, 4) + "…" + me.account.slice(-4);
 }
 document.addEventListener("click", (e) => {
   const g = e.target.closest("[data-go]");
@@ -185,6 +189,60 @@ async function listAuditors() {
     list.replaceChildren(...(all.length ? all.map((a) => el("li", {}, el("a", { href: a.page, text: a.name }), el("span", {}, `${a.fingerprint} · ${t("n_atts", { n: a.attestations })}`, a.offers ? el("a", { class: "order-link", href: new URL(`${LANG_PATH}order/?auditor=${a.slug}`, ROOT).href, text: t("order_link") }) : null))) : [el("li", { class: "muted", text: t("no_auditors") })]));
   } catch { list.replaceChildren(); }
 }
+
+// ---------------------------------------------------------------- sign in
+
+// signIn keeps what the phrase derives and finds the auditor registered
+// under its key, if any.
+async function signIn(id) {
+  me = { priv: id.priv, key: id.key, account: id.account, seedKey: id.seedKey };
+  const mine = (await api("auditors")).find((a) => a.operator === me.key);
+  if (mine) Object.assign(me, { slug: mine.slug, componentId: "onym:component:" + mine.slug, name: mine.name, base: mine.page });
+  if (me.base) setPub(me.base);
+  await saveIdentity(me);
+  home();
+}
+
+let pending = null; // a new identity, until its holder has written the phrase down
+$("login-new").addEventListener("click", guard(async () => {
+  const phrase = await generate();
+  pending = await derive(phrase);
+  $("np-words").replaceChildren(...phrase.split(" ").map((w) => el("li", { text: w })));
+  $("np-account").textContent = pending.account;
+  $("np-saved").checked = false;
+  $("np-continue").disabled = true;
+  show("newphrase");
+}));
+$("np-saved").addEventListener("change", () => ($("np-continue").disabled = !$("np-saved").checked));
+$("np-continue").addEventListener("click", guard(async () => {
+  $("np-words").replaceChildren(); // the phrase leaves the page
+  const id = pending;
+  pending = null;
+  await signIn(id);
+}));
+$("login-have").addEventListener("click", () => {
+  $("login-form").hidden = false;
+  $("login-phrase").focus();
+});
+$("login-form").addEventListener("submit", guard(async (ev) => {
+  ev.preventDefault();
+  const err = $("login-error");
+  err.hidden = true;
+  const phrase = normalize($("login-phrase").value);
+  const why = await check(phrase);
+  if (why) {
+    err.textContent = why === "checksum" ? t("e_phrase_checksum") : why === "length" ? t("e_phrase_length") : t("e_phrase_word", { w: why.slice(5) });
+    err.hidden = false;
+    return;
+  }
+  $("login-phrase").value = "";
+  $("login-go").disabled = true;
+  try {
+    await signIn(await derive(phrase));
+  } finally {
+    $("login-go").disabled = false;
+  }
+}));
 
 // ---------------------------------------------------------------- onboarding
 
@@ -236,8 +294,7 @@ $("ob-form").addEventListener("submit", guard(async (ev) => {
   btn.textContent = t("working");
   try {
     const claim = await api("claim", { slug });
-    const seed = crypto.getRandomValues(new Uint8Array(32));
-    const { priv, key } = await keyFromSeed(seed);
+    const { priv, key } = me;
     const base = claim.base;
     setPub(base);
     const docs = {
@@ -264,44 +321,21 @@ $("ob-form").addEventListener("submit", guard(async (ev) => {
     }
     const signed = await signDoc(manifest, priv);
     await api("register", { slug, manifest: JSON.parse(signed), docs });
-    me = { slug, key, componentId: claim.componentId, name, priv, base };
+    Object.assign(me, { slug, componentId: claim.componentId, name, base });
     await saveIdentity(me);
-    const backup = JSON.stringify({ onymAuditorBackup: 1, slug, componentId: claim.componentId, name, key, seed: hex(seed), base, createdAt: nowISO() }, null, 2);
-    $("ob-dl").href = URL.createObjectURL(new Blob([backup + "\n"], { type: "application/json" }));
-    $("ob-dl").download = `onym-auditor-${slug}.json`;
-    $("ob-form").hidden = true;
-    $("ob-done").hidden = false;
-    $("ob-done").scrollIntoView({ behavior: "smooth" });
+    toast(t("registered"));
+    show("dash");
   } finally {
     btn.disabled = false;
     btn.textContent = t("ob_submit");
   }
 }));
-$("ob-saved").addEventListener("change", () => ($("ob-continue").disabled = !$("ob-saved").checked));
-$("ob-continue").addEventListener("click", () => show("dash"));
-
-$("restore-file").addEventListener("change", guard(async (e) => {
-  const f = e.target.files[0];
-  if (!f) return;
-  const b = JSON.parse(await f.text());
-  if (b.onymAuditorBackup !== 1 || !/^[0-9a-f]{64}$/.test(b.seed || "")) throw new Error(t("e_backup"));
-  const { priv, key } = await keyFromSeed(unhex(b.seed));
-  if (key !== b.key) throw new Error(t("e_backup"));
-  setPub(b.base);
-  const m = plain(parseStrict(await getText(b.base + "manifest.json")));
-  if (m.operator !== key) throw new Error(t("e_backup_mismatch"));
-  me = { slug: b.slug, key, componentId: b.componentId, name: m.displayName, priv, base: b.base };
-  await saveIdentity(me);
-  toast(t("restored", { name: m.displayName }));
-  show("dash");
-}));
 
 // ---------------------------------------------------------------- dashboard
 
 async function dash() {
-  $("who").hidden = false;
-  $("who").textContent = me.name + " · " + (await fingerprint(me.key));
   $("d-name").textContent = me.name;
+  $("d-account").textContent = me.account;
   $("d-page").href = me.base;
   $("d-page").textContent = me.base.replace(/^https:\/\//, "");
   $("d-key").textContent = `${await fingerprint(me.key)} (${me.key})`;
@@ -313,6 +347,8 @@ async function dash() {
     const statusText = await getText(me.base + "status.json");
     const st = plain(parseStrict(statusText));
     if (!(await verifySig(statusText, plain(parseStrict(manifestText)).statusKey))) throw new Error(t("e_status"));
+    $("pipe-published").textContent = st.entries.filter((e) => e.state === "active").length;
+    $("pipe-revoked").textContent = st.entries.filter((e) => e.state !== "active").length;
     if (!st.entries.length) return box.replaceChildren(el("p", { class: "empty", text: t("no_atts") }));
     const rows = [];
     for (const e of st.entries) {
@@ -348,10 +384,13 @@ async function loadOrders() {
   const m = plain(parseStrict(await getText(me.base + "manifest.json")));
   $("d-offers-off").hidden = !m.offers.length;
   if (!m.offers.length) {
+    $("pipe-orders").textContent = $("pipe-held").textContent = "–";
     $("d-offers").open = true;
     return box.replaceChildren(el("p", { class: "empty", text: t("orders_off") }));
   }
   const res = await inboxCall("list");
+  $("pipe-orders").textContent = res.orders.length;
+  $("pipe-held").textContent = res.held.length;
   const rows = res.held.map((h) => el("p", { class: "note", text: t("held_row", { id: h.attestationId, date: h.releaseAt.slice(0, 10) }) }));
   for (const q of res.orders) {
     const o = q.order;
@@ -404,7 +443,6 @@ async function revoke(id, reason) {
   dash();
 }
 
-$("d-backup").addEventListener("click", () => toast(t("backup_note")));
 $("d-export").addEventListener("click", guard(async () => {
   const ex = await api(`a/${me.slug}/export`);
   const files = {};
@@ -416,11 +454,10 @@ $("d-export").addEventListener("click", guard(async () => {
   a.remove();
 }));
 $("d-forget").addEventListener("click", guard(async () => {
-  if (!confirm(t("confirm_forget"))) return;
+  if (!confirm(t("confirm_logout"))) return;
   await forgetIdentity();
   me = null;
-  $("who").hidden = true;
-  show("welcome");
+  show("login");
 }));
 
 // ---------------------------------------------------------------- audit
@@ -447,7 +484,7 @@ function startAudit() {
   $("a-comm").hidden = true;
   $("a-sent").checked = false;
   $("a-subject").readOnly = $("a-subject-key").readOnly = false;
-  for (const b of document.querySelectorAll(".choice")) b.disabled = false;
+  for (const b of document.querySelectorAll("#a-step1 .choice")) b.disabled = false;
   for (const s of ["a-step2", "a-step3", "a-step4"]) $(s).hidden = true;
   $("a-step1").hidden = false;
   $("a-done").hidden = true;
@@ -456,7 +493,7 @@ function startAudit() {
   for (const id of ["a-cov-sum", "a-cov-ex", "a-cov-nx", "a-contact"]) $(id).value = "";
   $("a-cov-complete").checked = false;
   $("a-rel").value = "none";
-  for (const b of document.querySelectorAll(".choice")) b.classList.remove("on");
+  for (const b of document.querySelectorAll("#a-step1 .choice")) b.classList.remove("on");
 }
 
 // takeOrder starts an examination bound to a queued order: the target and
@@ -475,13 +512,13 @@ function takeOrder(q) {
   $("a-comm-contact").href = q.contact;
   $("a-comm-contact").textContent = q.contact.replace(/^mailto:/, "");
   $("a-sent").closest("label").hidden = !o.disclosure.findingsToSubjectFirst;
-  for (const b of document.querySelectorAll(".choice")) b.disabled = b.dataset.kind !== kind;
-  document.querySelector(`.choice[data-kind="${kind}"]`).click();
+  for (const b of document.querySelectorAll("#a-step1 .choice")) b.disabled = b.dataset.kind !== kind;
+  document.querySelector(`#a-step1 .choice[data-kind="${kind}"]`).click();
 }
 
-for (const b of document.querySelectorAll(".choice")) {
+for (const b of document.querySelectorAll("#a-step1 .choice")) {
   b.addEventListener("click", () => {
-    for (const x of document.querySelectorAll(".choice")) x.classList.toggle("on", x === b);
+    for (const x of document.querySelectorAll("#a-step1 .choice")) x.classList.toggle("on", x === b);
     A.kind = b.dataset.kind;
     resetTarget();
     targetForm();
@@ -837,14 +874,77 @@ $("a-publish").addEventListener("click", guard(async () => {
   done.scrollIntoView({ behavior: "smooth" });
 }));
 
+// ---------------------------------------------------------------- library
+
+let LIB = null, libFilter = "all";
+const libPage = (e) => (e.auditorSlug ? e.auditorBase : new URL("./", ROOT).href);
+
+async function library() {
+  const q = decodeURIComponent((location.hash.match(/^#att=(.+)$/) || [])[1] || "");
+  if (q) $("lib-q").value = q;
+  $("lib-list").replaceChildren(el("p", { class: "muted", text: t("loading") }));
+  LIB = await api("library");
+  renderLibrary();
+}
+
+function renderLibrary() {
+  const q = $("lib-q").value.trim().toLowerCase();
+  const rows = LIB.filter((e) => (!q || [e.attestationId, e.subject, e.auditor, e.source].some((x) => x.toLowerCase().includes(q)))
+    && (libFilter === "all" || (libFilter === "revoked" ? e.state !== "active" : e.state === "active" && e.result === libFilter)));
+  $("lib-count").textContent = t("lib_count", { n: rows.length, all: LIB.length });
+  if (!rows.length) return $("lib-list").replaceChildren(el("p", { class: "empty", text: LIB.length ? t("lib_none") : t("lib_empty") }));
+  $("lib-list").replaceChildren(...rows.slice(0, 200).map((e) => {
+    const verdict = el("p", { class: "small muted", text: t("lib_checking") });
+    const row = el("article", { class: "entry", id: "att-" + e.attestationId },
+      el("div", { class: "entry-side" }, el("span", { class: `stamp r-${e.result}`, text: e.result.toUpperCase() }), el("span", { class: "state", text: e.state })),
+      el("div", {}, el("h3", { text: e.subject }),
+        el("p", { class: "who" }, el("a", { href: libPage(e), text: e.auditor }), ` · ${e.fingerprint} · ${e.methodologyClass} · ${e.engagement} · ${e.issuedAt.slice(0, 10)}`),
+        el("p", { class: "small mono", text: `${e.attestationId} · ${e.kind} · ${e.source}` }),
+        verdict,
+        el("p", { class: "links" }, el("a", { href: e.uri, text: t("l_att") }), el("a", { href: `#att=${e.attestationId}`, text: t("lib_link") }))));
+    verifyEntry(e, verdict);
+    return row;
+  }));
+}
+
+// verifyEntry checks an entry in this browser: the manifest, the status
+// list, and the attestation's signatures. Trust in the auditor stays the
+// reader's decision; the library only says whether the bytes verify.
+async function verifyEntry(e, out) {
+  try {
+    const [manifestText, statusText, attText] = await Promise.all(["manifest.json", "status.json"].map((f) => getText(e.auditorBase + f)).concat(getText(e.uri)));
+    const d = await verifyAttestation({ manifestText, attText, statusText, target: null, credited: false });
+    const good = d.display === "uncredited" || d.display === "attested";
+    out.className = "small " + (good ? "ok-line" : "bad");
+    out.textContent = good ? t("lib_ok") : t("lib_state", { state: d.display, err: d.error || "" });
+  } catch (err) {
+    out.className = "small bad";
+    out.textContent = t("lib_state", { state: "unavailable", err: err.message });
+  }
+}
+
+$("lib-q").addEventListener("input", () => LIB && renderLibrary());
+for (const b of document.querySelectorAll("#lib-filters .chip")) b.addEventListener("click", () => {
+  libFilter = b.dataset.f;
+  for (const x of document.querySelectorAll("#lib-filters .chip")) x.classList.toggle("on", x === b);
+  renderLibrary();
+});
+window.addEventListener("hashchange", () => /^#(library|att=)/.test(location.hash) && show("library"));
+
 // ---------------------------------------------------------------- start
 
 (async () => {
   fillTemplates(true);
   const saved = await loadIdentity();
-  if (saved && saved.priv) {
+  if (saved && saved.priv && saved.account) {
     me = saved;
-    setPub(me.base);
-    show("dash");
-  } else show("welcome");
+    // The hub may have taken the auditor down, or the holder registered
+    // from another browser: ask it which auditor this key is.
+    const mine = await api("auditors").then((all) => all.find((a) => a.operator === me.key), () => undefined);
+    if (mine === undefined && me.slug) ["slug", "componentId", "name", "base"].forEach((k) => delete me[k]);
+    else if (mine) Object.assign(me, { slug: mine.slug, componentId: "onym:component:" + mine.slug, name: mine.name, base: mine.page });
+    if (me.base) setPub(me.base);
+  }
+  if (/^#(library|att=)/.test(location.hash)) return show("library");
+  home();
 })().catch((e) => toast(e.message, true));

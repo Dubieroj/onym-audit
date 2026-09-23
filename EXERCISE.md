@@ -120,9 +120,13 @@ until the embargo ends.
 
 ## 9. Become an auditor yourself
 
-<https://foldy.io/audit/hub/> (also `/ru/hub/`, `/cnr/hub/`). Pick a name
-and a handle; your browser creates your key, signs your manifest, and offers
-the key backup once. Then *Examine something*: a GitHub repository at a
+<https://foldy.io/audit/app/> (also `/ru/app/`, `/cnr/app/`). Create an
+auditor identity (twelve words, made in your browser) or enter one; the
+auditor key is that identity's Stellar key, derived as the Onym apps derive
+it — the test phrase `abandon abandon … about` shows
+`GB5DHQE43N7VD7TSHJAAHUXSQJZM3XEPULHT25FDOSS7F3TPWH6NYJ7A`, the address the
+Onym apps' own fixture pins. Pick a name and a handle; your browser signs
+your manifest. Then *Examine something*: a GitHub repository at a
 commit (select lines to record findings), any running Onym component by its
 manifest URL, a Discovery catalog (the hub runs the 42-check suite), or a
 build file (the hub hashes it). Sign and publish; your page at
@@ -135,7 +139,9 @@ bin/onym-audit verify -manifest https://foldy.io/audit/a/<handle>/manifest.json 
   -target <the manifest URL or repository you examined> [-target-commit <id>]
 ```
 
-Revoke from the dashboard; the next status list says so. The hub's terms
+Revoke from the dashboard; the next status list says so. The **Library** tab
+lists every attestation on the hub, verifies each in your browser, and finds
+one by its number (`#att=<id>` links to it). The hub's terms
 are at <https://foldy.io/audit/hub/terms.md>.
 
 ## 10. Where each requirement is met
