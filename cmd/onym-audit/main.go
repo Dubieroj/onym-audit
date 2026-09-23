@@ -31,6 +31,7 @@ import (
 	"onym-audit/canon"
 	"onym-audit/conformance/discovery"
 	"onym-audit/console"
+	"onym-audit/hub"
 	"onym-audit/server"
 	"onym-audit/sig"
 	"onym-audit/site"
@@ -51,7 +52,8 @@ Auditor (offline, holds the auditor key):
 
 Online (holds only the delegated status key):
   status      -root DIR -config FILE -status-key FILE    re-sign status.json now
-  serve       -root DIR -config FILE -status-key FILE -inbox DIR [-listen ADDR]
+  serve       -root DIR -config FILE -status-key FILE -inbox DIR [-hub-root DIR] [-listen ADDR]
+  hub-disable -hub-root DIR -slug NAME -reason TEXT      take a hosted auditor off the hub
 
 Anyone:
   verify      -manifest URI|FILE -attestation URI|FILE -target URI [-status URI|FILE] [-credit onym:key:..]
@@ -84,7 +86,7 @@ func main() {
 		"countersign": countersign, "offer": offer, "status": status, "serve": serve, "verify": verify,
 		"respond": respond, "sign-order": signOrder, "fixtures": fixtures,
 		"conformance-discovery": conformanceDiscovery, "draft-conformance": draftConformance,
-		"agent-review": agentReview, "draft-review": draftReview, "console": runConsole,
+		"agent-review": agentReview, "draft-review": draftReview, "console": runConsole, "hub-disable": hubDisable,
 	}
 	run, ok := cmds[os.Args[1]]
 	if !ok {
@@ -385,6 +387,7 @@ func serve(args []string) error {
 	statusKey := fs.String("status-key", "", "status key")
 	inbox := fs.String("inbox", "", "order inbox (not published)")
 	listen := fs.String("listen", "127.0.0.1:8787", "listen address (behind a TLS reverse proxy)")
+	hubRoot := fs.String("hub-root", "", "host other auditors here (studio API and a/<slug>/ trees)")
 	fs.Parse(args)
 	if err := need(fs, "root", "config", "status-key", "inbox"); err != nil {
 		return err
@@ -399,6 +402,14 @@ func serve(args []string) error {
 	s, err := server.New(*root, *inbox, c, k)
 	if err != nil {
 		return err
+	}
+	if *hubRoot != "" {
+		h, err := hub.New(*hubRoot, *root, c.BaseURI)
+		if err != nil {
+			return err
+		}
+		h.ResignAll()
+		s.Hub, s.HubResign = h.Handler(), h.ResignAll
 	}
 	stop := make(chan struct{})
 	go s.Loop(audit.ResignInterval, stop)
@@ -1218,4 +1229,20 @@ func runConsole(args []string) error {
 	srv := &http.Server{Addr: *listen, Handler: con.Handler(*listen), ReadHeaderTimeout: 10 * time.Second}
 	fmt.Printf("auditor console: http://%s/\n(loopback only; the auditor key never leaves this machine)\n", *listen)
 	return srv.ListenAndServe()
+}
+
+func hubDisable(args []string) error {
+	fs := flag.NewFlagSet("hub-disable", flag.ExitOnError)
+	root := fs.String("hub-root", "/var/lib/onym-audit/hub", "hub directory")
+	slug := fs.String("slug", "", "auditor name")
+	reason := fs.String("reason", "", "why (kept with the tree)")
+	fs.Parse(args)
+	if err := need(fs, "slug", "reason"); err != nil {
+		return err
+	}
+	h, err := hub.New(*root, "", "")
+	if err != nil {
+		return err
+	}
+	return h.Disable(*slug, *reason)
 }

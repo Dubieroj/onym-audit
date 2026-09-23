@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="{{lang_tag}}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="auditor-root" content="./">
+<title>Onym auditor</title>
+<meta name="description" content="An auditor on the Onym network, hosted on the audit hub: signed, expiring, revocable attestations, verified in your browser.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="{{root}}style.css">
+<script type="module" src="{{root}}app.js"></script>
+</head>
+<body>
+<div class="grain" aria-hidden="true"></div>
+<header class="masthead">
+  <div class="wrap masthead-row">
+    <a class="brand" href="./">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span class="brand-text"><b id="brand-name">Auditor</b> <span class="muted">· Onym audit seat</span></span>
+    </a>
+    <nav aria-label="Sections"><a href="#register">Register</a><a href="#documents">Documents</a><a href="{{root}}hub/" class="nav-cta">Become an auditor</a></nav>
+  </div>
+  <div class="rule-strip"><div class="wrap">Hosted on the Onym audit hub · <code>onym:audit-profile:static-ed25519-v1</code></div></div>
+</header>
+<main>
+  <section class="hero wrap">
+    <div class="hero-copy">
+      <p class="kicker">Auditor on the Onym network</p>
+      <h1 class="auditor-h1">Attestations by <span id="h-name">this auditor</span></h1>
+      <p class="lede">Every opinion below is a signed object bound to exact bytes. This page checks each signature in your browser; the hub that serves it holds none of this auditor’s keys and could not have forged any of it.</p>
+    </div>
+    <figure class="seal-fig" aria-live="polite">
+      <svg class="seal" id="seal" viewBox="0 0 240 240" role="img" aria-labelledby="seal-title">
+        <title id="seal-title">{{seal_title}}</title>
+        <defs>
+          <filter id="ink" x="-10%" y="-10%" width="120%" height="120%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="7" result="n"/>
+            <feDisplacementMap in="SourceGraphic" in2="n" scale="2.6"/>
+          </filter>
+          <path id="ring" d="M120,120 m-88,0 a88,88 0 1,1 176,0 a88,88 0 1,1 -176,0"/>
+        </defs>
+        <g class="seal-ink" filter="url(#ink)">
+          <circle cx="120" cy="120" r="112" class="seal-outer"/>
+          <circle cx="120" cy="120" r="74" class="seal-inner"/>
+          <g class="seal-ring"><text class="seal-ringtext"><textPath href="#ring" startOffset="0" id="seal-ringtext" textLength="546" lengthAdjust="spacing">ONYM AUDIT SEAT · ED25519 ·</textPath></text></g>
+          <text x="120" y="104" class="seal-small" text-anchor="middle" id="seal-state">{{seal_checking}}</text>
+          <text x="120" y="129" class="seal-print" text-anchor="middle" id="seal-print">··:··:··:··</text>
+          <text x="120" y="152" class="seal-small" text-anchor="middle" id="seal-epoch">{{seal_status_list}}</text>
+        </g>
+      </svg>
+      <figcaption id="seal-caption">{{seal_caption}}</figcaption>
+    </figure>
+  </section>
+  <section class="ledger-facts wrap" aria-label="{{facts_label}}">
+    <dl>
+      <div><dt>{{facts_key}}</dt><dd class="mono" id="f-key">—</dd></div>
+      <div><dt>{{facts_status}}</dt><dd class="mono" id="f-status">—</dd></div>
+      <div><dt>{{facts_next}}</dt><dd class="mono" id="f-next">—</dd></div>
+      <div><dt>{{facts_contact}}</dt><dd id="f-contact">—</dd></div>
+    </dl>
+  </section>
+  <section class="register-sec wrap" id="register" aria-labelledby="register-h">
+    <header class="sec-head"><p class="numeral">I.</p><h2 id="register-h">{{reg_h}}</h2><p class="sec-lede">{{reg_lede}}</p></header>
+    <label class="credit"><input type="checkbox" id="credit"><span>{{credit}} <span class="muted">{{credit_note}}</span></span></label>
+    <div id="atts" class="entries"><p class="empty">{{reg_loading}}</p></div>
+  </section>
+  <section class="instruments wrap" id="documents" aria-labelledby="doc-h">
+    <header class="sec-head"><p class="numeral">II.</p><h2 id="doc-h">Documents this auditor is bound by</h2></header>
+    <ul class="docs">
+      <li><a href="manifest.json">Auditor manifest</a><span>signed by the auditor · <a href="manifest.json.sig">.sig</a></span></li>
+      <li><a href="status.json">Status list</a><span>re-signed every six hours by the hub’s delegated status key</span></li>
+      <li><a href="policies/independence.md">Independence policy</a><span>written by the auditor</span></li>
+      <li><a href="policies/unsolicited.md">Unsolicited disclosure policy</a><span>written by the auditor</span></li>
+      <li><a href="policies/liability.md">Liability terms</a><span>written by the auditor</span></li>
+      <li><a href="policies/privacy.md">Privacy profile</a><span>written by the auditor</span></li>
+      <li><a href="{{root}}profile/Audit-Static-Ed25519.md">Implementation profile</a><span>shared by every auditor on the hub</span></li>
+      <li><a href="{{root}}hub/terms.md">Hub terms</a><span>what the hub does and does not do for hosted auditors</span></li>
+    </ul>
+  </section>
+</main>
+<footer class="colophon"><div class="wrap">
+  <p class="motto">{{motto}}<span>— Onym Audit.md</span></p>
+  <p class="small muted">Hosted on the Onym audit hub at foldy.io, a replaceable default: this auditor can move the whole tree anywhere. <a href="{{root}}hub/">Become an auditor</a>.</p>
+</div></footer>
+<script type="application/json" id="strings">{{js}}</script>
+</body>
+</html>

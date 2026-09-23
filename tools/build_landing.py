@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Render the public pages in every language from web/*.html + web/i18n.json.
 
-  python3 tools/build_landing.py          # write public/{,ru/,cnr/}{,order/}index.html
+  python3 tools/build_landing.py          # write public/{,ru/,cnr/}{,order/,hub/}index.html
+                                          # and public/hub/auditor.html
   python3 tools/build_landing.py --check  # non-zero if the committed pages are stale
 
 One template per page and one string file, so hand-kept copies cannot drift.
@@ -20,12 +21,19 @@ LANGS = [  # code, path, BCP 47 tag, switcher label
 PAGES = [  # template, page path under the language, the JS strings key
     ("landing.html", "", "js"),
     ("order.html", "order/", "order_js"),
+    ("studio.html", "hub/", "studio_js"),
+]
+# Pages rendered once, in English, at a fixed path. The hosted auditor page is
+# served as a/<name>/, two levels below the shared tree.
+SINGLE = [  # template, output path under public/, the JS strings key, root
+    ("auditor.html", "hub/auditor.html", "js", "../../"),
 ]
 JS_KEYS = {js for _, _, js in PAGES}
 
-def render(template, strings, code, lpath, tag, ppath, jskey):
+def render(template, strings, code, lpath, tag, ppath, jskey, root=None):
     here = lpath + ppath
-    root = "../" * here.count("/")
+    if root is None:
+        root = "../" * here.count("/")
     s = {k: (v.replace("{{root}}", root) if isinstance(v, str) else v)
          for k, v in strings[code].items() if k not in JS_KEYS}
     s["lang_tag"] = tag
@@ -49,18 +57,23 @@ def main():
     strings = json.loads((ROOT / "web/i18n.json").read_text())
     check = "--check" in sys.argv
     stale = []
+    outputs = []
     for tname, ppath, jskey in PAGES:
         template = (ROOT / "web" / tname).read_text()
         for code, lpath, tag, _ in LANGS:
             out = render(template, strings, code, lpath, tag, ppath, jskey)
-            dest = ROOT / "public" / lpath / ppath / "index.html"
-            if check:
-                if not dest.exists() or dest.read_text() != out:
-                    stale.append(str(dest.relative_to(ROOT)))
-            else:
-                dest.parent.mkdir(parents=True, exist_ok=True)
-                dest.write_text(out)
-                print("wrote", dest.relative_to(ROOT))
+            outputs.append((ROOT / "public" / lpath / ppath / "index.html", out))
+    for tname, dpath, jskey, root in SINGLE:
+        template = (ROOT / "web" / tname).read_text()
+        outputs.append((ROOT / "public" / dpath, render(template, strings, "en", "", "en", "", jskey, root)))
+    for dest, out in outputs:
+        if check:
+            if not dest.exists() or dest.read_text() != out:
+                stale.append(str(dest.relative_to(ROOT)))
+        else:
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_text(out)
+            print("wrote", dest.relative_to(ROOT))
     if stale:
         sys.exit("stale: " + ", ".join(stale) + " (run python3 tools/build_landing.py)")
 

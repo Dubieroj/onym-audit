@@ -1,7 +1,10 @@
 import { verifyAttestation, verifySig, parseStrict, plain, fingerprint, digest } from "./verify.js";
 
 const $ = (id) => document.getElementById(id);
-const ROOT = new URL(".", import.meta.url); // the auditor's root, whatever page loaded us
+// The auditor's root: a hosted auditor's page names its own tree with
+// <meta name="auditor-root">; otherwise the tree this script is served from.
+const rootMeta = document.querySelector('meta[name="auditor-root"]');
+const ROOT = rootMeta ? new URL(rootMeta.content, document.baseURI) : new URL(".", import.meta.url);
 const T = JSON.parse(document.getElementById("strings")?.textContent || "{}");
 const t = (k, vars = {}) => (T[k] ?? k).replace(/\{(\w+)\}/g, (_, v) => vars[v] ?? "");
 const at = (p) => new URL(p, ROOT).href;
@@ -53,6 +56,7 @@ async function main() {
   base = manifest.statusEndpoint.replace(/status\.json$/, "");
   const print = await fingerprint(manifest.operator);
   $("brand-name").textContent = manifest.displayName;
+  if ($("h-name")) $("h-name").textContent = manifest.displayName;
   // The ring's textLength spreads the words evenly around the circle.
   $("seal-ringtext").textContent = `${manifest.displayName.toUpperCase()} · ONYM AUDIT SEAT · ED25519 ·`;
   $("f-key").textContent = print;

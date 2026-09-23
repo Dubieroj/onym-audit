@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Become an auditor · Onym audit hub</title>
+<meta name="description" content="Take the audit seat on the Onym network from your browser: sign attestations about any repository, service or build, with your key kept on your device.">
+<meta name="color-scheme" content="light dark">
+<link rel="alternate" hreflang="en" href="https://foldy.io/audit/hub/">
+<link rel="alternate" hreflang="ru" href="https://foldy.io/audit/ru/hub/">
+<link rel="alternate" hreflang="sr-Latn-ME" href="https://foldy.io/audit/cnr/hub/">
+<link rel="alternate" hreflang="x-default" href="https://foldy.io/audit/hub/">
+<link rel="stylesheet" href="../style.css">
+<script type="module" src="../hub/studio.js"></script>
+</head>
+<body class="studio">
+<div class="grain" aria-hidden="true"></div>
+<header class="masthead">
+  <div class="wrap masthead-row">
+    <a class="brand" href="../">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span class="brand-text"><b>Onym audit hub</b> <span class="muted">· take the audit seat</span></span>
+    </a>
+    <span id="who" class="who-chip" hidden></span>
+    <div class="langs" role="navigation" aria-label="Language"><a href="../hub/" hreflang="en" lang="en" aria-current="page">EN</a><a href="../ru/hub/" hreflang="ru" lang="ru">RU</a><a href="../cnr/hub/" hreflang="sr-Latn-ME" lang="sr-Latn-ME">CNR</a></div>
+  </div>
+</header>
+
+<main class="wrap studio-main">
+  <!-- Welcome -->
+  <section id="v-welcome" class="view" hidden>
+    <p class="kicker">Anyone can take the seat</p>
+    <h1>Become an auditor of the Onym network</h1>
+    <p class="lede">Examine anything in the network — a repository at a commit, a running courier, notary, storage, moderation or backup service, a Discovery catalog, an app build — and sign what you found. Your key stays in this browser; the hub only publishes what you signed.</p>
+    <ol class="order-steps">
+      <li>Pick a name. Your browser creates your Ed25519 key; you download a backup of it.</li>
+      <li>Examine something. Findings quote the exact bytes they rest on; Discovery catalogs get the full 42-check suite.</li>
+      <li>Sign and publish. Your attestations appear on your own page, verified in every reader's browser.</li>
+    </ol>
+    <p class="cta">
+      <button class="btn btn-ink" data-go="onboard">Become an auditor</button>
+      <label class="btn btn-line file-btn">I have a key backup<input type="file" id="restore-file" accept=".json,application/json" hidden></label>
+    </p>
+    <p class="small muted">The hub holds only a delegated key that keeps your status list fresh; it cannot sign, change, or revoke anything for you. You can take your whole tree and host it elsewhere at any time.</p>
+    <h2 class="sub-h">Auditors on this hub</h2>
+    <ul id="auditor-list" class="docs"></ul>
+  </section>
+
+  <!-- Onboarding -->
+  <section id="v-onboard" class="view" hidden>
+    <p class="kicker">Step one</p>
+    <h1>Your auditor identity</h1>
+    <form id="ob-form" class="order-form" novalidate>
+      <fieldset>
+        <legend>Who answers for the attestations</legend>
+        <label>Public name<input id="ob-name" required maxlength="80" autocomplete="name"></label>
+        <label>Handle<input id="ob-slug" required pattern="[a-z][a-z0-9-]{2,31}" class="mono" autocomplete="off" spellcheck="false"></label>
+        <p class="hint">Your page: <code id="ob-url">foldy.io/audit/a/…/</code></p>
+        <label>Contact email<input id="ob-email" type="email" required autocomplete="email"></label>
+        <p class="hint">Published in your manifest, so subjects can reach you.</p>
+      </fieldset>
+      <fieldset>
+        <legend>What you will examine</legend>
+        <label class="check"><input type="checkbox" id="ob-m-manual" checked> <span>Manual security review — repositories, served documents, builds</span></label>
+        <label class="check"><input type="checkbox" id="ob-m-conf" checked> <span>Conformance runs — the Discovery provider suite, run by the hub</span></label>
+      </fieldset>
+      <fieldset>
+        <legend>Your policies</legend>
+        <p class="hint">Filled from templates. They bind you and are published by digest — read them, change what you do differently.</p>
+        <details><summary>Independence policy</summary><textarea id="ob-p-independence" rows="10"></textarea></details>
+        <details><summary>Unsolicited disclosure policy</summary><textarea id="ob-p-unsolicited" rows="10"></textarea></details>
+        <details><summary>Liability terms</summary><textarea id="ob-p-liability" rows="10"></textarea></details>
+        <details><summary>Privacy profile</summary><textarea id="ob-p-privacy" rows="8"></textarea></details>
+      </fieldset>
+      <label class="check"><input id="ob-terms" type="checkbox" required> <span>I have read the hub terms and will sign only what I stand behind.</span></label>
+      <p id="ob-error" class="form-error" role="alert" hidden></p>
+      <button class="btn btn-ink" type="submit" id="ob-submit">Create my key and publish my manifest</button>
+      <p class="small muted">The key is created and kept in this browser. Only your signed manifest and your policies are sent.</p>
+    </form>
+    <div id="ob-done" class="order-done solo" hidden>
+      <p class="kicker">You are an auditor</p>
+      <h2>Now save your key backup</h2>
+      <p class="warn">Your key lives only in this browser. If you clear it or change devices without this file, you lose the ability to sign as this auditor — there is no reset, by design.</p>
+      <p class="cta"><a class="btn btn-ink" id="ob-dl" download>Download key backup</a></p>
+      <label class="check"><input type="checkbox" id="ob-saved"> <span>I saved the backup somewhere safe</span></label>
+      <p class="cta"><button class="btn btn-line" id="ob-continue" disabled>Continue</button></p>
+    </div>
+  </section>
+
+  <!-- Dashboard -->
+  <section id="v-dash" class="view" hidden>
+    <p class="kicker">Your auditor</p>
+    <h1 id="d-name"></h1>
+    <dl class="terms">
+      <div><dt>Public page</dt><dd><a id="d-page" target="_blank" rel="noopener"></a></dd></div>
+      <div><dt>Key</dt><dd class="mono" id="d-key"></dd></div>
+    </dl>
+    <p class="cta">
+      <button class="btn btn-ink" data-go="audit">Examine something</button>
+      <button class="btn btn-line" id="d-backup">About your backup</button>
+      <button class="btn btn-line" id="d-export">Export my tree</button>
+    </p>
+    <h2 class="sub-h">Your attestations</h2>
+    <div id="d-atts" class="entries"></div>
+    <p class="small muted"><button class="link-btn" id="d-forget">Remove the key from this browser</button></p>
+  </section>
+
+  <!-- New audit -->
+  <section id="v-audit" class="view" hidden>
+    <p class="kicker">New examination</p>
+    <h1>What are you examining?</h1>
+    <div class="steps" id="a-steps"></div>
+
+    <div class="step" id="a-step1">
+      <h2 class="sub-h">1 · Choose the thing</h2>
+      <div class="choice-grid">
+        <button class="choice" data-kind="source"><b>A repository</b><span>Code at an exact commit (GitHub). Select lines to record findings.</span></button>
+        <button class="choice" data-kind="deployment"><b>A running service</b><span>Any Onym component by its manifest URL: courier, storage, notary, moderation, backup.</span></button>
+        <button class="choice" data-kind="discovery"><b>A Discovery catalog</b><span>Runs the 42-check conformance suite against a provider.</span></button>
+        <button class="choice" data-kind="build"><b>An app build</b><span>A released file (APK, IPA…) bound to its source commit by digest.</span></button>
+      </div>
+    </div>
+
+    <div class="step" id="a-step2" hidden>
+      <h2 class="sub-h">2 · Inspect it</h2>
+      <form id="a-target" class="order-form inline-form"></form>
+      <div id="a-inspect"></div>
+    </div>
+
+    <div class="step" id="a-step3" hidden>
+      <h2 class="sub-h">3 · Findings and coverage</h2>
+      <p class="hint">Every finding quotes the exact bytes it rests on. State plainly what you did and did not examine.</p>
+      <div id="a-findings" class="entries"></div>
+      <form id="a-finding-form" class="order-form" hidden></form>
+      <h3>Coverage</h3>
+      <div class="order-form cov-form">
+        <label>What the examination found, in two sentences<textarea id="a-cov-sum" rows="2"></textarea></label>
+        <label>Examined (one per line)<textarea id="a-cov-ex" rows="2"></textarea></label>
+        <label>Not examined, and why (one per line)<textarea id="a-cov-nx" rows="2"></textarea></label>
+        <label class="check"><input type="checkbox" id="a-cov-complete"> <span>I examined the whole scope I stated</span></label>
+      </div>
+    </div>
+
+    <div class="step" id="a-step4" hidden>
+      <h2 class="sub-h">4 · Sign and publish</h2>
+      <div class="order-form">
+        <p>Result: <b id="a-result" class="stamp"></b></p>
+        <label>Subject component<input id="a-subject" class="mono" placeholder="onym:component:…"></label>
+        <label>Subject operator key<input id="a-subject-key" class="mono" placeholder="onym:key:…"></label>
+        <p class="hint">Filled from the manifest when it has one. Only this key can sign a reply to your attestation.</p>
+        <label>Your relationships with the subject<input id="a-rel" value="none"></label>
+        <label>Subject contact you notified<input id="a-contact" placeholder="mailto:security@…"></label>
+        <label>Notified at (UTC)<input id="a-notified" class="mono"></label>
+        <p class="hint">Unsolicited examinations are published only after the subject has been notified — see your unsolicited policy.</p>
+        <p id="a-error" class="form-error" role="alert" hidden></p>
+        <button class="btn btn-ink" id="a-publish">Sign with my key and publish</button>
+      </div>
+      <div id="a-done" class="order-done solo" hidden></div>
+    </div>
+  </section>
+</main>
+
+<footer class="colophon"><div class="wrap">
+  <p class="small muted">The hub is a replaceable default: attestations are location-independent signed bytes. <a href="../hub/terms.md">Hub terms</a> · <a href="../profile/Audit-Static-Ed25519.md">Profile</a></p>
+</div></footer>
+<div id="toast" class="toast" hidden role="status"></div>
+<script type="application/json" id="strings">{"tpl_independence":"# Independence policy\n\nAuditor: {name} (`onym:component:{slug}`).\n\nI own, operate, and am paid by no component I examine. Any ownership, operation, employment, or payment relationship with a subject is stated in the `relationships` field of every attestation about it, and I recuse from subjects I own, operate, or compete with.\n\nFees are verdict-independent. I accept nothing from a subject in connection with an unsolicited examination, and never withhold, soften, or delay an attestation in exchange for anything.\n","tpl_unsolicited":"# Unsolicited examination and disclosure policy\n\nAuditor: {name} (`onym:component:{slug}`).\n\n1. I examine uninvited only what is publicly available exactly as hashed.\n2. Before publishing, I send my findings to the subject's published security contact and record the contact and time in the attestation.\n3. A finding that lets a third party deceive or harm users now is embargoed for up to 90 days: the attestation may circulate with counts only.\n4. Observable non-conformance that gives an attacker nothing new is published no sooner than 12 hours after notice.\n5. The subject may publish a signed reply beside the attestation at any time; I cannot edit it.\n6. Offering to withhold, soften, or delay an attestation for anything violates this policy.\n","tpl_liability":"# Liability terms\n\nAuditor: {name} (`onym:component:{slug}`).\n\nAn attestation is professional judgment under a named methodology, about exact bytes, at a point in time. I answer for applying the methodology as written, for stating scope, exclusions, sponsor, and relationships completely, and for revoking what I no longer stand behind. I do not answer for anything outside the scope, any other revision or deployment, or a reader's decision to rely. An attestation is not a certification, a licence, or a warranty. Unsolicited and pro-bono attestations carry no financial liability.\n","tpl_privacy":"# Privacy profile\n\nAuditor: {name} (`onym:component:{slug}`).\n\nMy documents are served by the Onym audit hub without cookies, access logs, or per-attestation status queries. Subjects' replies are published; that is their purpose. I keep no data about the readers of my attestations.\n","n_atts":"{n} attestation(s)","no_auditors":"No auditors yet — be the first.","working":"Working…","ob_submit":"Create my key and publish my manifest","e_name":"Enter your public name.","e_slug":"The handle is 3–32 lowercase letters, digits or dashes, starting with a letter.","e_email":"Enter a valid email.","e_methods":"Choose at least one kind of examination.","e_terms":"Confirm the terms to continue.","e_crypto":"This browser cannot create Ed25519 keys. Use a current Chrome, Safari or Firefox.","e_backup":"This is not a valid auditor backup.","e_backup_mismatch":"This backup does not match the auditor's published key.","restored":"Welcome back, {name}.","loading":"Loading…","e_status":"Your status list does not verify.","no_atts":"No attestations yet. Examine something!","l_att":"attestation","l_report":"findings report","revoke":"Revoke","confirm_revoke":"Revoke {id}? Revocation is permanent and published with its reason.","revoked":"Revoked. Your status list now says so.","backup_note":"Your key backup was offered once, at registration. Without it, a new browser cannot sign as you.","confirm_forget":"Remove your key from this browser? Without your backup file you will not be able to sign as this auditor again.","f_scope":"Scope — what exactly you examine","f_scope_ph":"e.g. signature verification in src/verify.rs","f_repo":"Repository","f_repo_h":"GitHub repositories are browsed directly from GitHub.","f_commit":"Commit","f_manifest":"Manifest URL","f_manifest_h":"The component's signed manifest, e.g. https://relayer.onym.app/manifest.json","f_provider":"Provider manifest URL","f_provider_h":"e.g. https://discovery.onym.app/manifest.json","f_file":"Build file URL","inspect":"Inspect","e_scope":"State the scope.","e_github":"Enter a https://github.com/org/repo URL.","e_commit":"The commit is the full 40-character id.","e_tree":"GitHub did not return the tree: {err}","e_https":"Enter an https:// URL without port, query or fragment.","c_served":"served (HTTP {status})","c_cookies":"no cookies set","c_json":"strict JSON","c_sig_ok":"signature verifies under operator key {fp}","c_sig_bad":"signature does NOT verify under its operator key","c_unsigned":"no operator signature","c_valid":"valid until {until}","c_not_json":"not a JSON document","running_suite":"Running the conformance suite on the hub (up to a minute)…","suite_result":"Suite result:","suite_counts":"{pass} of {n} checks pass","hashing":"Downloading and hashing the build on the hub…","hashed":"Hashed {size}:","filter":"filter files","pick_file":"Pick a file on the left.","select_hint":"Click a line, shift-click another to select evidence, then describe the finding below.","ff_at":"Evidence at {where}","ff_sev":"Severity","ff_title_l":"Title","ff_title":"one line naming the defect","ff_desc_l":"Description","ff_desc":"what is wrong, why it matters, how it is reached","ff_rec_l":"Fix","ff_rec":"what would fix it","ff_add":"Add finding","e_finding":"Give the finding a title and a description.","finding_added":"Finding added.","no_fail_checks":"No failed checks.","no_findings":"No findings yet.","from_suite":"from the suite · {clause}","remove":"remove","e_subject":"The subject is onym:component:<name>.","e_subject_key":"The subject operator key is onym:key:<64 hex>.","e_contact":"Give the mailto: or https:// contact you notified.","e_notified":"Give the notice time as 2026-09-24T10:00:00Z, not in the future.","e_rel":"State your relationships (\"none\" when none).","e_coverage":"Summarize the examination.","confirm_publish":"Sign and publish this attestation with result {result}? Attestations are immutable — corrections are revocations or new attestations.","published_kicker":"Published","published_h":"Your attestation is live","see_page":"See my page","to_dash":"Back to my auditor","f_owner":"Subject's manifest URL (optional)","f_owner_h":"The signed manifest of the component this belongs to. It names the subject and the only key that can reply to your attestation."}</script>
+</body>
+</html>

@@ -143,3 +143,35 @@ func TestStaticServesLanguageDirectories(t *testing.T) {
 		}
 	}
 }
+
+// The hub mounts beside the static handler without a pattern conflict (a
+// conflict panics when the handler is built), and each side gets its paths.
+func TestHubMount(t *testing.T) {
+	s := &Server{
+		Root: t.TempDir(), Inbox: t.TempDir(),
+		Config:  &site.Config{BaseURI: base, ComponentID: "onym:component:test-auditor"},
+		limiter: newLimiter(1000, 1000),
+		Hub: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(299)
+		}),
+	}
+	h := s.Handler()
+	os.WriteFile(filepath.Join(s.Root, "index.html"), []byte("home"), 0o644)
+	for _, c := range []struct {
+		method, path string
+		want         int
+	}{
+		{"GET", "/", 200},
+		{"GET", "/hub/api/auditors", 299},
+		{"POST", "/hub/api/claim", 299},
+		{"GET", "/a/someone/manifest.json", 299},
+		{"POST", "/a/someone/responses", 299},
+		{"GET", "/hub/studio.js", 404},
+	} {
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, httptest.NewRequest(c.method, c.path, nil))
+		if rec.Code != c.want {
+			t.Errorf("%s %s: %d, want %d", c.method, c.path, rec.Code, c.want)
+		}
+	}
+}

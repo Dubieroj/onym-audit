@@ -43,6 +43,8 @@ type Server struct {
 	Config    *site.Config
 	StatusKey ed25519.PrivateKey
 	Now       func() time.Time
+	Hub       http.Handler // hosted auditors and the studio API, when enabled
+	HubResign func()       // refreshes every hosted auditor's status list
 
 	mu      sync.Mutex // serializes tree writes and re-signing
 	limiter *limiter
@@ -77,6 +79,9 @@ func (s *Server) Loop(interval time.Duration, stop <-chan struct{}) {
 			if err := s.Resign(); err != nil {
 				log.Printf("status re-sign failed: %v", err)
 			}
+			if s.HubResign != nil {
+				s.HubResign()
+			}
 		}
 	}
 }
@@ -88,6 +93,12 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /orders", s.postOrder)
 	mux.HandleFunc("POST /responses", s.postResponse)
 	mux.HandleFunc("GET /", s.static)
+	if s.Hub != nil {
+		// Method-qualified, so they are more specific than "GET /".
+		for _, p := range []string{"GET /hub/api/", "POST /hub/api/", "GET /a/", "POST /a/"} {
+			mux.Handle(p, s.Hub)
+		}
+	}
 	return mux
 }
 

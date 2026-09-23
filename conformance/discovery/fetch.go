@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"time"
 
+	"onym-audit/netguard"
 	"onym-audit/urirule"
 )
 
@@ -94,7 +95,9 @@ func NewHTTPFetcher() Fetcher {
 	t.Proxy = nil
 	t.DisableCompression = true
 	t.TLSClientConfig = &tls.Config{MinVersion: tls.VersionTLS12}
-	d := &net.Dialer{Timeout: 30 * time.Second, KeepAlive: 30 * time.Second}
+	// netguard.Control refuses any non-public address after DNS resolution,
+	// so a name that resolves inside the host's network is never dialed.
+	d := &net.Dialer{Timeout: 30 * time.Second, KeepAlive: 30 * time.Second, Control: netguard.Control}
 	t.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
 		if host, _, err := net.SplitHostPort(addr); err == nil && net.ParseIP(host) != nil {
 			return nil, fmt.Errorf("%w: %s", ErrIPDial, host)

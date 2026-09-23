@@ -30,6 +30,7 @@ showed **"Audit report: Pending — no audits yet"**.
 | `agent/` | An **LLM examination engine** (Claude, via the Anthropic Go SDK) for the `security-review` methodology: read-only tools confined to a repository checked out at an exact commit; every finding must quote the lines it rests on and is checked mechanically against the pinned bytes; the prompt is published and its digest recorded; the auditor reviews, drops with reasons, and signs |
 | `review/`, `console/` | **The auditor console**: a local web UI (loopback only, per-start token, Host check) for the order queue, manual reviews (select lines → the quote is checked against the pinned bytes), LLM-assisted reviews (run the engine, keep or drop each finding with a published reason), signing with the offline key — including countersigning commissioned orders and holding embargoed reports — and publishing |
 | `public/order/` | **Order page** (EN/RU/CNR): the subject's browser creates an Ed25519 key, signs the `AuditOrder` as subject and sponsor, and queues it with its scope text; the key is downloaded, never sent |
+| `public/hub/`, `hub/`, `netguard/` | **The audit hub**: anyone can take the audit seat from a browser at <https://foldy.io/audit/hub/> (EN/RU/CNR). The studio creates the auditor's Ed25519 key in the browser (non-extractable, plus a backup file), signs the manifest and every attestation there, and examines a repository at a commit, any running Onym component by its signed manifest, a Discovery catalog (the 42-check suite, run by the hub), or a build file (hashed by the hub). The hub validates everything against the profile before publishing it under `a/<handle>/`, holds only each auditor's delegated status key, and fetches only public addresses (`netguard` checks the dialed IP) |
 | `server/`, `cmd/onym-audit` | The auditor CLI and the online server (status re-signing, `POST orders`, `POST responses`) |
 | `public/` | The published tree: manifest, profile, policies, methodology, scope, severity scale, privacy profile, landing page (EN, RU, CNR) |
 | `web/` | The landing's single template and its strings in all three languages — `python3 tools/build_landing.py` renders `public/{,ru/,cnr/}index.html`; `--check` fails on drift |
@@ -58,6 +59,7 @@ showed **"Audit report: Pending — no audits yet"**.
 
 <https://foldy.io/audit/> — auditor manifest, signed status list, published
 attestations, and a page that verifies all of them in your browser.
+<https://foldy.io/audit/hub/> — become an auditor yourself.
 
 ## Run it
 
@@ -121,8 +123,10 @@ curl --data-binary @reply.json https://…/responses
 See the profile's §11. In short: one author wrote both relying clients;
 no shipping Onym client consumes attestations yet (Discovery's `evidence`
 field is deferred to its v2, and this profile's attestation is the
-candidate shape); key rotation is out of scope for v1; one host; only the
-`conformance-run` methodology is written.
+candidate shape); key rotation is out of scope for v1; one host. A hub
+auditor's key lives in one browser and a backup file the hub cannot
+recover; the hub's conformance runs and build hashes happen on the hub's
+server, and its reports say so.
 
 ## License
 

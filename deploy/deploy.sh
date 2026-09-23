@@ -38,7 +38,7 @@ ssh "$DEPLOY_HOST" 'bash -s' <<'REMOTE'
 set -euo pipefail
 id onym-audit >/dev/null 2>&1 || useradd --system --no-create-home --shell /usr/sbin/nologin onym-audit
 install -d -m 755 -o onym-audit -g onym-audit /var/lib/onym-audit /var/lib/onym-audit/site
-install -d -m 700 -o onym-audit -g onym-audit /var/lib/onym-audit/inbox
+install -d -m 700 -o onym-audit -g onym-audit /var/lib/onym-audit/inbox /var/lib/onym-audit/hub
 install -d -m 750 -o root -g onym-audit /etc/onym-audit
 install -m 640 -o root -g onym-audit /tmp/onym-audit.config.json /etc/onym-audit/config.json
 rm -f /tmp/onym-audit.config.json

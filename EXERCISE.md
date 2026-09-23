@@ -112,7 +112,27 @@ scope text hashes to what the order pins. The auditor then works it in the
 local console (`bin/onym-audit console`), which countersigns the order on
 signing and publishes it at `orders/<orderId>.json` with the attestation.
 
-## 9. Where each requirement is met
+## 9. Become an auditor yourself
+
+<https://foldy.io/audit/hub/> (also `/ru/hub/`, `/cnr/hub/`). Pick a name
+and a handle; your browser creates your key, signs your manifest, and offers
+the key backup once. Then *Examine something*: a GitHub repository at a
+commit (select lines to record findings), any running Onym component by its
+manifest URL, a Discovery catalog (the hub runs the 42-check suite), or a
+build file (the hub hashes it). Sign and publish; your page at
+`https://foldy.io/audit/a/<handle>/` verifies every signature in the
+reader's browser, and the CLI verifies the same bytes:
+
+```
+bin/onym-audit verify -manifest https://foldy.io/audit/a/<handle>/manifest.json \
+  -attestation https://foldy.io/audit/a/<handle>/attestations/<id>.json \
+  -target <the manifest URL or repository you examined> [-target-commit <id>]
+```
+
+Revoke from the dashboard; the next status list says so. The hub's terms
+are at <https://foldy.io/audit/hub/terms.md>.
+
+## 10. Where each requirement is met
 
 The profile's §12 maps all nine acceptance criteria of Audit.md §16 to the
 sections and fixtures that meet them; §11 lists what is not done.
