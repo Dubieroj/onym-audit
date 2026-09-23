@@ -285,3 +285,43 @@ h3 { font-size: 21px; font-weight: 600; margin: 0 0 8px; letter-spacing: -.01em;
   .seal.verified .seal-ink { transform: rotate(-8deg); }
   html { scroll-behavior: auto; }
 }
+
+/* nav call to action */
+nav a.nav-cta { color: var(--seal); border-bottom: 1px solid var(--seal); }
+
+/* order page */
+.order-main { display: grid; grid-template-columns: 1fr 1.05fr; gap: 56px; align-items: start; padding-top: 56px; padding-bottom: 40px; }
+@media (max-width: 960px) { .order-main { grid-template-columns: 1fr; gap: 32px; padding-top: 36px; } }
+.order-page h1 { font-size: clamp(38px, 5.6vw, 64px); }
+.order-steps { margin: 0 0 28px; padding-left: 22px; display: grid; gap: 10px; color: var(--ink-2); font-size: 17px; }
+.terms { margin: 0 0 16px; border-top: 2px solid var(--ink); }
+.terms > div { display: grid; grid-template-columns: 170px 1fr; gap: 14px; padding: 10px 0; border-bottom: 1px solid var(--rule); font-size: 16px; }
+.terms dt { font: 12px/1.9 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); }
+.terms dd { margin: 0; overflow-wrap: anywhere; }
+@media (max-width: 520px) { .terms > div { grid-template-columns: 1fr; gap: 2px; } }
+.order-form { background: var(--card); border: 1px solid var(--rule); padding: 26px 26px 22px; box-shadow: 0 24px 48px -34px rgba(40, 30, 10, .35); }
+@media (max-width: 520px) { .order-form { padding: 20px 16px; } }
+.order-form fieldset { border: 0; padding: 0; margin: 0 0 22px; }
+.order-form legend { font: italic 22px/1.2 var(--serif); padding: 0; margin-bottom: 12px; }
+.order-form label { display: grid; gap: 6px; font: 12px/1.4 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); margin-top: 12px; }
+.order-form input[type=url], .order-form input[type=email], .order-form input[type=password], .order-form input:not([type]), .order-form textarea {
+  font: 16px/1.4 var(--serif); letter-spacing: 0; text-transform: none; color: var(--ink); background: var(--paper);
+  border: 1px solid var(--rule); border-radius: 2px; padding: 10px 12px; width: 100%;
+}
+.order-form input.mono { font-family: var(--mono); font-size: 14px; }
+.order-form textarea { resize: vertical; min-height: 120px; }
+.order-form input:focus, .order-form textarea:focus { outline: 2px solid var(--seal); outline-offset: 1px; border-color: transparent; }
+.order-form .hint { margin: 4px 0 0; font-size: 14px; color: var(--ink-3); }
+.order-form .hint code { font-size: 12px; }
+.keybox { margin-top: 16px; padding: 14px 16px; border-left: 3px solid var(--seal); background: var(--seal-soft); font-size: 15px; }
+.keybox p { margin: 0 0 8px; }
+.order-form label.radio, .order-form label.check { display: flex; gap: 10px; align-items: baseline; font: 16px/1.45 var(--serif); letter-spacing: 0; text-transform: none; color: var(--ink); margin-top: 8px; cursor: pointer; }
+.order-form label.check { margin: 14px 0 0; }
+.order-form input[type=radio], .order-form input[type=checkbox] { accent-color: var(--seal); transform: translateY(2px); }
+.form-error { margin: 16px 0 0; padding: 10px 14px; border: 1.5px solid var(--seal); color: var(--seal); font-size: 15px; }
+.order-form button { margin-top: 20px; cursor: pointer; }
+.order-form button:disabled { opacity: .6; cursor: progress; }
+.order-done { grid-column: 2; background: var(--card); border: 2px solid var(--ink); padding: 26px; }
+@media (max-width: 960px) { .order-done { grid-column: 1; } }
+.order-done h2 { font-size: clamp(28px, 4vw, 40px); }
+.order-done .warn { padding: 12px 14px; border-left: 3px solid var(--seal); background: var(--seal-soft); font-size: 16px; }

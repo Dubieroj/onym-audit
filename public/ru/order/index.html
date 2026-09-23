@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Заказать AI-аудит безопасности · Dimitrii</title>
+<meta name="description" content="Закажите проверку безопасности репозитория на точном коммите: её выполняет LLM под контролем человека, а результат подписывается как аттестация Onym.">
+<meta name="color-scheme" content="light dark">
+<link rel="alternate" hreflang="en" href="https://foldy.io/audit/order/">
+<link rel="alternate" hreflang="ru" href="https://foldy.io/audit/ru/order/">
+<link rel="alternate" hreflang="sr-Latn-ME" href="https://foldy.io/audit/cnr/order/">
+<link rel="alternate" hreflang="x-default" href="https://foldy.io/audit/order/">
+<link rel="stylesheet" href="../../style.css">
+<script type="module" src="../../order.js"></script>
+</head>
+<body class="order-page">
+<div class="grain" aria-hidden="true"></div>
+
+<header class="masthead">
+  <div class="wrap masthead-row">
+    <a class="brand" href="../">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span class="brand-text"><b id="brand-name">Dimitrii</b> <span class="muted">· аудитор сети Onym</span></span>
+    </a>
+    <div class="langs" role="navigation" aria-label="Язык"><a href="../../order/" hreflang="en" lang="en">EN</a><a href="../../ru/order/" hreflang="ru" lang="ru" aria-current="page">RU</a><a href="../../cnr/order/" hreflang="sr-Latn-ME" lang="sr-Latn-ME">CNR</a></div>
+  </div>
+  <div class="rule-strip"><div class="wrap">Заказ проверки · аудитор сети Onym · <code>security-review-llm-v1</code></div></div>
+</header>
+
+<main class="wrap order-main">
+  <section class="order-intro">
+    <p class="kicker">Бесплатно на время Sobor 2026</p>
+    <h1>Заказать AI-аудит безопасности</h1>
+    <p class="lede">Укажите репозиторий и коммит. Claude прочитает код ровно в этих байтах и подготовит находки, каждая с цитатой строк, на которых она основана; Dimitrii проверит каждую и подпишет то, за что готов отвечать, — в виде аттестации, которую может проверить любой.</p>
+    <ol class="order-steps">
+      <li>Вы заполняете форму. Браузер создаёт ключ Ed25519 и подписывает им заказ — как владелец компонента и как плательщик.</li>
+      <li>Заказ ждёт в очереди. Прежде чем принять его, аудитор сверяется с <a href="../../policies/independence.md">политикой независимости</a>.</li>
+      <li>Движок проверяет код, аудитор разбирает каждую находку. Находки сначала получаете вы.</li>
+      <li>Публикуется подписанная аттестация. Своим ключом вы можете опубликовать рядом подписанный ответ — его никто не сможет изменить.</li>
+    </ol>
+    <dl class="terms">
+      <div><dt>Цена</dt><dd>бесплатно — одинаково при любом результате</dd></div>
+      <div><dt>Находки</dt><dd>приходят вам до любой публикации</dd></div>
+      <div><dt>Эмбарго</dt><dd>до 90 дней для эксплуатируемых находок</dd></div>
+      <div><dt>Публикация</dt><dd>аттестация — сразу при выпуске; провальная — после эмбарго</dd></div>
+      <div><dt>Что нельзя купить</dt><dd>результат, молчание или отсрочку</dd></div>
+    </dl>
+    <p class="small muted">Обязывающие условия (на английском): <a href="../../methodology/security-review-llm.md">методика</a> · <a href="../../policies/liability.md">ответственность</a> · <a href="../../privacy.md">приватность</a> · <a href="../../offers/security-review-llm-source.json">подписанный оффер</a>.</p>
+  </section>
+
+  <form id="order-form" class="order-form" novalidate>
+    <fieldset>
+      <legend>Что проверить</legend>
+      <label>Репозиторий (HTTPS)<input id="repo" name="repo" type="url" required placeholder="https://github.com/org/repo" autocomplete="off" spellcheck="false"></label>
+      <p class="hint">Только публичные репозитории: проверка читает публичные байты.</p>
+      <label>Коммит<input id="commit" name="commit" required pattern="[0-9a-f]{40}" placeholder="40 hex characters" autocomplete="off" spellcheck="false" class="mono"></label>
+      <p class="hint">Полный идентификатор из 40 символов. Аттестация будет касаться ровно этих байтов и ничего больше: <code>git rev-parse HEAD</code></p>
+      <label>Идентификатор компонента<input id="component" name="component" required pattern="onym:component:[a-z0-9-]{1,64}" placeholder="onym:component:my-relay" autocomplete="off" spellcheck="false" class="mono"></label>
+      <p class="hint">Как ваш компонент называется в сети Onym — это субъект аттестации.</p>
+    </fieldset>
+    <fieldset>
+      <legend>Область</legend>
+      <label>Что именно проверить<textarea id="scope" name="scope" required rows="6" maxlength="8000" placeholder="например, src/verify.rs и src/canonical.rs: проверка подписей и хешей снимков каталога"></textarea></label>
+      <p class="hint">Назовите файлы, папки или темы. Область публикуется вместе с аттестацией; всё, что вне неё, будет указано как непроверенное.</p>
+    </fieldset>
+    <fieldset>
+      <legend>Вы</legend>
+      <label>Email для связи<input id="email" name="email" type="email" required autocomplete="email"></label>
+      <p class="hint">Только для обсуждения этого заказа. Хранится вместе с заказом, не публикуется, удаляется через 90 дней после решения.</p>
+      <div class="keybox">
+        <p><b>Ваш ключ подписи.</b> Он доказывает, что заказ ваш, а потом позволит подписать ответ на аттестацию.</p>
+        <label class="radio"><input type="radio" name="keymode" value="new" checked> Создать новый ключ в этом браузере</label>
+        <label class="radio"><input type="radio" name="keymode" value="existing"> Использовать мой существующий ключ</label>
+        <label id="seed-wrap" hidden>Seed Ed25519 (hex) — не покидает эту страницу<input id="seed" type="password" autocomplete="off" spellcheck="false" class="mono" placeholder="64 hex characters"></label>
+      </div>
+    </fieldset>
+    <label class="check"><input id="authority" type="checkbox" required> <span>Я владелец этого компонента или уполномочен заказать его проверку.</span></label>
+    <label class="check"><input id="terms" type="checkbox" required> <span>Я принимаю условия раскрытия выше, в том числе то, что неприятный мне результат всё равно будет опубликован.</span></label>
+    <p id="form-error" class="form-error" role="alert" hidden></p>
+    <button class="btn btn-ink" type="submit" id="submit">Подписать и отправить заказ</button>
+    <p class="small muted">Отправляются только подписанный заказ, текст области и ваш email. Ключ остаётся в браузере.</p>
+  </form>
+
+  <section id="done" class="order-done" hidden aria-live="polite">
+    <p class="kicker">Заказ в очереди</p>
+    <h2>Принято — теперь сохраните ключ</h2>
+    <dl class="terms">
+      <div><dt>Номер заказа</dt><dd class="mono" id="done-id"></dd></div>
+      <div><dt>Хеш заказа</dt><dd class="mono" id="done-digest"></dd></div>
+      <div><dt>Ваш ключ</dt><dd class="mono" id="done-key"></dd></div>
+    </dl>
+    <p class="warn" id="key-warning">Скачайте файл ключа сейчас. Только им можно подписать ответ на вашу аттестацию, и больше его нет нигде — ни на нашем сервере, ни в браузере после закрытия страницы.</p>
+    <p class="cta">
+      <a class="btn btn-ink" id="dl-key" download>Скачать ключ</a>
+      <a class="btn btn-line" id="dl-order" download>Скачать подписанный заказ</a>
+    </p>
+    <p class="small muted">Аудитор сверит заказ с политикой независимости и напишет вам до начала работы. Ничего не публикуется, пока вы не увидите находки.</p>
+  </section>
+</main>
+
+<footer class="colophon">
+  <div class="wrap">
+    <p class="small muted">Dimitrii · <a href="mailto:dubieroj@gmail.com">dubieroj@gmail.com</a> · заказы хранятся без cookies и отслеживания; см. профиль приватности.</p>
+  </div>
+</footer>
+<script type="application/json" id="strings">{"err_repo":"Укажите адрес репозитория с https:// — без порта, параметров и #фрагмента.","err_commit":"Коммит — полный идентификатор из 40 шестнадцатеричных символов в нижнем регистре.","err_component":"Идентификатор выглядит так: onym:component:my-relay (строчные латинские буквы, цифры, дефисы).","err_scope":"Опишите область проверки (до 8000 символов).","err_email":"Укажите корректный email.","err_seed":"Ключ — 64 шестнадцатеричных символа (seed Ed25519).","err_checks":"Отметьте оба подтверждения.","err_crypto":"Этот браузер не умеет создавать ключи Ed25519. Используйте свежий Chrome, Safari или Firefox.","err_manifest":"Не удалось загрузить манифест аудитора: {err}","err_server":"Аудитор не принял заказ: {err}","signing":"Подписываю…","sending":"Отправляю…","submit":"Подписать и отправить заказ"}</script>
+</body>
+</html>

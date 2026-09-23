@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="sr-Latn-ME">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Naručite AI bezbjednosnu reviziju · Dimitrii</title>
+<meta name="description" content="Naručite bezbjednosnu reviziju repozitorijuma na tačnom komitu: radi je LLM uz ljudsku provjeru, a rezultat se potpisuje kao Onym atestacija.">
+<meta name="color-scheme" content="light dark">
+<link rel="alternate" hreflang="en" href="https://foldy.io/audit/order/">
+<link rel="alternate" hreflang="ru" href="https://foldy.io/audit/ru/order/">
+<link rel="alternate" hreflang="sr-Latn-ME" href="https://foldy.io/audit/cnr/order/">
+<link rel="alternate" hreflang="x-default" href="https://foldy.io/audit/order/">
+<link rel="stylesheet" href="../../style.css">
+<script type="module" src="../../order.js"></script>
+</head>
+<body class="order-page">
+<div class="grain" aria-hidden="true"></div>
+
+<header class="masthead">
+  <div class="wrap masthead-row">
+    <a class="brand" href="../">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span class="brand-text"><b id="brand-name">Dimitrii</b> <span class="muted">· revizor mreže Onym</span></span>
+    </a>
+    <div class="langs" role="navigation" aria-label="Jezik"><a href="../../order/" hreflang="en" lang="en">EN</a><a href="../../ru/order/" hreflang="ru" lang="ru">RU</a><a href="../../cnr/order/" hreflang="sr-Latn-ME" lang="sr-Latn-ME" aria-current="page">CNR</a></div>
+  </div>
+  <div class="rule-strip"><div class="wrap">Narudžba pregleda · revizor mreže Onym · <code>security-review-llm-v1</code></div></div>
+</header>
+
+<main class="wrap order-main">
+  <section class="order-intro">
+    <p class="kicker">Besplatno tokom Sobor 2026</p>
+    <h1>Naručite AI bezbjednosnu reviziju</h1>
+    <p class="lede">Navedite repozitorijum i komit. Claude čita kod tačno u tim bajtovima i priprema nalaze, svaki s citatom linija na kojima počiva; Dimitrii provjerava svaki i potpisuje ono iza čega stoji — kao atestaciju koju svako može provjeriti.</p>
+    <ol class="order-steps">
+      <li>Popunjavate formular. Pregledač pravi Ed25519 ključ i njime potpisuje narudžbu — kao vlasnik komponente i kao strana koja plaća.</li>
+      <li>Narudžba čeka u redu. Prije prihvatanja, revizor je provjerava prema <a href="../../policies/independence.md">politici nezavisnosti</a>.</li>
+      <li>Mehanizam pregleda kod, revizor provjerava svaki nalaz. Nalaze prvo dobijate vi.</li>
+      <li>Objavljuje se potpisana atestacija. Svojim ključem možete pored nje objaviti potpisani odgovor koji niko ne može izmijeniti.</li>
+    </ol>
+    <dl class="terms">
+      <div><dt>Cijena</dt><dd>besplatno — isto bez obzira na rezultat</dd></div>
+      <div><dt>Nalazi</dt><dd>stižu vama prije bilo kakve objave</dd></div>
+      <div><dt>Embargo</dt><dd>do 90 dana za iskoristive nalaze</dd></div>
+      <div><dt>Objava</dt><dd>atestacija javna pri izdavanju; neuspjeh nakon embarga</dd></div>
+      <div><dt>Šta se ne može kupiti</dt><dd>rezultat, ćutanje ni odlaganje</dd></div>
+    </dl>
+    <p class="small muted">Obavezujući uslovi (na engleskom): <a href="../../methodology/security-review-llm.md">metodologija</a> · <a href="../../policies/liability.md">odgovornost</a> · <a href="../../privacy.md">privatnost</a> · <a href="../../offers/security-review-llm-source.json">potpisana ponuda</a>.</p>
+  </section>
+
+  <form id="order-form" class="order-form" novalidate>
+    <fieldset>
+      <legend>Šta pregledati</legend>
+      <label>Repozitorijum (HTTPS)<input id="repo" name="repo" type="url" required placeholder="https://github.com/org/repo" autocomplete="off" spellcheck="false"></label>
+      <p class="hint">Samo javni repozitorijumi: pregled čita javne bajtove.</p>
+      <label>Komit<input id="commit" name="commit" required pattern="[0-9a-f]{40}" placeholder="40 hex characters" autocomplete="off" spellcheck="false" class="mono"></label>
+      <p class="hint">Puni identifikator od 40 znakova. Atestacija će pokrivati tačno te bajtove i ništa drugo: <code>git rev-parse HEAD</code></p>
+      <label>Identifikator komponente<input id="component" name="component" required pattern="onym:component:[a-z0-9-]{1,64}" placeholder="onym:component:my-relay" autocomplete="off" spellcheck="false" class="mono"></label>
+      <p class="hint">Kako se vaša komponenta zove u mreži Onym — to je subjekt atestacije.</p>
+    </fieldset>
+    <fieldset>
+      <legend>Obim</legend>
+      <label>Šta tačno pregledati<textarea id="scope" name="scope" required rows="6" maxlength="8000" placeholder="npr. src/verify.rs i src/canonical.rs: provjera potpisa i heševa snimaka kataloga"></textarea></label>
+      <p class="hint">Navedite fajlove, direktorijume ili teme. Obim se objavljuje uz atestaciju; sve van njega navodi se kao nepregledano.</p>
+    </fieldset>
+    <fieldset>
+      <legend>Vi</legend>
+      <label>Kontakt email<input id="email" name="email" type="email" required autocomplete="email"></label>
+      <p class="hint">Koristi se samo za ovu narudžbu. Čuva se uz narudžbu, ne objavljuje se, briše se 90 dana nakon odluke.</p>
+      <div class="keybox">
+        <p><b>Vaš ključ za potpis.</b> Dokazuje da je narudžba vaša, a kasnije vam omogućava da potpišete odgovor na atestaciju.</p>
+        <label class="radio"><input type="radio" name="keymode" value="new" checked> Napravi novi ključ u ovom pregledaču</label>
+        <label class="radio"><input type="radio" name="keymode" value="existing"> Koristi ključ koji već imam</label>
+        <label id="seed-wrap" hidden>Ed25519 seed (hex) — ne napušta ovu stranicu<input id="seed" type="password" autocomplete="off" spellcheck="false" class="mono" placeholder="64 hex characters"></label>
+      </div>
+    </fieldset>
+    <label class="check"><input id="authority" type="checkbox" required> <span>Vlasnik sam ove komponente ili sam ovlašćen da naručim njen pregled.</span></label>
+    <label class="check"><input id="terms" type="checkbox" required> <span>Prihvatam uslove objave iznad, uključujući da će i rezultat koji mi se ne dopada biti objavljen.</span></label>
+    <p id="form-error" class="form-error" role="alert" hidden></p>
+    <button class="btn btn-ink" type="submit" id="submit">Potpiši i pošalji narudžbu</button>
+    <p class="small muted">Šalju se samo potpisana narudžba, tekst obima i vaš email. Ključ ostaje u pregledaču.</p>
+  </form>
+
+  <section id="done" class="order-done" hidden aria-live="polite">
+    <p class="kicker">Narudžba je u redu</p>
+    <h2>Primljeno — sada sačuvajte ključ</h2>
+    <dl class="terms">
+      <div><dt>Broj narudžbe</dt><dd class="mono" id="done-id"></dd></div>
+      <div><dt>Heš narudžbe</dt><dd class="mono" id="done-digest"></dd></div>
+      <div><dt>Vaš ključ</dt><dd class="mono" id="done-key"></dd></div>
+    </dl>
+    <p class="warn" id="key-warning">Preuzmite fajl ključa sada. Samo njime možete potpisati odgovor na atestaciju, a nema ga nigdje drugo — ni na našem serveru, ni u pregledaču kad zatvorite stranicu.</p>
+    <p class="cta">
+      <a class="btn btn-ink" id="dl-key" download>Preuzmi ključ</a>
+      <a class="btn btn-line" id="dl-order" download>Preuzmi potpisanu narudžbu</a>
+    </p>
+    <p class="small muted">Revizor provjerava narudžbu prema politici nezavisnosti i javlja vam se prije početka. Ništa se ne objavljuje dok ne vidite nalaze.</p>
+  </section>
+</main>
+
+<footer class="colophon">
+  <div class="wrap">
+    <p class="small muted">Dimitrii · <a href="mailto:dubieroj@gmail.com">dubieroj@gmail.com</a> · narudžbe se čuvaju bez kolačića i praćenja; vidi profil privatnosti.</p>
+  </div>
+</footer>
+<script type="application/json" id="strings">{"err_repo":"Unesite adresu repozitorijuma s https:// — bez porta, parametara i #fragmenta.","err_commit":"Komit je puni identifikator od 40 heksadecimalnih znakova, malim slovima.","err_component":"Identifikator izgleda ovako: onym:component:my-relay (mala slova, cifre, crtice).","err_scope":"Opišite obim pregleda (do 8000 znakova).","err_email":"Unesite ispravnu email adresu.","err_seed":"Ključ je 64 heksadecimalna znaka (Ed25519 seed).","err_checks":"Označite obje potvrde.","err_crypto":"Ovaj pregledač ne može da napravi Ed25519 ključeve. Koristite noviji Chrome, Safari ili Firefox.","err_manifest":"Manifest revizora nije mogao da se učita: {err}","err_server":"Revizor nije prihvatio narudžbu: {err}","signing":"Potpisujem…","sending":"Šaljem…","submit":"Potpiši i pošalji narudžbu"}</script>
+</body>
+</html>

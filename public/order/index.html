@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Order an AI security review · Dimitrii</title>
+<meta name="description" content="Order an LLM-assisted, human-reviewed security review of a repository at an exact commit, signed as an Onym attestation.">
+<meta name="color-scheme" content="light dark">
+<link rel="alternate" hreflang="en" href="https://foldy.io/audit/order/">
+<link rel="alternate" hreflang="ru" href="https://foldy.io/audit/ru/order/">
+<link rel="alternate" hreflang="sr-Latn-ME" href="https://foldy.io/audit/cnr/order/">
+<link rel="alternate" hreflang="x-default" href="https://foldy.io/audit/order/">
+<link rel="stylesheet" href="../style.css">
+<script type="module" src="../order.js"></script>
+</head>
+<body class="order-page">
+<div class="grain" aria-hidden="true"></div>
+
+<header class="masthead">
+  <div class="wrap masthead-row">
+    <a class="brand" href="../">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span class="brand-text"><b id="brand-name">Dimitrii</b> <span class="muted">· Onym audit seat</span></span>
+    </a>
+    <div class="langs" role="navigation" aria-label="Language"><a href="../order/" hreflang="en" lang="en" aria-current="page">EN</a><a href="../ru/order/" hreflang="ru" lang="ru">RU</a><a href="../cnr/order/" hreflang="sr-Latn-ME" lang="sr-Latn-ME">CNR</a></div>
+  </div>
+  <div class="rule-strip"><div class="wrap">Order an examination · Onym audit seat · <code>security-review-llm-v1</code></div></div>
+</header>
+
+<main class="wrap order-main">
+  <section class="order-intro">
+    <p class="kicker">Pro bono during Sobor 2026</p>
+    <h1>Order an AI security review</h1>
+    <p class="lede">Point us at a repository and a commit. Claude reads the code at exactly those bytes and drafts findings, each quoting the lines it rests on; Dimitrii checks every one and signs what he stands behind — as an attestation anyone can verify.</p>
+    <ol class="order-steps">
+      <li>You fill in the form. Your browser creates an Ed25519 key and signs the order with it — as the component’s owner and as the paying party.</li>
+      <li>The order waits in a queue. Before accepting it, the auditor checks it against the <a href="../policies/independence.md">independence policy</a>.</li>
+      <li>The engine examines the code; the auditor reviews each finding. You get the findings first.</li>
+      <li>A signed attestation is published. With your key you can post a signed reply beside it, and nobody can edit that reply.</li>
+    </ol>
+    <dl class="terms">
+      <div><dt>Fee</dt><dd>pro bono — the same whatever the result</dd></div>
+      <div><dt>Findings</dt><dd>sent to you before anything is published</dd></div>
+      <div><dt>Embargo</dt><dd>up to 90 days for exploitable findings</dd></div>
+      <div><dt>Publication</dt><dd>attestation public on issuance; a fail after the embargo</dd></div>
+      <div><dt>What you cannot buy</dt><dd>a result class, silence, or a delay</dd></div>
+    </dl>
+    <p class="small muted">Binding terms: <a href="../methodology/security-review-llm.md">methodology</a> · <a href="../policies/liability.md">liability</a> · <a href="../privacy.md">privacy</a> · <a href="../offers/security-review-llm-source.json">signed offer</a>.</p>
+  </section>
+
+  <form id="order-form" class="order-form" novalidate>
+    <fieldset>
+      <legend>What to examine</legend>
+      <label>Repository (HTTPS)<input id="repo" name="repo" type="url" required placeholder="https://github.com/org/repo" autocomplete="off" spellcheck="false"></label>
+      <p class="hint">Public repositories only: the examination reads public bytes.</p>
+      <label>Commit<input id="commit" name="commit" required pattern="[0-9a-f]{40}" placeholder="40 hex characters" autocomplete="off" spellcheck="false" class="mono"></label>
+      <p class="hint">The full 40-character id. The attestation will cover these exact bytes and nothing else: <code>git rev-parse HEAD</code></p>
+      <label>Component id<input id="component" name="component" required pattern="onym:component:[a-z0-9-]{1,64}" placeholder="onym:component:my-relay" autocomplete="off" spellcheck="false" class="mono"></label>
+      <p class="hint">How your component is named in the Onym network — the attestation’s subject.</p>
+    </fieldset>
+    <fieldset>
+      <legend>Scope</legend>
+      <label>What should be examined<textarea id="scope" name="scope" required rows="6" maxlength="8000" placeholder="e.g. src/verify.rs and src/canonical.rs: signature and digest verification of catalog snapshots"></textarea></label>
+      <p class="hint">Name files, directories or concerns. The scope is published with the attestation; what is outside it is listed as not examined.</p>
+    </fieldset>
+    <fieldset>
+      <legend>You</legend>
+      <label>Contact email<input id="email" name="email" type="email" required autocomplete="email"></label>
+      <p class="hint">Used only to discuss this order. Stored with the queued order, never published, deleted 90 days after a decision.</p>
+      <div class="keybox">
+        <p><b>Your signing key.</b> It proves the order is yours, and later lets you sign a reply to the attestation.</p>
+        <label class="radio"><input type="radio" name="keymode" value="new" checked> Create a new key in this browser</label>
+        <label class="radio"><input type="radio" name="keymode" value="existing"> Use a key I already have</label>
+        <label id="seed-wrap" hidden>Ed25519 seed (hex) — never leaves this page<input id="seed" type="password" autocomplete="off" spellcheck="false" class="mono" placeholder="64 hex characters"></label>
+      </div>
+    </fieldset>
+    <label class="check"><input id="authority" type="checkbox" required> <span>I own this component or am authorized to commission its examination.</span></label>
+    <label class="check"><input id="terms" type="checkbox" required> <span>I accept the disclosure terms above, including that a result I dislike will still be published.</span></label>
+    <p id="form-error" class="form-error" role="alert" hidden></p>
+    <button class="btn btn-ink" type="submit" id="submit">Sign and send the order</button>
+    <p class="small muted">Only the signed order, the scope text and your email are sent. The key stays in your browser.</p>
+  </form>
+
+  <section id="done" class="order-done" hidden aria-live="polite">
+    <p class="kicker">Order queued</p>
+    <h2>Received — now keep your key</h2>
+    <dl class="terms">
+      <div><dt>Order id</dt><dd class="mono" id="done-id"></dd></div>
+      <div><dt>Order digest</dt><dd class="mono" id="done-digest"></dd></div>
+      <div><dt>Your key</dt><dd class="mono" id="done-key"></dd></div>
+    </dl>
+    <p class="warn" id="key-warning">Download your key file now. It is the only way to sign a reply to your attestation, and it exists nowhere else — not on our server, not in your browser after you close this page.</p>
+    <p class="cta">
+      <a class="btn btn-ink" id="dl-key" download>Download key</a>
+      <a class="btn btn-line" id="dl-order" download>Download signed order</a>
+    </p>
+    <p class="small muted">The auditor reviews the order against the independence policy and writes to you before starting. Nothing is published until you have seen the findings.</p>
+  </section>
+</main>
+
+<footer class="colophon">
+  <div class="wrap">
+    <p class="small muted">Dimitrii · <a href="mailto:dubieroj@gmail.com">dubieroj@gmail.com</a> · orders are stored without cookies or tracking; see the privacy profile.</p>
+  </div>
+</footer>
+<script type="application/json" id="strings">{"err_repo":"Enter an https:// repository URL without a port, query or #fragment.","err_commit":"The commit must be the full 40-character lowercase hex id.","err_component":"The component id looks like onym:component:my-relay (lowercase letters, digits, dashes).","err_scope":"Describe the scope (up to 8000 characters).","err_email":"Enter a valid email address.","err_seed":"The key must be 64 hex characters (an Ed25519 seed).","err_checks":"Tick both confirmations to continue.","err_crypto":"This browser cannot create Ed25519 keys. Use a current Chrome, Safari or Firefox.","err_manifest":"Could not load the auditor manifest: {err}","err_server":"The auditor did not accept the order: {err}","signing":"Signing…","sending":"Sending…","submit":"Sign and send the order"}</script>
+</body>
+</html>

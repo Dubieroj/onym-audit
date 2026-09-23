@@ -28,6 +28,7 @@
       <a href="#rules">Правила</a>
       <a href="#verify">Проверка</a>
       <a href="#instruments">Документы</a>
+      <a href="order/" class="nav-cta">Заказать аудит</a>
     </nav>
     <div class="langs" role="navigation" aria-label="Язык"><a href="../" hreflang="en" lang="en">EN</a><a href="../ru/" hreflang="ru" lang="ru" aria-current="page">RU</a><a href="../cnr/" hreflang="sr-Latn-ME" lang="sr-Latn-ME">CNR</a></div>
   </div>
@@ -43,6 +44,7 @@
       <div class="cta reveal">
         <a class="btn btn-ink" href="#register">Открыть реестр</a>
         <a class="btn btn-line" href="#verify">Проверить самому</a>
+        <a class="btn btn-line" href="order/">Заказать аудит</a>
       </div>
     </div>
 
@@ -228,7 +230,7 @@ tools/sandbox.sh</code></pre>
       <h2 id="comm-h">Заказать проверку</h2>
     </header>
     <div class="comm-grid">
-      <div><h3>Операторам</h3><p>Держите курьера, каталог, нотариуса? Отправьте подписанный <code>AuditOrder</code>: подписывают проверяемый и спонсор, аудитор ставит свою подпись, только сверившись с политикой независимости.</p><p class="mono small">POST https://foldy.io/audit/orders</p></div>
+      <div><h3>Операторам</h3><p>Держите курьера, каталог, нотариуса? Отправьте подписанный <code>AuditOrder</code>: подписывают проверяемый и спонсор, аудитор ставит свою подпись, только сверившись с политикой независимости.</p><p class="mono small">POST https://foldy.io/audit/orders</p><p><a class="btn btn-ink" href="order/">Заказать аудит</a></p></div>
       <div><h3>Проверяемым</h3><p>Вас проверили без спроса? Непрошеные проверки касаются только публичных байтов, и вас уведомляют до публикации. Ответьте подписанным <code>SubjectResponse</code> — он будет опубликован рядом с аттестацией без правок.</p><p class="mono small">POST https://foldy.io/audit/responses</p></div>
       <div><h3>Всем</h3><p>Оплата покупает работу по проверке опубликованным методом. Она не покупает результат, ранний доступ к уязвимостям, молчание или приоритет показа.</p><p class="mono small">offers: conformance-run-discovery · pro-bono</p></div>
     </div>

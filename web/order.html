@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="{{lang_tag}}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{o_title}}</title>
+<meta name="description" content="{{o_description}}">
+<meta name="color-scheme" content="light dark">
+{{alternates}}
+<link rel="stylesheet" href="{{root}}style.css">
+<script type="module" src="{{root}}order.js"></script>
+</head>
+<body class="order-page">
+<div class="grain" aria-hidden="true"></div>
+
+<header class="masthead">
+  <div class="wrap masthead-row">
+    <a class="brand" href="{{home}}">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span class="brand-text"><b id="brand-name">Dimitrii</b> <span class="muted">· {{brand_seat}}</span></span>
+    </a>
+    <div class="langs" role="navigation" aria-label="{{lang_label}}">{{switcher}}</div>
+  </div>
+  <div class="rule-strip"><div class="wrap">{{o_strip}} · <code>security-review-llm-v1</code></div></div>
+</header>
+
+<main class="wrap order-main">
+  <section class="order-intro">
+    <p class="kicker">{{o_kicker}}</p>
+    <h1>{{o_h1}}</h1>
+    <p class="lede">{{o_lede}}</p>
+    <ol class="order-steps">
+      <li>{{o_step1}}</li>
+      <li>{{o_step2}}</li>
+      <li>{{o_step3}}</li>
+      <li>{{o_step4}}</li>
+    </ol>
+    <dl class="terms">
+      <div><dt>{{o_t_fee}}</dt><dd>{{o_t_fee_v}}</dd></div>
+      <div><dt>{{o_t_first}}</dt><dd>{{o_t_first_v}}</dd></div>
+      <div><dt>{{o_t_embargo}}</dt><dd>{{o_t_embargo_v}}</dd></div>
+      <div><dt>{{o_t_publish}}</dt><dd>{{o_t_publish_v}}</dd></div>
+      <div><dt>{{o_t_verdict}}</dt><dd>{{o_t_verdict_v}}</dd></div>
+    </dl>
+    <p class="small muted">{{o_terms_links}}</p>
+  </section>
+
+  <form id="order-form" class="order-form" novalidate>
+    <fieldset>
+      <legend>{{o_f_artifact}}</legend>
+      <label>{{o_f_repo}}<input id="repo" name="repo" type="url" required placeholder="https://github.com/org/repo" autocomplete="off" spellcheck="false"></label>
+      <p class="hint">{{o_f_repo_h}}</p>
+      <label>{{o_f_commit}}<input id="commit" name="commit" required pattern="[0-9a-f]{40}" placeholder="40 hex characters" autocomplete="off" spellcheck="false" class="mono"></label>
+      <p class="hint">{{o_f_commit_h}} <code>git rev-parse HEAD</code></p>
+      <label>{{o_f_component}}<input id="component" name="component" required pattern="onym:component:[a-z0-9-]{1,64}" placeholder="onym:component:my-relay" autocomplete="off" spellcheck="false" class="mono"></label>
+      <p class="hint">{{o_f_component_h}}</p>
+    </fieldset>
+    <fieldset>
+      <legend>{{o_f_scope}}</legend>
+      <label>{{o_f_scope_l}}<textarea id="scope" name="scope" required rows="6" maxlength="8000" placeholder="{{o_f_scope_ph}}"></textarea></label>
+      <p class="hint">{{o_f_scope_h}}</p>
+    </fieldset>
+    <fieldset>
+      <legend>{{o_f_you}}</legend>
+      <label>{{o_f_email}}<input id="email" name="email" type="email" required autocomplete="email"></label>
+      <p class="hint">{{o_f_email_h}}</p>
+      <div class="keybox">
+        <p><b>{{o_f_key}}</b> {{o_f_key_h}}</p>
+        <label class="radio"><input type="radio" name="keymode" value="new" checked> {{o_f_key_new}}</label>
+        <label class="radio"><input type="radio" name="keymode" value="existing"> {{o_f_key_existing}}</label>
+        <label id="seed-wrap" hidden>{{o_f_seed}}<input id="seed" type="password" autocomplete="off" spellcheck="false" class="mono" placeholder="64 hex characters"></label>
+      </div>
+    </fieldset>
+    <label class="check"><input id="authority" type="checkbox" required> <span>{{o_f_authority}}</span></label>
+    <label class="check"><input id="terms" type="checkbox" required> <span>{{o_f_terms}}</span></label>
+    <p id="form-error" class="form-error" role="alert" hidden></p>
+    <button class="btn btn-ink" type="submit" id="submit">{{o_submit}}</button>
+    <p class="small muted">{{o_submit_h}}</p>
+  </form>
+
+  <section id="done" class="order-done" hidden aria-live="polite">
+    <p class="kicker">{{o_done_kicker}}</p>
+    <h2>{{o_done_h}}</h2>
+    <dl class="terms">
+      <div><dt>{{o_done_id}}</dt><dd class="mono" id="done-id"></dd></div>
+      <div><dt>{{o_done_digest}}</dt><dd class="mono" id="done-digest"></dd></div>
+      <div><dt>{{o_done_key}}</dt><dd class="mono" id="done-key"></dd></div>
+    </dl>
+    <p class="warn" id="key-warning">{{o_done_keep}}</p>
+    <p class="cta">
+      <a class="btn btn-ink" id="dl-key" download>{{o_done_dl_key}}</a>
+      <a class="btn btn-line" id="dl-order" download>{{o_done_dl_order}}</a>
+    </p>
+    <p class="small muted">{{o_done_next}}</p>
+  </section>
+</main>
+
+<footer class="colophon">
+  <div class="wrap">
+    <p class="small muted">Dimitrii · <a href="mailto:dubieroj@gmail.com">dubieroj@gmail.com</a> · {{o_footer}}</p>
+  </div>
+</footer>
+<script type="application/json" id="strings">{{js}}</script>
+</body>
+</html>

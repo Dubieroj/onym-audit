@@ -367,6 +367,11 @@ Relative to the manifest directory, both bounded and rate-limited:
   auditor's review, never auto-accepted; the reply is `202` with the
   order digest. The auditor countersigns offline after checking its
   independence policy (Audit.md §8.4). Queued orders are not published.
+  A subject that cannot host its own scope document may send an envelope
+  `{"order": …, "scopeText": …, "contact": "mailto:…"}`: the order then pins
+  `scopes/order-<orderId>.md` on the auditor's base URI, `scopeText` must hash
+  to that pin, and the auditor publishes it byte-for-byte on acceptance. The
+  contact is kept with the queued order and never published.
 - `POST responses` — the subject's right of reply. Body: a
   `SubjectResponse` (≤ 16 KiB) verified against the published attestation
   and its `subjectOperator`. A valid response is published immutably and

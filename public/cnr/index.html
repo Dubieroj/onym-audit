@@ -28,6 +28,7 @@
       <a href="#rules">Pravila</a>
       <a href="#verify">Provjera</a>
       <a href="#instruments">Dokumenti</a>
+      <a href="order/" class="nav-cta">Naruči reviziju</a>
     </nav>
     <div class="langs" role="navigation" aria-label="Jezik"><a href="../" hreflang="en" lang="en">EN</a><a href="../ru/" hreflang="ru" lang="ru">RU</a><a href="../cnr/" hreflang="sr-Latn-ME" lang="sr-Latn-ME" aria-current="page">CNR</a></div>
   </div>
@@ -43,6 +44,7 @@
       <div class="cta reveal">
         <a class="btn btn-ink" href="#register">Otvori registar</a>
         <a class="btn btn-line" href="#verify">Provjeri sam</a>
+        <a class="btn btn-line" href="order/">Naruči reviziju</a>
       </div>
     </div>
 
@@ -228,7 +230,7 @@ tools/sandbox.sh</code></pre>
       <h2 id="comm-h">Naručite pregled</h2>
     </header>
     <div class="comm-grid">
-      <div><h3>Operatorima</h3><p>Držite kurira, katalog, notara? Pošaljite potpisani <code>AuditOrder</code>: potpisuju subjekt i sponzor, a revizor supotpisuje tek nakon provjere svoje politike nezavisnosti.</p><p class="mono small">POST https://foldy.io/audit/orders</p></div>
+      <div><h3>Operatorima</h3><p>Držite kurira, katalog, notara? Pošaljite potpisani <code>AuditOrder</code>: potpisuju subjekt i sponzor, a revizor supotpisuje tek nakon provjere svoje politike nezavisnosti.</p><p class="mono small">POST https://foldy.io/audit/orders</p><p><a class="btn btn-ink" href="order/">Naruči reviziju</a></p></div>
       <div><h3>Subjektima</h3><p>Pregledani ste bez pitanja? Nenaručeni pregledi obuhvataju samo javne bajtove, a obavještavaju vas prije objave. Odgovorite potpisanim <code>SubjectResponse</code>; objavljuje se pored atestacije, bez izmjena.</p><p class="mono small">POST https://foldy.io/audit/responses</p></div>
       <div><h3>Svima</h3><p>Plaćanje kupuje rad na pregledu po objavljenoj metodi. Ne kupuje rezultat, rani pristup ranjivostima, ćutanje niti prioritet prikaza.</p><p class="mono small">offers: conformance-run-discovery · pro-bono</p></div>
     </div>

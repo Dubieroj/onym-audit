@@ -5,7 +5,8 @@
   "contact": "mailto:dubieroj@gmail.com",
   "validUntil": "2027-09-24T00:00:00Z",
   "offers": [
-    "conformance-run-discovery"
+    "conformance-run-discovery",
+    "security-review-llm-source"
   ],
   "methodologies": [
     {

@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -22,6 +23,7 @@ import (
 	"crypto/ed25519"
 
 	"onym-audit/audit"
+	"onym-audit/canon"
 	"onym-audit/sig"
 	"onym-audit/site"
 )
@@ -31,6 +33,7 @@ const (
 	MaxOrderBytes    = 64 << 10
 	MaxResponseBytes = 16 << 10
 	MaxInbox         = 1000
+	MaxScopeText     = 8 << 10
 )
 
 // Server holds the online state.
@@ -155,33 +158,94 @@ func (s *Server) readBody(w http.ResponseWriter, r *http.Request, limit int64) (
 // postOrder is accept-order's intake (Audit.md §6): a well-formed order
 // signed by its subject and sponsor is queued for the auditor's review.
 // Queuing is not acceptance; the auditor countersigns offline.
+//
+// The body is either the bare signed order, or an envelope
+// {"order": …, "scopeText": …, "contact": …} for a subject that cannot host
+// its own scope document: the order then pins scopes/order-<orderId>.md on
+// this auditor's base URI, and scopeText must hash to that pin. The contact
+// is kept with the queued order and never published.
 func (s *Server) postOrder(w http.ResponseWriter, r *http.Request) {
 	body, ok := s.readBody(w, r, MaxOrderBytes)
 	if !ok {
 		return
 	}
-	o, err := audit.ParseOrderRequest(body, s.Config.ComponentID)
+	orderBytes, scopeText, contact, err := unwrapOrder(body)
 	if err != nil {
 		fail(w, http.StatusUnprocessableEntity, "order_invalid", err)
 		return
 	}
+	o, err := audit.ParseOrderRequest(orderBytes, s.Config.ComponentID)
+	if err != nil {
+		fail(w, http.StatusUnprocessableEntity, "order_invalid", err)
+		return
+	}
+	if scopeText != "" {
+		want := s.Config.BaseURI + "scopes/order-" + o.OrderID + ".md"
+		if o.Scope.URI != want {
+			fail(w, http.StatusUnprocessableEntity, "order_invalid", fmt.Errorf("an order carrying its scope text pins %s", want))
+			return
+		}
+		if sig.Digest([]byte(scopeText)) != o.Scope.Digest {
+			fail(w, http.StatusUnprocessableEntity, "order_invalid", errors.New("scopeText does not hash to the order's scope digest"))
+			return
+		}
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if n, _ := filepath.Glob(filepath.Join(s.Inbox, "*.json")); len(n) >= MaxInbox {
+	if n, _ := os.ReadDir(s.Inbox); len(n) >= MaxInbox {
 		fail(w, http.StatusServiceUnavailable, "inbox_full", errors.New("order inbox is full; use the manifest contact"))
 		return
 	}
-	path := filepath.Join(s.Inbox, o.OrderID+".json")
-	if prev, err := os.ReadFile(path); err == nil {
-		if string(prev) != string(body) {
+	dir := filepath.Join(s.Inbox, o.OrderID)
+	if prev, err := os.ReadFile(filepath.Join(dir, "order.json")); err == nil {
+		if string(prev) != string(orderBytes) {
 			fail(w, http.StatusConflict, "order_conflict", errors.New("a different order with this id is already queued"))
 			return
 		}
-	} else if err := site.WriteAtomic(path, body); err != nil {
-		fail(w, http.StatusInternalServerError, "internal", errors.New("could not queue order"))
-		return
+	} else {
+		meta, _ := json.Marshal(map[string]string{"contact": contact, "receivedAt": sig.FormatTime(s.Now())})
+		for name, b := range map[string][]byte{"order.json": orderBytes, "scope.md": []byte(scopeText), "meta.json": meta} {
+			if name == "scope.md" && scopeText == "" {
+				continue
+			}
+			if err := site.WriteAtomic(filepath.Join(dir, name), b); err != nil {
+				fail(w, http.StatusInternalServerError, "internal", errors.New("could not queue order"))
+				return
+			}
+		}
 	}
-	jsonReply(w, http.StatusAccepted, map[string]string{"orderId": o.OrderID, "state": "queued-for-review", "digest": sig.Digest(body)})
+	jsonReply(w, http.StatusAccepted, map[string]string{"orderId": o.OrderID, "state": "queued-for-review", "digest": sig.Digest(orderBytes)})
+}
+
+var contactRE = regexp.MustCompile(`^mailto:[^\s@<>()",;:]{1,64}@[A-Za-z0-9.-]{1,190}\.[A-Za-z]{2,24}$`)
+
+// unwrapOrder returns the canonical order bytes and, for an envelope, the
+// scope text and contact.
+func unwrapOrder(body []byte) ([]byte, string, string, error) {
+	obj, err := canon.Parse(body)
+	if err != nil {
+		return nil, "", "", err
+	}
+	inner, isEnvelope := obj["order"].(canon.Object)
+	if !isEnvelope {
+		b, err := canon.Encode(obj)
+		return b, "", "", err
+	}
+	for k := range obj {
+		if k != "order" && k != "scopeText" && k != "contact" {
+			return nil, "", "", fmt.Errorf("unknown envelope field %q", k)
+		}
+	}
+	scope, _ := obj["scopeText"].(string)
+	contact, _ := obj["contact"].(string)
+	if strings.TrimSpace(scope) == "" || len(scope) > MaxScopeText {
+		return nil, "", "", fmt.Errorf("scopeText must be 1–%d bytes", MaxScopeText)
+	}
+	if !contactRE.MatchString(contact) {
+		return nil, "", "", errors.New("contact must be a mailto: address")
+	}
+	b, err := canon.Encode(inner)
+	return b, scope, contact, err
 }
 
 // postResponse accepts the subject's signed reply to an attestation (Audit.md
