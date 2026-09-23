@@ -369,6 +369,36 @@ func TestOrders(t *testing.T) {
 	}
 }
 
+func TestOrderMatchesOffer(t *testing.T) {
+	disc := Disclosure{FindingsToSubjectFirst: true, EmbargoDays: 90, AttestationPublication: "public-on-issuance", FailPublication: "public-after-embargo"}
+	of := &Offer{OfferID: "manual-review", Auditor: "onym:component:alice", MethodologyClass: SecurityReview, Fee: OfferFee{Model: "pro-bono"}, Disclosure: disc, ValidUntil: "2027-01-01T00:00:00Z"}
+	good := func() *AuditOrder {
+		return &AuditOrder{Auditor: "onym:component:alice", MethodologyCls: SecurityReview, Disclosure: disc, Fee: Fee{Model: "pro-bono", OfferID: "manual-review"}}
+	}
+	now := time.Date(2026, 9, 24, 0, 0, 0, 0, time.UTC)
+	if err := OrderMatchesOffer(good(), of, now); err != nil {
+		t.Fatal(err)
+	}
+	for name, mut := range map[string]func(o *AuditOrder){
+		"other offer":         func(o *AuditOrder) { o.Fee.OfferID = "x" },
+		"other auditor":       func(o *AuditOrder) { o.Auditor = "onym:component:bob" },
+		"other methodology":   func(o *AuditOrder) { o.MethodologyCls = ConformanceRun },
+		"other fee model":     func(o *AuditOrder) { o.Fee.Model = "fixed-verdict-independent" },
+		"shorter embargo":     func(o *AuditOrder) { o.Disclosure.EmbargoDays = 0 },
+		"no findings first":   func(o *AuditOrder) { o.Disclosure.FindingsToSubjectFirst = false },
+		"fail public at once": func(o *AuditOrder) { o.Disclosure.FailPublication = "public-on-issuance" },
+	} {
+		o := good()
+		mut(o)
+		if err := OrderMatchesOffer(o, of, now); err == nil {
+			t.Errorf("%s: accepted", name)
+		}
+	}
+	if err := OrderMatchesOffer(good(), of, time.Date(2027, 1, 1, 0, 0, 0, 0, time.UTC)); err == nil {
+		t.Error("expired offer accepted")
+	}
+}
+
 // Strictness: unknown or case-variant keys are rejected, never matched.
 func TestStrictKeys(t *testing.T) {
 	w := newWorld(t)

@@ -62,6 +62,11 @@
         <label class="check"><input type="checkbox" id="ob-m-conf" checked> <span>{{s_ob_m_conf}}</span></label>
       </fieldset>
       <fieldset>
+        <legend>{{s_ob_orders}}</legend>
+        <label class="check"><input type="checkbox" id="ob-orders" checked> <span>{{s_ob_orders_on}}</span></label>
+        <div id="ob-fee"></div>
+      </fieldset>
+      <fieldset>
         <legend>{{s_ob_policies}}</legend>
         <p class="hint">{{s_ob_policies_h}}</p>
         <details><summary>{{s_ob_p_indep}}</summary><textarea id="ob-p-independence" rows="10"></textarea></details>
@@ -97,6 +102,14 @@
       <button class="btn btn-line" id="d-backup">{{s_d_backup}}</button>
       <button class="btn btn-line" id="d-export">{{s_d_export}}</button>
     </p>
+    <h2 class="sub-h">{{s_d_orders}}</h2>
+    <div id="d-orders" class="entries"></div>
+    <details class="order-form offers-box" id="d-offers">
+      <summary>{{s_d_offers}}</summary>
+      <p class="hint">{{s_d_offers_h}}</p>
+      <div id="d-fee"></div>
+      <p class="cta"><button class="btn btn-ink" id="d-offers-save" type="button">{{s_d_offers_save}}</button> <button class="link-btn" id="d-offers-off" type="button">{{s_d_offers_off}}</button></p>
+    </details>
     <h2 class="sub-h">{{s_d_atts}}</h2>
     <div id="d-atts" class="entries"></div>
     <p class="small muted"><button class="link-btn" id="d-forget">{{s_d_forget}}</button></p>
@@ -106,6 +119,7 @@
   <section id="v-audit" class="view" hidden>
     <p class="kicker">{{s_a_kicker}}</p>
     <h1>{{s_a_h}}</h1>
+    <div id="a-order-banner" class="keybox" hidden></div>
     <div class="steps" id="a-steps"></div>
 
     <div class="step" id="a-step1">
@@ -146,9 +160,16 @@
         <label>{{s_a_subject_key}}<input id="a-subject-key" class="mono" placeholder="onym:key:…"></label>
         <p class="hint">{{s_a_subject_key_h}}</p>
         <label>{{s_a_rel}}<input id="a-rel" value="none"></label>
-        <label>{{s_a_contact}}<input id="a-contact" placeholder="mailto:security@…"></label>
-        <label>{{s_a_notified}}<input id="a-notified" class="mono"></label>
-        <p class="hint">{{s_a_notice_h}}</p>
+        <div id="a-unsol">
+          <label>{{s_a_contact}}<input id="a-contact" placeholder="mailto:security@…"></label>
+          <label>{{s_a_notified}}<input id="a-notified" class="mono"></label>
+          <p class="hint">{{s_a_notice_h}}</p>
+        </div>
+        <div id="a-comm" hidden>
+          <p class="hint">{{s_a_comm_h}}</p>
+          <p class="cta"><button type="button" class="btn btn-line" id="a-report-dl">{{s_a_report_dl}}</button> <a id="a-comm-contact" class="mono small"></a></p>
+          <label class="check"><input type="checkbox" id="a-sent"> <span>{{s_a_sent}}</span></label>
+        </div>
         <p id="a-error" class="form-error" role="alert" hidden></p>
         <button class="btn btn-ink" id="a-publish">{{s_a_publish}}</button>
       </div>

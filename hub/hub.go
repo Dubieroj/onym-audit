@@ -10,6 +10,7 @@
 package hub
 
 import (
+	"bytes"
 	"context"
 	"crypto/ed25519"
 	"crypto/rand"
@@ -53,7 +54,7 @@ const (
 
 // Hub serves the studio's API and every hosted auditor's tree.
 type Hub struct {
-	Root       string // tenants/<slug>/, keys/<slug>.key, claims/, disabled
+	Root       string // tenants/<slug>/, keys/<slug>.key, claims/, inbox/<slug>/, held/<slug>/
 	PublicRoot string // the operator's public tree: shared profile, scale, docs
 	PublicBase string // https://foldy.io/audit/
 	Now        func() time.Time
@@ -67,7 +68,7 @@ type Hub struct {
 
 // New prepares the hub's directories.
 func New(root, publicRoot, publicBase string) (*Hub, error) {
-	for _, d := range []string{"tenants", "keys", "claims"} {
+	for _, d := range []string{"tenants", "keys", "claims", "inbox", "held"} {
 		if err := os.MkdirAll(filepath.Join(root, d), 0o700); err != nil {
 			return nil, err
 		}
@@ -92,7 +93,7 @@ func New(root, publicRoot, publicBase string) (*Hub, error) {
 var (
 	slugRE    = regexp.MustCompile(`^[a-z][a-z0-9-]{2,31}$`)
 	reserved  = map[string]bool{"admin": true, "api": true, "hub": true, "audit": true, "onym": true, "dimitrii": true, "dimitrii-audit": true, "foundation": true, "sobor": true, "root": true, "status": true, "www": true}
-	docPathRE = regexp.MustCompile(`^(policies|methodology|scopes|reports|offers|notes)/[a-z0-9][a-z0-9._-]{0,120}\.(md|json)$`)
+	docPathRE = regexp.MustCompile(`^(policies|methodology|scopes|reports|offers|notes|orders)/[A-Za-z0-9][A-Za-z0-9._-]{0,127}\.(md|json)$`)
 )
 
 func (h *Hub) base(slug string) string      { return h.PublicBase + "a/" + slug + "/" }
@@ -137,6 +138,8 @@ func (h *Hub) Handler() http.Handler {
 	mux.HandleFunc("POST /hub/api/conformance/discovery", h.conformance)
 	mux.HandleFunc("GET /hub/api/auditors", h.auditors)
 	mux.HandleFunc("GET /hub/api/a/{slug}/export", h.export)
+	mux.HandleFunc("POST /hub/api/a/{slug}/inbox", h.inbox)
+	mux.HandleFunc("POST /a/{slug}/orders", h.postOrder)
 	mux.HandleFunc("POST /a/{slug}/responses", h.response)
 	mux.HandleFunc("GET /a/{slug}/{path...}", h.static)
 	mux.HandleFunc("GET /a/{slug}", func(w http.ResponseWriter, r *http.Request) {
@@ -316,7 +319,7 @@ func (h *Hub) write(slug string, files map[string][]byte) error {
 	}
 	for p, b := range files {
 		full := filepath.Join(h.tenantDir(slug), filepath.FromSlash(p))
-		if strings.HasPrefix(p, "attestations/") || strings.HasPrefix(p, "revocations/") || p == "manifest.json" {
+		if strings.HasPrefix(p, "attestations/") || strings.HasPrefix(p, "revocations/") || strings.HasPrefix(p, "offers/") || p == "manifest.json" {
 			if err := site.WriteSigned(full, b); err != nil {
 				return err
 			}
@@ -405,9 +408,39 @@ func (h *Hub) register(w http.ResponseWriter, r *http.Request) {
 		fail(w, 422, err)
 		return
 	}
+	for p := range offered {
+		if strings.HasPrefix(p, "orders/") {
+			fail(w, 422, errors.New("orders are published with the attestation they commission"))
+			return
+		}
+	}
 	refs := []audit.DocRef{m.AuditProfile, m.IndependencePolicy, m.UnsolicitedPolicy, m.Liability, m.SeverityScale, m.PrivacyProfile}
+	classes := map[string]bool{}
 	for _, mt := range m.Methodologies {
 		refs = append(refs, mt.Specification)
+		classes[mt.Class] = true
+	}
+	// Every listed offer is a document signed by this key, for a methodology
+	// the manifest names.
+	for _, id := range m.Offers {
+		p := "offers/" + id + ".json"
+		b, ok := offered[p]
+		if !ok {
+			var rerr error
+			if b, rerr = os.ReadFile(filepath.Join(h.tenantDir(in.Slug), filepath.FromSlash(p))); rerr != nil {
+				fail(w, 422, fmt.Errorf("offer %s is neither offered nor stored", id))
+				return
+			}
+		}
+		of, err := audit.ParseOffer(b)
+		if err == nil && (of.OfferID != id || of.Auditor != m.ComponentID || of.AuditorKey != m.Operator || !classes[of.MethodologyClass]) {
+			err = errors.New("it must be signed by this auditor's key, for a methodology the manifest names")
+		}
+		if err != nil {
+			fail(w, 422, fmt.Errorf("offer %s: %v", id, err))
+			return
+		}
+		refs = append(refs, of.Scope)
 	}
 	for _, ref := range refs {
 		if err := h.pinned(in.Slug, ref, offered); err != nil {
@@ -495,7 +528,7 @@ func (h *Hub) publish(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	apath := "attestations/" + a.AttestationID + ".json"
-	if _, err := os.Stat(filepath.Join(h.tenantDir(slug), apath)); err == nil {
+	if _, err := os.Stat(filepath.Join(h.tenantDir(slug), apath)); err == nil || h.isHeld(slug, a.AttestationID) {
 		fail(w, 409, errors.New("an attestation with this id exists; attestations are immutable — supersede it"))
 		return
 	}
@@ -503,6 +536,17 @@ func (h *Hub) publish(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fail(w, 422, err)
 		return
+	}
+	order, opath, err := h.commissioned(m, a, offered)
+	if err != nil {
+		fail(w, 422, err)
+		return
+	}
+	if order != nil {
+		if prev, err := os.ReadFile(filepath.Join(h.tenantDir(slug), filepath.FromSlash(opath))); err == nil && !bytes.Equal(prev, offered[opath]) {
+			fail(w, 409, errors.New("a different countersigned order with this id is published"))
+			return
+		}
 	}
 	refs := []audit.DocRef{a.Methodology, a.Scope}
 	if a.SeverityScale != nil {
@@ -518,10 +562,42 @@ func (h *Hub) publish(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	offered[apath] = araw
+	fulfilled := func() {
+		if order != nil {
+			os.RemoveAll(filepath.Join(h.inboxDir(slug), order.OrderID))
+		}
+	}
+	// A failing result under an order that embargoes failures is held: the
+	// order and its scope are published now, the attestation and its
+	// report when the embargo ends.
+	if order != nil && a.Result == audit.Fail && order.Disclosure.FailPublication == "public-after-embargo" && order.Disclosure.EmbargoDays > 0 {
+		releaseAt := h.Now().Add(time.Duration(order.Disclosure.EmbargoDays) * 24 * time.Hour)
+		now := map[string][]byte{opath: offered[opath]}
+		later := map[string][]byte{}
+		for p, b := range offered {
+			if p == opath || p == strings.TrimPrefix(a.Scope.URI, h.base(slug)) {
+				now[p] = b
+			} else {
+				later[p] = b
+			}
+		}
+		if err := h.write(slug, now); err != nil {
+			fail(w, 507, err)
+			return
+		}
+		if err := h.hold(slug, a.AttestationID, releaseAt, later); err != nil {
+			fail(w, 500, err)
+			return
+		}
+		fulfilled()
+		reply(w, 202, map[string]any{"uri": h.base(slug) + apath, "digest": sig.Digest(araw), "held": true, "releaseAt": sig.FormatTime(releaseAt)})
+		return
+	}
 	if err := h.write(slug, offered); err != nil {
 		fail(w, 507, err)
 		return
 	}
+	fulfilled()
 	if err := h.resign(slug); err != nil {
 		fail(w, 500, fmt.Errorf("published, but the status list was not re-signed: %v", err))
 		return
@@ -759,7 +835,7 @@ func (h *Hub) auditors(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		atts, _ := filepath.Glob(filepath.Join(h.tenantDir(slug), "attestations", "*.json"))
-		out = append(out, map[string]any{"slug": slug, "name": m.DisplayName, "fingerprint": m.Operator.Fingerprint(), "page": h.base(slug), "attestations": len(atts)})
+		out = append(out, map[string]any{"slug": slug, "name": m.DisplayName, "fingerprint": m.Operator.Fingerprint(), "page": h.base(slug), "attestations": len(atts), "offers": len(m.Offers)})
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i]["slug"].(string) < out[j]["slug"].(string) })
 	reply(w, 200, out)
@@ -823,7 +899,8 @@ func (h *Hub) static(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, full)
 }
 
-// ResignAll refreshes every hosted auditor's status list.
+// ResignAll releases held attestations whose embargo has ended and
+// refreshes every hosted auditor's status list.
 func (h *Hub) ResignAll() {
 	entries, _ := os.ReadDir(filepath.Join(h.Root, "tenants"))
 	for _, e := range entries {
@@ -836,6 +913,7 @@ func (h *Hub) ResignAll() {
 		}
 		l := h.lock(slug)
 		l.Lock()
+		h.release(slug)
 		if err := h.resign(slug); err != nil {
 			log.Printf("hub %s: status re-sign failed: %v", slug, err)
 		}

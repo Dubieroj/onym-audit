@@ -514,3 +514,29 @@ func ParseOffer(raw []byte) (*Offer, error) {
 	}
 	return &o, nil
 }
+
+// OrderMatchesOffer checks that an order takes an offer as the auditor
+// published it: same auditor, methodology, fee model, and disclosure terms,
+// while the offer is valid. An order cannot weaken the disclosure it was
+// offered, nor pay under a model the auditor did not offer.
+func OrderMatchesOffer(o *AuditOrder, of *Offer, now time.Time) error {
+	until, err := sig.ParseTime(of.ValidUntil)
+	if err != nil {
+		return err
+	}
+	switch {
+	case o.Fee.OfferID != of.OfferID:
+		return fmt.Errorf("the order names offer %q, not %q", o.Fee.OfferID, of.OfferID)
+	case o.Auditor != of.Auditor:
+		return fmt.Errorf("offer %s belongs to %s", of.OfferID, of.Auditor)
+	case !now.Before(until):
+		return fmt.Errorf("offer %s expired at %s", of.OfferID, of.ValidUntil)
+	case o.MethodologyCls != of.MethodologyClass:
+		return fmt.Errorf("offer %s is for %s, not %s", of.OfferID, of.MethodologyClass, o.MethodologyCls)
+	case o.Fee.Model != of.Fee.Model:
+		return fmt.Errorf("offer %s is %s, not %s", of.OfferID, of.Fee.Model, o.Fee.Model)
+	case o.Disclosure != of.Disclosure:
+		return fmt.Errorf("the order's disclosure terms differ from offer %s", of.OfferID)
+	}
+	return nil
+}

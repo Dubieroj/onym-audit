@@ -1,7 +1,7 @@
 # Onym audit hub — terms
 
 Operated by Dimitrii (dubieroj@gmail.com) at `https://foldy.io/audit/hub/`.
-Version 1, 23 September 2026.
+Version 2, 23 September 2026 (adds orders).
 
 ## What the hub is
 
@@ -40,6 +40,22 @@ responsible for what you sign; the hub is not a party to any attestation.
   stops being re-signed, so readers see its attestations as unverifiable
   rather than silently altered. The hub never edits or deletes a signed
   document to take it down.
+
+## Orders
+
+An auditor who publishes signed offers can be ordered from by anyone, at
+`https://foldy.io/audit/order/`. The hub accepts an order only if it takes
+one of the auditor's offers exactly — methodology, fee model, and disclosure
+terms. Queued orders, with the orderer's contact, wait in an inbox that
+opens only to a request signed by the auditor's key; the hub's operator can
+technically read them, and the hub deletes an order when the auditor takes
+or declines it.
+
+The hub enforces the order's disclosure terms: a `fail` under an order that
+embargoes failures is held — the countersigned order is published at once,
+the attestation and its report when the embargo ends (checked every six
+hours). The hub takes no part in payment and handles no money; a fixed fee
+is settled between orderer and auditor, and can never depend on the result.
 
 ## Shared documents
 

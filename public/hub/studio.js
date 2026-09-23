@@ -109,6 +109,58 @@ async function sharedRef(path) {
   const text = await getText(new URL(path, ROOT));
   return ref(PUB + path, text);
 }
+const LANG_PATH = { ru: "ru/", "sr-Latn-ME": "cnr/" }[document.documentElement.lang] || "";
+
+// ---------------------------------------------------------------- offers
+
+// The disclosure terms of every hub offer: findings reach the subject first;
+// a failing result is held — a conformance fail for a week, any other for 90
+// days — and then published. The hub enforces the hold.
+const DISCLOSURE = {
+  "security-review": { findingsToSubjectFirst: true, embargoDays: 90, attestationPublication: "public-on-issuance", failPublication: "public-after-embargo" },
+  "conformance-run": { findingsToSubjectFirst: true, embargoDays: 7, attestationPublication: "public-on-issuance", failPublication: "public-after-embargo" },
+};
+const OFFER_ID = { "security-review": "manual-review", "conformance-run": "conformance-run-discovery" };
+
+// feeFields builds the price inputs; read() returns the fee or throws.
+function feeFields(box, prefix) {
+  const radio = (v, label) => el("label", { class: "radio" }, el("input", { type: "radio", name: prefix + "-fee", value: v, checked: v === "pro-bono" }), " ", label);
+  const amount = el("input", { inputmode: "decimal", placeholder: "150.00", class: "mono", "aria-label": t("fee_amount") });
+  const currency = el("input", { value: "EUR", maxlength: 3, class: "mono", "aria-label": t("fee_currency") });
+  const days = el("input", { type: "number", min: 1, max: 365, value: 14 });
+  box.replaceChildren(radio("pro-bono", t("fee_probono")), radio("fixed-verdict-independent", t("fee_fixed_l")),
+    el("div", { class: "row-inline" }, amount, currency),
+    el("label", {}, t("fee_days"), days),
+    el("p", { class: "hint", text: t("fee_h") }));
+  return {
+    read() {
+      const model = box.querySelector(`input[name="${prefix}-fee"]:checked`).value;
+      const n = Number(days.value);
+      if (!Number.isInteger(n) || n < 1 || n > 365) throw new Error(t("e_days"));
+      if (model === "pro-bono") return { model, amount: null, currency: null, days: n };
+      const a = Math.round(Number(amount.value.replace(",", ".")) * 100);
+      const c = currency.value.trim().toUpperCase();
+      if (!Number.isFinite(a) || a <= 0 || !/^[A-Z]{3}$/.test(c)) throw new Error(t("e_fee"));
+      return { model, amount: a, currency: c, days: n };
+    },
+  };
+}
+
+// buildOffers signs one offer per methodology the manifest names.
+async function buildOffers(methodologies, fee, id) {
+  const ids = [], docs = {};
+  for (const mt of methodologies) {
+    const offerId = OFFER_ID[mt.class];
+    if (!offerId || ids.includes(offerId)) continue;
+    const offer = {
+      offerVersion: 1, offerId, auditor: id.componentId, auditorKey: id.key, methodologyClass: mt.class, scope: mt.specification,
+      fee: { model: fee.model, amount: fee.amount, currency: fee.currency }, timelineDays: fee.days, disclosure: DISCLOSURE[mt.class], validUntil: addDays(365),
+    };
+    docs[`offers/${offerId}.json`] = await signDoc(offer, id.priv);
+    ids.push(offerId);
+  }
+  return { ids, docs };
+}
 
 // ---------------------------------------------------------------- views
 
@@ -130,7 +182,7 @@ async function listAuditors() {
   const list = $("auditor-list");
   try {
     const all = await api("auditors");
-    list.replaceChildren(...(all.length ? all.map((a) => el("li", {}, el("a", { href: a.page, text: a.name }), el("span", { text: `${a.fingerprint} · ${t("n_atts", { n: a.attestations })}` }))) : [el("li", { class: "muted", text: t("no_auditors") })]));
+    list.replaceChildren(...(all.length ? all.map((a) => el("li", {}, el("a", { href: a.page, text: a.name }), el("span", {}, `${a.fingerprint} · ${t("n_atts", { n: a.attestations })}`, a.offers ? el("a", { class: "order-link", href: new URL(`${LANG_PATH}order/?auditor=${a.slug}`, ROOT).href, text: t("order_link") }) : null))) : [el("li", { class: "muted", text: t("no_auditors") })]));
   } catch { list.replaceChildren(); }
 }
 
@@ -152,6 +204,8 @@ function fillTemplates(force) {
   }
 }
 for (const k of ["independence", "unsolicited", "liability", "privacy"]) $("ob-p-" + k).addEventListener("input", (e) => (e.target.dataset.edited = "1"));
+const obFee = feeFields($("ob-fee"), "ob");
+$("ob-orders").addEventListener("change", () => ($("ob-fee").hidden = !$("ob-orders").checked));
 $("ob-name").addEventListener("input", () => {
   if (!$("ob-slug").dataset.edited) $("ob-slug").value = $("ob-name").value.toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").replace(/^[^a-z]+/, "").slice(0, 32);
   $("ob-url").textContent = `foldy.io/audit/a/${$("ob-slug").value || "…"}/`;
@@ -174,6 +228,8 @@ $("ob-form").addEventListener("submit", guard(async (ev) => {
   if (!/^[^\s@<>()",;:]{1,64}@[A-Za-z0-9.-]{1,190}\.[A-Za-z]{2,24}$/.test(email)) return bad(t("e_email"));
   if (!$("ob-m-manual").checked && !$("ob-m-conf").checked) return bad(t("e_methods"));
   if (!$("ob-terms").checked) return bad(t("e_terms"));
+  let fee = null;
+  try { fee = $("ob-orders").checked ? obFee.read() : null; } catch (e) { return bad(e.message); }
   if (!(await crypto.subtle.generateKey({ name: "Ed25519" }, true, ["sign"]).then(() => true, () => false))) return bad(t("e_crypto"));
   const btn = $("ob-submit");
   btn.disabled = true;
@@ -201,6 +257,11 @@ $("ob-form").addEventListener("submit", guard(async (ev) => {
       liability: await own("policies/liability.md"), severityScale: await sharedRef("severity-v1.json"), privacyProfile: await own("policies/privacy.md"),
       statusEndpoint: base + "status.json", statusKey: claim.statusKey, offers: [], validUntil: addDays(365),
     };
+    if (fee) {
+      const offers = await buildOffers(methodologies, fee, { componentId: claim.componentId, key, priv });
+      manifest.offers = offers.ids;
+      Object.assign(docs, offers.docs);
+    }
     const signed = await signDoc(manifest, priv);
     await api("register", { slug, manifest: JSON.parse(signed), docs });
     me = { slug, key, componentId: claim.componentId, name, priv, base };
@@ -244,6 +305,7 @@ async function dash() {
   $("d-page").href = me.base;
   $("d-page").textContent = me.base.replace(/^https:\/\//, "");
   $("d-key").textContent = `${await fingerprint(me.key)} (${me.key})`;
+  loadOrders().catch((e) => $("d-orders").replaceChildren(el("p", { class: "bad", text: e.message })));
   const box = $("d-atts");
   box.replaceChildren(el("p", { class: "muted", text: t("loading") }));
   try {
@@ -272,6 +334,66 @@ async function dash() {
     box.replaceChildren(el("p", { class: "bad", text: e.message }));
   }
 }
+
+// inboxCall sends a request signed by the auditor's key: only it opens the
+// order inbox, where the orderers' contacts wait.
+async function inboxCall(action, orderId = null) {
+  const req = { action, auditor: me.componentId, orderId, issuedAt: nowISO() };
+  return api(`a/${me.slug}/inbox`, { request: JSON.parse(await signDoc(req, me.priv)) });
+}
+
+async function loadOrders() {
+  const box = $("d-orders");
+  box.replaceChildren(el("p", { class: "muted", text: t("loading") }));
+  const m = plain(parseStrict(await getText(me.base + "manifest.json")));
+  $("d-offers-off").hidden = !m.offers.length;
+  if (!m.offers.length) {
+    $("d-offers").open = true;
+    return box.replaceChildren(el("p", { class: "empty", text: t("orders_off") }));
+  }
+  const res = await inboxCall("list");
+  const rows = res.held.map((h) => el("p", { class: "note", text: t("held_row", { id: h.attestationId, date: h.releaseAt.slice(0, 10) }) }));
+  for (const q of res.orders) {
+    const o = q.order;
+    const decline = guard(async () => {
+      if (!confirm(t("confirm_decline", { id: o.orderId }))) return;
+      await inboxCall("decline", o.orderId);
+      toast(t("declined"));
+      loadOrders();
+    });
+    rows.push(el("article", { class: "entry" },
+      el("div", { class: "entry-side" }, el("span", { class: "stamp", text: t("order_stamp") }), el("span", { class: "state", text: t("due", { date: o.timeline.reportDue }) })),
+      el("div", {}, el("h3", { text: o.subject }),
+        el("p", { class: "who", text: `${t("m_" + o.methodologyClass)} · ${o.artifact.kind} · ${o.fee.model} · ${o.fee.offerId}` }),
+        el("p", { class: "small mono", text: `${o.artifact.source} @ ${o.artifact.revision}` }),
+        el("pre", { class: "quote", text: q.scopeText }),
+        el("p", { class: "small" }, el("a", { href: q.contact, text: q.contact.replace(/^mailto:/, "") }), ` · ${t("sponsor_fp", { fp: await fingerprint(o.sponsor) })} · ${o.orderId} · ${t("received", { date: q.receivedAt.slice(0, 10) })}`),
+        el("p", { class: "row-inline" }, el("button", { class: "btn btn-ink small-btn", text: t("take"), onclick: () => takeOrder(q) }), el("button", { class: "btn btn-line small-btn", text: t("decline"), onclick: decline })))));
+  }
+  box.replaceChildren(...(rows.length ? rows : [el("p", { class: "empty", text: t("no_orders") })]));
+}
+
+const dFee = feeFields($("d-fee"), "d");
+// setOffers re-signs the manifest with a new set of offers (none: no orders).
+async function setOffers(fee) {
+  const m = plain(parseStrict(await getText(me.base + "manifest.json")));
+  const { ids, docs } = fee ? await buildOffers(m.methodologies, fee, me) : { ids: [], docs: {} };
+  delete m.signature;
+  m.offers = ids;
+  await api("register", { slug: me.slug, manifest: JSON.parse(await signDoc(m, me.priv)), docs });
+}
+$("d-offers-save").addEventListener("click", guard(async () => {
+  await setOffers(dFee.read());
+  toast(t("offers_saved"));
+  $("d-offers").open = false;
+  loadOrders();
+}));
+$("d-offers-off").addEventListener("click", guard(async () => {
+  if (!confirm(t("confirm_offers_off"))) return;
+  await setOffers(null);
+  toast(t("offers_stopped"));
+  loadOrders();
+}));
 
 async function revoke(id, reason) {
   if (!confirm(t("confirm_revoke", { id }))) return;
@@ -318,8 +440,14 @@ function resetTarget() {
 }
 
 function startAudit() {
-  A = { kind: null };
+  A = { kind: null, order: null };
   resetTarget();
+  $("a-order-banner").hidden = true;
+  $("a-unsol").hidden = false;
+  $("a-comm").hidden = true;
+  $("a-sent").checked = false;
+  $("a-subject").readOnly = $("a-subject-key").readOnly = false;
+  for (const b of document.querySelectorAll(".choice")) b.disabled = false;
   for (const s of ["a-step2", "a-step3", "a-step4"]) $(s).hidden = true;
   $("a-step1").hidden = false;
   $("a-done").hidden = true;
@@ -329,6 +457,26 @@ function startAudit() {
   $("a-cov-complete").checked = false;
   $("a-rel").value = "none";
   for (const b of document.querySelectorAll(".choice")) b.classList.remove("on");
+}
+
+// takeOrder starts an examination bound to a queued order: the target and
+// the scope are the order's, and signing countersigns it.
+function takeOrder(q) {
+  show("audit");
+  A.order = q;
+  const o = q.order;
+  const kind = o.methodologyClass === "conformance-run" ? "discovery" : o.artifact.kind;
+  const banner = $("a-order-banner");
+  banner.replaceChildren(el("p", {}, el("b", { text: t("order_banner", { id: o.orderId }) }), " ", t("order_banner_h")),
+    el("p", { class: "mono small", text: [o.artifact.source, o.artifact.revision, o.artifact.artifactHash].filter(Boolean).join(" · ") }));
+  banner.hidden = false;
+  $("a-unsol").hidden = true;
+  $("a-comm").hidden = false;
+  $("a-comm-contact").href = q.contact;
+  $("a-comm-contact").textContent = q.contact.replace(/^mailto:/, "");
+  $("a-sent").closest("label").hidden = !o.disclosure.findingsToSubjectFirst;
+  for (const b of document.querySelectorAll(".choice")) b.disabled = b.dataset.kind !== kind;
+  document.querySelector(`.choice[data-kind="${kind}"]`).click();
 }
 
 for (const b of document.querySelectorAll(".choice")) {
@@ -360,6 +508,16 @@ function targetForm() {
     parts.repo = field(t("f_repo"), { placeholder: "https://github.com/org/repo", class: "mono" });
     parts.commit = field(t("f_commit"), { placeholder: "40 hex", class: "mono" });
     parts.owner = field(t("f_owner"), { placeholder: "https://…/manifest.json", class: "mono" }, t("f_owner_h"));
+  }
+  if (A.order) {
+    const o = A.order.order;
+    const fix = (p, v) => { p.input.value = v; p.input.readOnly = true; };
+    delete parts.owner;
+    if (parts.repo) fix(parts.repo, o.artifact.source);
+    if (parts.commit) fix(parts.commit, o.artifact.revision);
+    if (parts.url) fix(parts.url, o.artifact.source);
+    if (parts.file) fix(parts.file, (A.order.scopeText.match(/^Build file: (https:\/\/\S+)$/m) || [])[1] || "");
+    fix(scope, A.order.scopeText.trim());
   }
   const go = el("button", { class: "btn btn-ink", type: "submit", text: t("inspect") });
   f.replaceChildren(...Object.values(parts).filter((p) => p !== scope).map((p) => p.node), scope.node, go);
@@ -470,8 +628,19 @@ async function inspect(p) {
     A.subject = m.componentId || A.subject;
     A.subjectKey = m.operator;
   }
+  // Under an order, the bytes examined must be the bytes ordered, and the
+  // attestation binds exactly the order's artifact, subject and key.
+  if (A.order) {
+    const o = A.order.order;
+    const same = A.kind === "build" ? A.artifact.artifactHash === o.artifact.artifactHash : A.kind === "source" || A.artifact.revision === o.artifact.revision;
+    if (!same) throw new Error(t("e_order_changed"));
+    A.artifact = JSON.parse(JSON.stringify(o.artifact));
+    A.subject = o.subject;
+    A.subjectKey = o.signatures.find((x) => x.role === "subject").key;
+  }
   $("a-subject").value = A.subject;
   $("a-subject-key").value = A.subjectKey;
+  $("a-subject").readOnly = $("a-subject-key").readOnly = !!A.order;
 }
 
 // codeBrowser shows files (a GitHub tree) or one served document; clicking
@@ -561,40 +730,80 @@ function updateResult() {
 }
 $("a-cov-complete").addEventListener("change", updateResult);
 
+function coverageOf() {
+  const lines = (id) => $(id).value.split("\n").map((s) => s.trim()).filter(Boolean);
+  return { summary: $("a-cov-sum").value.trim(), examined: lines("a-cov-ex"), notExamined: lines("a-cov-nx"), complete: $("a-cov-complete").checked, declared: true };
+}
+
+// reportOf builds the findings report: what is sent to the subject first
+// and published by digest.
+function reportOf(coverage) {
+  if (A.method === "conformance") return canonText({ findingsVersion: 1, suiteReport: A.report, observations: [] });
+  return canonText({ findingsVersion: 1, methodology: "hub-manual-review-v1", examiner: me.name, artifact: A.artifact, scope: A.scope, coverage, evidence: A.evidence,
+    findings: A.findings.map((f, i) => ({ id: "F" + (i + 1), severity: f.severity, title: f.title, path: f.path, lineStart: f.lineStart, lineEnd: f.lineEnd, quote: f.quote, description: f.description, recommendation: f.recommendation || "" })) });
+}
+
+$("a-report-dl").addEventListener("click", () => {
+  const a = el("a", { href: URL.createObjectURL(new Blob([reportOf(coverageOf())], { type: "application/json" })), download: `findings-${A.order.order.orderId}.json` });
+  document.body.append(a);
+  a.click();
+  a.remove();
+});
+
 $("a-publish").addEventListener("click", guard(async () => {
   const err = $("a-error");
   err.hidden = true;
   const bad = (m) => { err.textContent = m; err.hidden = false; };
   const subject = $("a-subject").value.trim(), subjectKey = $("a-subject-key").value.trim();
   const contact = $("a-contact").value.trim(), notified = $("a-notified").value.trim(), rel = $("a-rel").value.trim();
+  const q = A.order;
   if (!/^onym:component:[a-z0-9-]{1,64}$/.test(subject)) return bad(t("e_subject"));
   if (!/^onym:key:[0-9a-f]{64}$/.test(subjectKey)) return bad(t("e_subject_key"));
-  if (!/^(mailto:|https:\/\/)\S+$/.test(contact)) return bad(t("e_contact"));
-  if (!/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$/.test(notified) || Date.parse(notified) > Date.now()) return bad(t("e_notified"));
+  if (q) {
+    if (q.order.disclosure.findingsToSubjectFirst && !$("a-sent").checked) return bad(t("e_sent"));
+  } else {
+    if (!/^(mailto:|https:\/\/)\S+$/.test(contact)) return bad(t("e_contact"));
+    if (!/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$/.test(notified) || Date.parse(notified) > Date.now()) return bad(t("e_notified"));
+  }
   if (!rel) return bad(t("e_rel"));
   const summary = $("a-cov-sum").value.trim();
   if (!summary) return bad(t("e_coverage"));
   if (!confirm(t("confirm_publish", { result: resultClass().toUpperCase() }))) return;
 
-  const lines = (id) => $(id).value.split("\n").map((s) => s.trim()).filter(Boolean);
-  const coverage = { summary, examined: lines("a-cov-ex"), notExamined: lines("a-cov-nx"), complete: $("a-cov-complete").checked, declared: true };
+  const coverage = coverageOf();
   const manifest = plain(parseStrict(await getText(me.base + "manifest.json")));
   const id = rid("att-");
-  const scopeText = `# Scope: ${A.artifact.source}\n\n${A.artifact.kind === "deployment" ? "Manifest digest" : "Revision"}: ${A.artifact.revision}\n\n${A.scope}\n`;
-  const docs = { [`scopes/${id}.md`]: scopeText };
-  let reportObj;
-  if (A.method === "conformance") {
-    reportObj = { findingsVersion: 1, suiteReport: A.report, observations: [] };
+  const docs = {};
+  let scopeRef;
+  if (q) {
+    docs[q.order.scope.uri.slice(me.base.length)] = q.scopeText;
+    scopeRef = q.order.scope;
   } else {
-    reportObj = { findingsVersion: 1, methodology: "hub-manual-review-v1", examiner: me.name, artifact: A.artifact, scope: A.scope, coverage, evidence: A.evidence,
-      findings: A.findings.map((f, i) => ({ id: "F" + (i + 1), severity: f.severity, title: f.title, path: f.path, lineStart: f.lineStart, lineEnd: f.lineEnd, quote: f.quote, description: f.description, recommendation: f.recommendation || "" })) };
+    const scopeText = `# Scope: ${A.artifact.source}\n\n${A.artifact.kind === "deployment" ? "Manifest digest" : "Revision"}: ${A.artifact.revision}\n\n${A.scope}\n`;
+    docs[`scopes/${id}.md`] = scopeText;
+    scopeRef = await ref(me.base + `scopes/${id}.md`, scopeText);
   }
-  const reportText = canonText(reportObj);
+  const reportText = reportOf(coverage);
   const reportPath = `reports/${(await digest(enc.encode(reportText))).slice(7)}.json`;
   docs[reportPath] = reportText;
   const summaryCounts = {};
   for (const f of A.findings) summaryCounts[f.severity] = (summaryCounts[f.severity] || 0) + 1;
   const isConf = A.method === "conformance";
+  // Countersigning: the auditor's signature joins the subject's and the
+  // sponsor's over the same bytes.
+  let orderRef = null, held = false;
+  if (q) {
+    const full = parseStrict(canonText(q.order));
+    const unsigned = parseStrict(canonText(q.order));
+    unsigned.delete("signatures");
+    const s = b64(await crypto.subtle.sign({ name: "Ed25519" }, me.priv, enc.encode(canonical(unsigned))));
+    full.get("signatures").push(parseStrict(JSON.stringify({ role: "auditor", key: me.key, signature: s })));
+    const orderText = canonical(full);
+    docs[`orders/${q.order.orderId}.json`] = orderText;
+    orderRef = await digest(enc.encode(orderText));
+    const dsc = q.order.disclosure;
+    held = resultClass() === "fail" && dsc.failPublication === "public-after-embargo" && dsc.embargoDays > 0;
+  }
   const exclusions = isConf
     ? ["client behaviour", "availability, honesty, or security of the listed instances beyond their signed manifests' digests, fields, and signatures", "host security and key custody", "any state of the deployment other than the one served at run time"]
     : ["anything outside the stated scope", "runtime behaviour beyond the examined bytes", "defects the examination did not find"];
@@ -603,22 +812,24 @@ $("a-publish").addEventListener("click", guard(async () => {
     subject, subjectOperator: subjectKey, artifact: A.artifact,
     methodologyClass: isConf ? "conformance-run" : "security-review",
     methodology: await sharedRef(isConf ? "hub/methodology/conformance-run-v1.md" : "hub/methodology/manual-review-v1.md"),
-    scope: await ref(me.base + `scopes/${id}.md`, scopeText),
-    scopeSummary: (isConf ? "Discovery provider conformance run: " : "Manual examination: ") + A.scope.split("\n")[0].slice(0, 160).replace(/[.\s]+$/, ""),
+    scope: scopeRef,
+    scopeSummary: (q ? "Commissioned " : "") + (isConf ? (q ? "conformance run: " : "Discovery provider conformance run: ") : q ? "examination: " : "Manual examination: ") + A.scope.split("\n")[0].slice(0, 160).replace(/[.\s]+$/, ""),
     exclusions: [...exclusions, ...coverage.notExamined],
     result: resultClass(), severityScale: await sharedRef("severity-v1.json"), severityFloor: "low",
     findingsReport: await ref(me.base + reportPath, reportText), findingsSummary: summaryCounts,
-    engagement: "unsolicited", sponsor: me.key, sponsorName: me.name + " (self-funded)", relationships: rel, orderRef: null,
-    unsolicited: { policy: manifest.unsolicitedPolicy.digest, subjectContact: contact, subjectNotifiedAt: notified, embargoUntil: null },
-    issuedAt: nowISO(), expiresAt: addDays(isConf ? 30 : 180), supersedes: null, status: manifest.statusEndpoint,
+    engagement: q ? "commissioned" : "unsolicited",
+    sponsor: q ? q.order.sponsor : me.key, sponsorName: q ? `the sponsor of order ${q.order.orderId}` : me.name + " (self-funded)", relationships: rel, orderRef,
+    unsolicited: q ? null : { policy: manifest.unsolicitedPolicy.digest, subjectContact: contact, subjectNotifiedAt: notified, embargoUntil: null },
+    // A held attestation's validity starts counting when it is published.
+    issuedAt: nowISO(), expiresAt: addDays((isConf ? 30 : 180) + (held ? q.order.disclosure.embargoDays : 0)), supersedes: null, status: manifest.statusEndpoint,
   };
   const signed = await signDoc(att, me.priv);
   $("a-publish").disabled = true;
   const res = await api(`a/${me.slug}/publish`, { attestation: JSON.parse(signed), docs });
   const done = $("a-done");
   done.replaceChildren(
-    el("p", { class: "kicker", text: t("published_kicker") }),
-    el("h2", { text: t("published_h") }),
+    el("p", { class: "kicker", text: res.held ? t("held_kicker") : t("published_kicker") }),
+    el("h2", { text: res.held ? t("held_h", { date: res.releaseAt.slice(0, 10) }) : t("published_h") }),
     el("p", {}, el("a", { href: res.uri, target: "_blank", rel: "noopener", text: res.uri })),
     el("p", { class: "mono small", text: res.digest }),
     el("p", { class: "cta" }, el("a", { class: "btn btn-ink", href: me.base, target: "_blank", rel: "noopener", text: t("see_page") }), el("button", { class: "btn btn-line", "data-go": "dash", text: t("to_dash") })));

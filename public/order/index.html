@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Order an AI security review · Dimitrii</title>
-<meta name="description" content="Order an LLM-assisted, human-reviewed security review of a repository at an exact commit, signed as an Onym attestation.">
+<title>Order an audit · Onym auditors</title>
+<meta name="description" content="Order a signed examination of any Onym component — a repository, a running service, a Discovery catalog, or a build — from the auditor you choose.">
 <meta name="color-scheme" content="light dark">
 <link rel="alternate" hreflang="en" href="https://foldy.io/audit/order/">
 <link rel="alternate" hreflang="ru" href="https://foldy.io/audit/ru/order/">
@@ -20,41 +20,60 @@
   <div class="wrap masthead-row">
     <a class="brand" href="../">
       <span class="brand-mark" aria-hidden="true"></span>
-      <span class="brand-text"><b id="brand-name">Dimitrii</b> <span class="muted">· Onym audit seat</span></span>
+      <span class="brand-text"><b>Onym auditors</b> <span class="muted">· order an audit</span></span>
     </a>
     <div class="langs" role="navigation" aria-label="Language"><a href="../order/" hreflang="en" lang="en" aria-current="page">EN</a><a href="../ru/order/" hreflang="ru" lang="ru">RU</a><a href="../cnr/order/" hreflang="sr-Latn-ME" lang="sr-Latn-ME">CNR</a></div>
   </div>
-  <div class="rule-strip"><div class="wrap">Order an examination · Onym audit seat · <code>security-review-llm-v1</code></div></div>
+  <div class="rule-strip"><div class="wrap">Orders under signed offers · Onym audit seat · <code id="offer-code">onym:audit-profile:static-ed25519-v1</code></div></div>
 </header>
 
 <main class="wrap order-main">
   <section class="order-intro">
-    <p class="kicker">Pro bono during Sobor 2026</p>
-    <h1>Order an AI security review</h1>
-    <p class="lede">Point us at a repository and a commit. Claude reads the code at exactly those bytes and drafts findings, each quoting the lines it rests on; Dimitrii checks every one and signs what he stands behind — as an attestation anyone can verify.</p>
+    <p class="kicker">Any auditor, any component</p>
+    <h1>Order an audit</h1>
+    <p class="lede">Choose an auditor and one of their signed offers, point at exact bytes, and sign the order in your browser. The price and the disclosure terms are fixed before anyone looks — nothing you pay can change the result.</p>
     <ol class="order-steps">
-      <li>You fill in the form. Your browser creates an Ed25519 key and signs the order with it — as the component’s owner and as the paying party.</li>
-      <li>The order waits in a queue. Before accepting it, the auditor checks it against the <a href="../policies/independence.md">independence policy</a>.</li>
-      <li>The engine examines the code; the auditor reviews each finding. You get the findings first.</li>
+      <li>You pick an auditor and an offer and fill in the form. Your browser creates an Ed25519 key and signs the order with it — as the component’s owner and as the paying party.</li>
+      <li>The order waits in that auditor’s queue. Before accepting it, the auditor checks it against their independence policy.</li>
+      <li>The auditor examines exactly the bytes the order pins and sends you the findings first.</li>
       <li>A signed attestation is published. With your key you can post a signed reply beside it, and nobody can edit that reply.</li>
     </ol>
-    <dl class="terms">
-      <div><dt>Fee</dt><dd>pro bono — the same whatever the result</dd></div>
-      <div><dt>Findings</dt><dd>sent to you before anything is published</dd></div>
-      <div><dt>Embargo</dt><dd>up to 90 days for exploitable findings</dd></div>
-      <div><dt>Publication</dt><dd>attestation public on issuance; a fail after the embargo</dd></div>
+    <dl class="terms" id="offer-terms">
+      <div><dt>Auditor</dt><dd id="t-auditor">—</dd></div>
+      <div><dt>Fee</dt><dd id="t-fee">—</dd></div>
+      <div><dt>Report due</dt><dd id="t-due">—</dd></div>
+      <div><dt>Findings</dt><dd id="t-first">—</dd></div>
+      <div><dt>Embargo</dt><dd id="t-embargo">—</dd></div>
+      <div><dt>Publication</dt><dd id="t-publish">—</dd></div>
       <div><dt>What you cannot buy</dt><dd>a result class, silence, or a delay</dd></div>
     </dl>
-    <p class="small muted">Binding terms: <a href="../methodology/security-review-llm.md">methodology</a> · <a href="../policies/liability.md">liability</a> · <a href="../privacy.md">privacy</a> · <a href="../offers/security-review-llm-source.json">signed offer</a>.</p>
+    <p class="small muted" id="t-links"></p>
   </section>
 
   <form id="order-form" class="order-form" novalidate>
     <fieldset>
+      <legend>Auditor</legend>
+      <div id="auditors" class="pick-list" role="radiogroup" aria-label="Auditor"><p class="muted">Loading auditors…</p></div>
+      <p class="hint">Every auditor signs their own manifest and offers; this page checks each signature before showing an offer.</p>
+      <div id="offers" class="pick-list" role="radiogroup" aria-label="Offer"></div>
+    </fieldset>
+    <fieldset>
       <legend>What to examine</legend>
-      <label>Repository (HTTPS)<input id="repo" name="repo" type="url" required placeholder="https://github.com/org/repo" autocomplete="off" spellcheck="false"></label>
-      <p class="hint">Public repositories only: the examination reads public bytes.</p>
-      <label>Commit<input id="commit" name="commit" required pattern="[0-9a-f]{40}" placeholder="40 hex characters" autocomplete="off" spellcheck="false" class="mono"></label>
-      <p class="hint">The full 40-character id. The attestation will cover these exact bytes and nothing else: <code>git rev-parse HEAD</code></p>
+      <div id="kinds" class="row-inline"></div>
+      <div data-kind="source build">
+        <label>Repository (HTTPS)<input id="repo" name="repo" type="url" placeholder="https://github.com/org/repo" autocomplete="off" spellcheck="false"></label>
+        <p class="hint">Public repositories only: the examination reads public bytes.</p>
+        <label>Commit<input id="commit" name="commit" pattern="[0-9a-f]{40}" placeholder="40 hex characters" autocomplete="off" spellcheck="false" class="mono"></label>
+        <p class="hint">The full 40-character id. The attestation will cover these exact bytes and nothing else: <code>git rev-parse HEAD</code></p>
+      </div>
+      <div data-kind="build">
+        <label>Build file (HTTPS)<input id="file" type="url" placeholder="https://github.com/org/repo/releases/download/v1/app.apk" autocomplete="off" spellcheck="false" class="mono"></label>
+        <p class="hint">The released file. The hub hashes it now; the order binds that digest to the repository and commit below.</p>
+      </div>
+      <div data-kind="deployment discovery">
+        <label>Manifest URL (HTTPS)<input id="manifest-url" type="url" placeholder="https://relayer.example.org/manifest.json" autocomplete="off" spellcheck="false" class="mono"></label>
+        <p class="hint">The component’s signed manifest. The order binds the exact bytes served right now.</p>
+      </div>
       <label>Component id<input id="component" name="component" required pattern="onym:component:[a-z0-9-]{1,64}" placeholder="onym:component:my-relay" autocomplete="off" spellcheck="false" class="mono"></label>
       <p class="hint">How your component is named in the Onym network — the attestation’s subject.</p>
     </fieldset>
@@ -103,6 +122,6 @@
     <p class="small muted">Dimitrii · <a href="mailto:dubieroj@gmail.com">dubieroj@gmail.com</a> · orders are stored without cookies or tracking; see the privacy profile.</p>
   </div>
 </footer>
-<script type="application/json" id="strings">{"err_repo":"Enter an https:// repository URL without a port, query or #fragment.","err_commit":"The commit must be the full 40-character lowercase hex id.","err_component":"The component id looks like onym:component:my-relay (lowercase letters, digits, dashes).","err_scope":"Describe the scope (up to 8000 characters).","err_email":"Enter a valid email address.","err_seed":"The key must be 64 hex characters (an Ed25519 seed).","err_checks":"Tick both confirmations to continue.","err_crypto":"This browser cannot create Ed25519 keys. Use a current Chrome, Safari or Firefox.","err_manifest":"Could not load the auditor manifest: {err}","err_server":"The auditor did not accept the order: {err}","signing":"Signing…","sending":"Sending…","submit":"Sign and send the order"}</script>
+<script type="application/json" id="strings">{"err_repo":"Enter an https:// repository URL without a port, query or #fragment.","err_commit":"The commit must be the full 40-character lowercase hex id.","err_component":"The component id looks like onym:component:my-relay (lowercase letters, digits, dashes).","err_scope":"Describe the scope (up to 8000 characters).","err_email":"Enter a valid email address.","err_seed":"The key must be 64 hex characters (an Ed25519 seed).","err_checks":"Tick both confirmations to continue.","err_crypto":"This browser cannot create Ed25519 keys. Use a current Chrome, Safari or Firefox.","err_server":"The auditor did not accept the order: {err}","signing":"Signing…","sending":"Sending…","submit":"Sign and send the order","loading":"loading…","auditor_line":"{fp} · offers: {n}","err_auditor":"manifest does not verify — not shown","m_security-review":"Security review","m_conformance-run":"Conformance run","due_days":"report within {n} days","fee_probono":"pro bono","fee_fixed":"{amount} {currency}","fee_same":"the same whatever the result","first_yes":"sent to you before anything is published","first_no":"published without an advance copy","embargo_days":"a fail is held up to {n} days","embargo_none":"none","publish_embargo":"attestation public on issuance; a fail after the embargo","publish_now":"attestation public on issuance","links":"Binding terms:","l_method":"methodology","l_indep":"independence","l_liab":"liability","l_priv":"privacy","k_source":"a repository","k_deployment":"a running service","k_discovery":"a Discovery catalog","k_build":"an app build","err_url":"Enter an https:// manifest URL without a port, query or #fragment.","err_pin":"Could not read {url}: {err}","err_offer":"Choose an auditor and an offer.","hashing":"Hashing the build…","pinning":"Reading the manifest…","err_github":"This auditor reads repositories in the hub studio, which opens GitHub repositories: enter https://github.com/org/repo."}</script>
 </body>
 </html>

@@ -57,6 +57,11 @@ async function main() {
   const print = await fingerprint(manifest.operator);
   $("brand-name").textContent = manifest.displayName;
   if ($("h-name")) $("h-name").textContent = manifest.displayName;
+  // A hosted auditor who publishes offers can be ordered from.
+  if ($("order-cta") && manifest.offers.length) {
+    $("order-link").search = "?auditor=" + encodeURIComponent(manifest.componentId.replace(/^onym:component:/, ""));
+    $("order-cta").hidden = false;
+  }
   // The ring's textLength spreads the words evenly around the circle.
   $("seal-ringtext").textContent = `${manifest.displayName.toUpperCase()} · ONYM AUDIT SEAT · ED25519 ·`;
   $("f-key").textContent = print;

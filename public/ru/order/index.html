@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Заказать AI-аудит безопасности · Dimitrii</title>
-<meta name="description" content="Закажите проверку безопасности репозитория на точном коммите: её выполняет LLM под контролем человека, а результат подписывается как аттестация Onym.">
+<title>Заказать аудит · аудиторы Onym</title>
+<meta name="description" content="Закажите подписанную проверку любого компонента Onym — репозитория, работающего сервиса, каталога Discovery или сборки — у аудитора, которого выберете сами.">
 <meta name="color-scheme" content="light dark">
 <link rel="alternate" hreflang="en" href="https://foldy.io/audit/order/">
 <link rel="alternate" hreflang="ru" href="https://foldy.io/audit/ru/order/">
@@ -20,41 +20,60 @@
   <div class="wrap masthead-row">
     <a class="brand" href="../">
       <span class="brand-mark" aria-hidden="true"></span>
-      <span class="brand-text"><b id="brand-name">Dimitrii</b> <span class="muted">· аудитор сети Onym</span></span>
+      <span class="brand-text"><b>Аудиторы Onym</b> <span class="muted">· заказать аудит</span></span>
     </a>
     <div class="langs" role="navigation" aria-label="Язык"><a href="../../order/" hreflang="en" lang="en">EN</a><a href="../../ru/order/" hreflang="ru" lang="ru" aria-current="page">RU</a><a href="../../cnr/order/" hreflang="sr-Latn-ME" lang="sr-Latn-ME">CNR</a></div>
   </div>
-  <div class="rule-strip"><div class="wrap">Заказ проверки · аудитор сети Onym · <code>security-review-llm-v1</code></div></div>
+  <div class="rule-strip"><div class="wrap">Заказы по подписанным предложениям · место аудитора Onym · <code id="offer-code">onym:audit-profile:static-ed25519-v1</code></div></div>
 </header>
 
 <main class="wrap order-main">
   <section class="order-intro">
-    <p class="kicker">Бесплатно на время Sobor 2026</p>
-    <h1>Заказать AI-аудит безопасности</h1>
-    <p class="lede">Укажите репозиторий и коммит. Claude прочитает код ровно в этих байтах и подготовит находки, каждая с цитатой строк, на которых она основана; Dimitrii проверит каждую и подпишет то, за что готов отвечать, — в виде аттестации, которую может проверить любой.</p>
+    <p class="kicker">Любой аудитор, любой компонент</p>
+    <h1>Заказать аудит</h1>
+    <p class="lede">Выберите аудитора и одно из его подписанных предложений, укажите точные байты и подпишите заказ в браузере. Цена и условия раскрытия зафиксированы до начала проверки — оплата не может повлиять на результат.</p>
     <ol class="order-steps">
-      <li>Вы заполняете форму. Браузер создаёт ключ Ed25519 и подписывает им заказ — как владелец компонента и как плательщик.</li>
-      <li>Заказ ждёт в очереди. Прежде чем принять его, аудитор сверяется с <a href="../../policies/independence.md">политикой независимости</a>.</li>
-      <li>Движок проверяет код, аудитор разбирает каждую находку. Находки сначала получаете вы.</li>
+      <li>Вы выбираете аудитора и предложение и заполняете форму. Браузер создаёт ключ Ed25519 и подписывает им заказ — как владелец компонента и как плательщик.</li>
+      <li>Заказ ждёт в очереди этого аудитора. Перед тем как принять его, аудитор сверяет его со своей политикой независимости.</li>
+      <li>Аудитор проверяет ровно те байты, которые закреплены в заказе, и сначала присылает находки вам.</li>
       <li>Публикуется подписанная аттестация. Своим ключом вы можете опубликовать рядом подписанный ответ — его никто не сможет изменить.</li>
     </ol>
-    <dl class="terms">
-      <div><dt>Цена</dt><dd>бесплатно — одинаково при любом результате</dd></div>
-      <div><dt>Находки</dt><dd>приходят вам до любой публикации</dd></div>
-      <div><dt>Эмбарго</dt><dd>до 90 дней для эксплуатируемых находок</dd></div>
-      <div><dt>Публикация</dt><dd>аттестация — сразу при выпуске; провальная — после эмбарго</dd></div>
+    <dl class="terms" id="offer-terms">
+      <div><dt>Аудитор</dt><dd id="t-auditor">—</dd></div>
+      <div><dt>Цена</dt><dd id="t-fee">—</dd></div>
+      <div><dt>Срок отчёта</dt><dd id="t-due">—</dd></div>
+      <div><dt>Находки</dt><dd id="t-first">—</dd></div>
+      <div><dt>Эмбарго</dt><dd id="t-embargo">—</dd></div>
+      <div><dt>Публикация</dt><dd id="t-publish">—</dd></div>
       <div><dt>Что нельзя купить</dt><dd>результат, молчание или отсрочку</dd></div>
     </dl>
-    <p class="small muted">Обязывающие условия (на английском): <a href="../../methodology/security-review-llm.md">методика</a> · <a href="../../policies/liability.md">ответственность</a> · <a href="../../privacy.md">приватность</a> · <a href="../../offers/security-review-llm-source.json">подписанный оффер</a>.</p>
+    <p class="small muted" id="t-links"></p>
   </section>
 
   <form id="order-form" class="order-form" novalidate>
     <fieldset>
+      <legend>Аудитор</legend>
+      <div id="auditors" class="pick-list" role="radiogroup" aria-label="Аудитор"><p class="muted">Загружаю аудиторов…</p></div>
+      <p class="hint">Каждый аудитор сам подписывает свой манифест и предложения; страница проверяет каждую подпись, прежде чем показать предложение.</p>
+      <div id="offers" class="pick-list" role="radiogroup" aria-label="Предложение"></div>
+    </fieldset>
+    <fieldset>
       <legend>Что проверить</legend>
-      <label>Репозиторий (HTTPS)<input id="repo" name="repo" type="url" required placeholder="https://github.com/org/repo" autocomplete="off" spellcheck="false"></label>
-      <p class="hint">Только публичные репозитории: проверка читает публичные байты.</p>
-      <label>Коммит<input id="commit" name="commit" required pattern="[0-9a-f]{40}" placeholder="40 hex characters" autocomplete="off" spellcheck="false" class="mono"></label>
-      <p class="hint">Полный идентификатор из 40 символов. Аттестация будет касаться ровно этих байтов и ничего больше: <code>git rev-parse HEAD</code></p>
+      <div id="kinds" class="row-inline"></div>
+      <div data-kind="source build">
+        <label>Репозиторий (HTTPS)<input id="repo" name="repo" type="url" placeholder="https://github.com/org/repo" autocomplete="off" spellcheck="false"></label>
+        <p class="hint">Только публичные репозитории: проверка читает публичные байты.</p>
+        <label>Коммит<input id="commit" name="commit" pattern="[0-9a-f]{40}" placeholder="40 hex characters" autocomplete="off" spellcheck="false" class="mono"></label>
+        <p class="hint">Полный идентификатор из 40 символов. Аттестация будет касаться ровно этих байтов и ничего больше: <code>git rev-parse HEAD</code></p>
+      </div>
+      <div data-kind="build">
+        <label>Файл сборки (HTTPS)<input id="file" type="url" placeholder="https://github.com/org/repo/releases/download/v1/app.apk" autocomplete="off" spellcheck="false" class="mono"></label>
+        <p class="hint">Опубликованный файл. Хаб сразу считает его хеш; заказ привязывает этот хеш к репозиторию и коммиту ниже.</p>
+      </div>
+      <div data-kind="deployment discovery">
+        <label>URL манифеста (HTTPS)<input id="manifest-url" type="url" placeholder="https://relayer.example.org/manifest.json" autocomplete="off" spellcheck="false" class="mono"></label>
+        <p class="hint">Подписанный манифест компонента. Заказ привязывается к байтам, которые отдаются прямо сейчас.</p>
+      </div>
       <label>Идентификатор компонента<input id="component" name="component" required pattern="onym:component:[a-z0-9-]{1,64}" placeholder="onym:component:my-relay" autocomplete="off" spellcheck="false" class="mono"></label>
       <p class="hint">Как ваш компонент называется в сети Onym — это субъект аттестации.</p>
     </fieldset>
@@ -103,6 +122,6 @@
     <p class="small muted">Dimitrii · <a href="mailto:dubieroj@gmail.com">dubieroj@gmail.com</a> · заказы хранятся без cookies и отслеживания; см. профиль приватности.</p>
   </div>
 </footer>
-<script type="application/json" id="strings">{"err_repo":"Укажите адрес репозитория с https:// — без порта, параметров и #фрагмента.","err_commit":"Коммит — полный идентификатор из 40 шестнадцатеричных символов в нижнем регистре.","err_component":"Идентификатор выглядит так: onym:component:my-relay (строчные латинские буквы, цифры, дефисы).","err_scope":"Опишите область проверки (до 8000 символов).","err_email":"Укажите корректный email.","err_seed":"Ключ — 64 шестнадцатеричных символа (seed Ed25519).","err_checks":"Отметьте оба подтверждения.","err_crypto":"Этот браузер не умеет создавать ключи Ed25519. Используйте свежий Chrome, Safari или Firefox.","err_manifest":"Не удалось загрузить манифест аудитора: {err}","err_server":"Аудитор не принял заказ: {err}","signing":"Подписываю…","sending":"Отправляю…","submit":"Подписать и отправить заказ"}</script>
+<script type="application/json" id="strings">{"err_repo":"Укажите адрес репозитория с https:// — без порта, параметров и #фрагмента.","err_commit":"Коммит — полный идентификатор из 40 шестнадцатеричных символов в нижнем регистре.","err_component":"Идентификатор выглядит так: onym:component:my-relay (строчные латинские буквы, цифры, дефисы).","err_scope":"Опишите область проверки (до 8000 символов).","err_email":"Укажите корректный email.","err_seed":"Ключ — 64 шестнадцатеричных символа (seed Ed25519).","err_checks":"Отметьте оба подтверждения.","err_crypto":"Этот браузер не умеет создавать ключи Ed25519. Используйте свежий Chrome, Safari или Firefox.","err_server":"Аудитор не принял заказ: {err}","signing":"Подписываю…","sending":"Отправляю…","submit":"Подписать и отправить заказ","loading":"загружаю…","auditor_line":"{fp} · предложений: {n}","err_auditor":"манифест не проходит проверку — не показан","m_security-review":"Проверка безопасности","m_conformance-run":"Проверка соответствия","due_days":"отчёт за {n} дн.","fee_probono":"бесплатно","fee_fixed":"{amount} {currency}","fee_same":"одинаково при любом результате","first_yes":"присылаются вам до любой публикации","first_no":"публикуются без предварительной копии","embargo_days":"провал придерживается до {n} дней","embargo_none":"нет","publish_embargo":"аттестация публикуется сразу; провал — после эмбарго","publish_now":"аттестация публикуется сразу","links":"Обязывающие условия:","l_method":"методика","l_indep":"независимость","l_liab":"ответственность","l_priv":"приватность","k_source":"репозиторий","k_deployment":"работающий сервис","k_discovery":"каталог Discovery","k_build":"сборка приложения","err_url":"Укажите https:// адрес манифеста без порта, параметров и #фрагмента.","err_pin":"Не удалось прочитать {url}: {err}","err_offer":"Выберите аудитора и предложение.","hashing":"Считаю хеш сборки…","pinning":"Читаю манифест…","err_github":"Этот аудитор читает репозитории в студии хаба, которая открывает репозитории GitHub: укажите https://github.com/org/repo."}</script>
 </body>
 </html>

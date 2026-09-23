@@ -17,11 +17,11 @@
   <div class="wrap masthead-row">
     <a class="brand" href="{{home}}">
       <span class="brand-mark" aria-hidden="true"></span>
-      <span class="brand-text"><b id="brand-name">Dimitrii</b> <span class="muted">· {{brand_seat}}</span></span>
+      <span class="brand-text"><b>{{o_brand}}</b> <span class="muted">· {{o_strip}}</span></span>
     </a>
     <div class="langs" role="navigation" aria-label="{{lang_label}}">{{switcher}}</div>
   </div>
-  <div class="rule-strip"><div class="wrap">{{o_strip}} · <code>security-review-llm-v1</code></div></div>
+  <div class="rule-strip"><div class="wrap">{{o_rule}} · <code id="offer-code">onym:audit-profile:static-ed25519-v1</code></div></div>
 </header>
 
 <main class="wrap order-main">
@@ -35,23 +35,42 @@
       <li>{{o_step3}}</li>
       <li>{{o_step4}}</li>
     </ol>
-    <dl class="terms">
-      <div><dt>{{o_t_fee}}</dt><dd>{{o_t_fee_v}}</dd></div>
-      <div><dt>{{o_t_first}}</dt><dd>{{o_t_first_v}}</dd></div>
-      <div><dt>{{o_t_embargo}}</dt><dd>{{o_t_embargo_v}}</dd></div>
-      <div><dt>{{o_t_publish}}</dt><dd>{{o_t_publish_v}}</dd></div>
+    <dl class="terms" id="offer-terms">
+      <div><dt>{{o_t_auditor}}</dt><dd id="t-auditor">—</dd></div>
+      <div><dt>{{o_t_fee}}</dt><dd id="t-fee">—</dd></div>
+      <div><dt>{{o_t_due}}</dt><dd id="t-due">—</dd></div>
+      <div><dt>{{o_t_first}}</dt><dd id="t-first">—</dd></div>
+      <div><dt>{{o_t_embargo}}</dt><dd id="t-embargo">—</dd></div>
+      <div><dt>{{o_t_publish}}</dt><dd id="t-publish">—</dd></div>
       <div><dt>{{o_t_verdict}}</dt><dd>{{o_t_verdict_v}}</dd></div>
     </dl>
-    <p class="small muted">{{o_terms_links}}</p>
+    <p class="small muted" id="t-links"></p>
   </section>
 
   <form id="order-form" class="order-form" novalidate>
     <fieldset>
+      <legend>{{o_f_auditor}}</legend>
+      <div id="auditors" class="pick-list" role="radiogroup" aria-label="{{o_f_auditor}}"><p class="muted">{{o_loading}}</p></div>
+      <p class="hint">{{o_f_auditor_h}}</p>
+      <div id="offers" class="pick-list" role="radiogroup" aria-label="{{o_f_offer}}"></div>
+    </fieldset>
+    <fieldset>
       <legend>{{o_f_artifact}}</legend>
-      <label>{{o_f_repo}}<input id="repo" name="repo" type="url" required placeholder="https://github.com/org/repo" autocomplete="off" spellcheck="false"></label>
-      <p class="hint">{{o_f_repo_h}}</p>
-      <label>{{o_f_commit}}<input id="commit" name="commit" required pattern="[0-9a-f]{40}" placeholder="40 hex characters" autocomplete="off" spellcheck="false" class="mono"></label>
-      <p class="hint">{{o_f_commit_h}} <code>git rev-parse HEAD</code></p>
+      <div id="kinds" class="row-inline"></div>
+      <div data-kind="source build">
+        <label>{{o_f_repo}}<input id="repo" name="repo" type="url" placeholder="https://github.com/org/repo" autocomplete="off" spellcheck="false"></label>
+        <p class="hint">{{o_f_repo_h}}</p>
+        <label>{{o_f_commit}}<input id="commit" name="commit" pattern="[0-9a-f]{40}" placeholder="40 hex characters" autocomplete="off" spellcheck="false" class="mono"></label>
+        <p class="hint">{{o_f_commit_h}} <code>git rev-parse HEAD</code></p>
+      </div>
+      <div data-kind="build">
+        <label>{{o_f_file}}<input id="file" type="url" placeholder="https://github.com/org/repo/releases/download/v1/app.apk" autocomplete="off" spellcheck="false" class="mono"></label>
+        <p class="hint">{{o_f_file_h}}</p>
+      </div>
+      <div data-kind="deployment discovery">
+        <label>{{o_f_manifest}}<input id="manifest-url" type="url" placeholder="https://relayer.example.org/manifest.json" autocomplete="off" spellcheck="false" class="mono"></label>
+        <p class="hint">{{o_f_manifest_h}}</p>
+      </div>
       <label>{{o_f_component}}<input id="component" name="component" required pattern="onym:component:[a-z0-9-]{1,64}" placeholder="onym:component:my-relay" autocomplete="off" spellcheck="false" class="mono"></label>
       <p class="hint">{{o_f_component_h}}</p>
     </fieldset>

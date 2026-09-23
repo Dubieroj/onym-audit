@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Naručite AI bezbjednosnu reviziju · Dimitrii</title>
-<meta name="description" content="Naručite bezbjednosnu reviziju repozitorijuma na tačnom komitu: radi je LLM uz ljudsku provjeru, a rezultat se potpisuje kao Onym atestacija.">
+<title>Naruči reviziju · Onym revizori</title>
+<meta name="description" content="Naručite potpisani pregled bilo koje Onym komponente — repozitorijuma, servisa u radu, Discovery kataloga ili build-a — od revizora kojeg sami izaberete.">
 <meta name="color-scheme" content="light dark">
 <link rel="alternate" hreflang="en" href="https://foldy.io/audit/order/">
 <link rel="alternate" hreflang="ru" href="https://foldy.io/audit/ru/order/">
@@ -20,41 +20,60 @@
   <div class="wrap masthead-row">
     <a class="brand" href="../">
       <span class="brand-mark" aria-hidden="true"></span>
-      <span class="brand-text"><b id="brand-name">Dimitrii</b> <span class="muted">· revizor mreže Onym</span></span>
+      <span class="brand-text"><b>Onym revizori</b> <span class="muted">· naruči reviziju</span></span>
     </a>
     <div class="langs" role="navigation" aria-label="Jezik"><a href="../../order/" hreflang="en" lang="en">EN</a><a href="../../ru/order/" hreflang="ru" lang="ru">RU</a><a href="../../cnr/order/" hreflang="sr-Latn-ME" lang="sr-Latn-ME" aria-current="page">CNR</a></div>
   </div>
-  <div class="rule-strip"><div class="wrap">Narudžba pregleda · revizor mreže Onym · <code>security-review-llm-v1</code></div></div>
+  <div class="rule-strip"><div class="wrap">Narudžbe po potpisanim ponudama · Onym mjesto revizora · <code id="offer-code">onym:audit-profile:static-ed25519-v1</code></div></div>
 </header>
 
 <main class="wrap order-main">
   <section class="order-intro">
-    <p class="kicker">Besplatno tokom Sobor 2026</p>
-    <h1>Naručite AI bezbjednosnu reviziju</h1>
-    <p class="lede">Navedite repozitorijum i komit. Claude čita kod tačno u tim bajtovima i priprema nalaze, svaki s citatom linija na kojima počiva; Dimitrii provjerava svaki i potpisuje ono iza čega stoji — kao atestaciju koju svako može provjeriti.</p>
+    <p class="kicker">Bilo koji revizor, bilo koja komponenta</p>
+    <h1>Naruči reviziju</h1>
+    <p class="lede">Izaberite revizora i jednu od njegovih potpisanih ponuda, navedite tačne bajtove i potpišite narudžbu u pregledaču. Cijena i uslovi objave utvrđeni su prije pregleda — ono što platite ne može promijeniti rezultat.</p>
     <ol class="order-steps">
-      <li>Popunjavate formular. Pregledač pravi Ed25519 ključ i njime potpisuje narudžbu — kao vlasnik komponente i kao strana koja plaća.</li>
-      <li>Narudžba čeka u redu. Prije prihvatanja, revizor je provjerava prema <a href="../../policies/independence.md">politici nezavisnosti</a>.</li>
-      <li>Mehanizam pregleda kod, revizor provjerava svaki nalaz. Nalaze prvo dobijate vi.</li>
+      <li>Birate revizora i ponudu i popunjavate formular. Pregledač pravi Ed25519 ključ i njime potpisuje narudžbu — kao vlasnik komponente i kao platilac.</li>
+      <li>Narudžba čeka u redu tog revizora. Prije prihvatanja revizor je provjerava prema svojoj politici nezavisnosti.</li>
+      <li>Revizor pregleda tačno bajtove koje narudžba fiksira i nalaze prvo šalje vama.</li>
       <li>Objavljuje se potpisana atestacija. Svojim ključem možete pored nje objaviti potpisani odgovor koji niko ne može izmijeniti.</li>
     </ol>
-    <dl class="terms">
-      <div><dt>Cijena</dt><dd>besplatno — isto bez obzira na rezultat</dd></div>
-      <div><dt>Nalazi</dt><dd>stižu vama prije bilo kakve objave</dd></div>
-      <div><dt>Embargo</dt><dd>do 90 dana za iskoristive nalaze</dd></div>
-      <div><dt>Objava</dt><dd>atestacija javna pri izdavanju; neuspjeh nakon embarga</dd></div>
+    <dl class="terms" id="offer-terms">
+      <div><dt>Revizor</dt><dd id="t-auditor">—</dd></div>
+      <div><dt>Cijena</dt><dd id="t-fee">—</dd></div>
+      <div><dt>Rok izvještaja</dt><dd id="t-due">—</dd></div>
+      <div><dt>Nalazi</dt><dd id="t-first">—</dd></div>
+      <div><dt>Embargo</dt><dd id="t-embargo">—</dd></div>
+      <div><dt>Objava</dt><dd id="t-publish">—</dd></div>
       <div><dt>Šta se ne može kupiti</dt><dd>rezultat, ćutanje ni odlaganje</dd></div>
     </dl>
-    <p class="small muted">Obavezujući uslovi (na engleskom): <a href="../../methodology/security-review-llm.md">metodologija</a> · <a href="../../policies/liability.md">odgovornost</a> · <a href="../../privacy.md">privatnost</a> · <a href="../../offers/security-review-llm-source.json">potpisana ponuda</a>.</p>
+    <p class="small muted" id="t-links"></p>
   </section>
 
   <form id="order-form" class="order-form" novalidate>
     <fieldset>
+      <legend>Revizor</legend>
+      <div id="auditors" class="pick-list" role="radiogroup" aria-label="Revizor"><p class="muted">Učitavam revizore…</p></div>
+      <p class="hint">Svaki revizor sam potpisuje svoj manifest i ponude; stranica provjerava svaki potpis prije nego što prikaže ponudu.</p>
+      <div id="offers" class="pick-list" role="radiogroup" aria-label="Ponuda"></div>
+    </fieldset>
+    <fieldset>
       <legend>Šta pregledati</legend>
-      <label>Repozitorijum (HTTPS)<input id="repo" name="repo" type="url" required placeholder="https://github.com/org/repo" autocomplete="off" spellcheck="false"></label>
-      <p class="hint">Samo javni repozitorijumi: pregled čita javne bajtove.</p>
-      <label>Komit<input id="commit" name="commit" required pattern="[0-9a-f]{40}" placeholder="40 hex characters" autocomplete="off" spellcheck="false" class="mono"></label>
-      <p class="hint">Puni identifikator od 40 znakova. Atestacija će pokrivati tačno te bajtove i ništa drugo: <code>git rev-parse HEAD</code></p>
+      <div id="kinds" class="row-inline"></div>
+      <div data-kind="source build">
+        <label>Repozitorijum (HTTPS)<input id="repo" name="repo" type="url" placeholder="https://github.com/org/repo" autocomplete="off" spellcheck="false"></label>
+        <p class="hint">Samo javni repozitorijumi: pregled čita javne bajtove.</p>
+        <label>Komit<input id="commit" name="commit" pattern="[0-9a-f]{40}" placeholder="40 hex characters" autocomplete="off" spellcheck="false" class="mono"></label>
+        <p class="hint">Puni identifikator od 40 znakova. Atestacija će pokrivati tačno te bajtove i ništa drugo: <code>git rev-parse HEAD</code></p>
+      </div>
+      <div data-kind="build">
+        <label>Fajl build-a (HTTPS)<input id="file" type="url" placeholder="https://github.com/org/repo/releases/download/v1/app.apk" autocomplete="off" spellcheck="false" class="mono"></label>
+        <p class="hint">Objavljeni fajl. Hub odmah računa njegov heš; narudžba vezuje taj heš za repozitorijum i komit ispod.</p>
+      </div>
+      <div data-kind="deployment discovery">
+        <label>URL manifesta (HTTPS)<input id="manifest-url" type="url" placeholder="https://relayer.example.org/manifest.json" autocomplete="off" spellcheck="false" class="mono"></label>
+        <p class="hint">Potpisani manifest komponente. Narudžba vezuje bajtove koji se serviraju upravo sada.</p>
+      </div>
       <label>Identifikator komponente<input id="component" name="component" required pattern="onym:component:[a-z0-9-]{1,64}" placeholder="onym:component:my-relay" autocomplete="off" spellcheck="false" class="mono"></label>
       <p class="hint">Kako se vaša komponenta zove u mreži Onym — to je subjekt atestacije.</p>
     </fieldset>
@@ -103,6 +122,6 @@
     <p class="small muted">Dimitrii · <a href="mailto:dubieroj@gmail.com">dubieroj@gmail.com</a> · narudžbe se čuvaju bez kolačića i praćenja; vidi profil privatnosti.</p>
   </div>
 </footer>
-<script type="application/json" id="strings">{"err_repo":"Unesite adresu repozitorijuma s https:// — bez porta, parametara i #fragmenta.","err_commit":"Komit je puni identifikator od 40 heksadecimalnih znakova, malim slovima.","err_component":"Identifikator izgleda ovako: onym:component:my-relay (mala slova, cifre, crtice).","err_scope":"Opišite obim pregleda (do 8000 znakova).","err_email":"Unesite ispravnu email adresu.","err_seed":"Ključ je 64 heksadecimalna znaka (Ed25519 seed).","err_checks":"Označite obje potvrde.","err_crypto":"Ovaj pregledač ne može da napravi Ed25519 ključeve. Koristite noviji Chrome, Safari ili Firefox.","err_manifest":"Manifest revizora nije mogao da se učita: {err}","err_server":"Revizor nije prihvatio narudžbu: {err}","signing":"Potpisujem…","sending":"Šaljem…","submit":"Potpiši i pošalji narudžbu"}</script>
+<script type="application/json" id="strings">{"err_repo":"Unesite adresu repozitorijuma s https:// — bez porta, parametara i #fragmenta.","err_commit":"Komit je puni identifikator od 40 heksadecimalnih znakova, malim slovima.","err_component":"Identifikator izgleda ovako: onym:component:my-relay (mala slova, cifre, crtice).","err_scope":"Opišite obim pregleda (do 8000 znakova).","err_email":"Unesite ispravnu email adresu.","err_seed":"Ključ je 64 heksadecimalna znaka (Ed25519 seed).","err_checks":"Označite obje potvrde.","err_crypto":"Ovaj pregledač ne može da napravi Ed25519 ključeve. Koristite noviji Chrome, Safari ili Firefox.","err_server":"Revizor nije prihvatio narudžbu: {err}","signing":"Potpisujem…","sending":"Šaljem…","submit":"Potpiši i pošalji narudžbu","loading":"učitavam…","auditor_line":"{fp} · ponuda: {n}","err_auditor":"manifest ne prolazi provjeru — nije prikazan","m_security-review":"Bezbjednosna revizija","m_conformance-run":"Provjera usklađenosti","due_days":"izvještaj za {n} dana","fee_probono":"besplatno","fee_fixed":"{amount} {currency}","fee_same":"isto bez obzira na rezultat","first_yes":"šalju se vama prije bilo kakve objave","first_no":"objavljuju se bez prethodne kopije","embargo_days":"neuspjeh se zadržava do {n} dana","embargo_none":"nema","publish_embargo":"atestacija javna odmah; neuspjeh nakon embarga","publish_now":"atestacija javna odmah","links":"Obavezujući uslovi:","l_method":"metodologija","l_indep":"nezavisnost","l_liab":"odgovornost","l_priv":"privatnost","k_source":"repozitorijum","k_deployment":"servis u radu","k_discovery":"Discovery katalog","k_build":"build aplikacije","err_url":"Unesite https:// adresu manifesta bez porta, parametara i #fragmenta.","err_pin":"Nije moguće pročitati {url}: {err}","err_offer":"Izaberite revizora i ponudu.","hashing":"Računam heš build-a…","pinning":"Čitam manifest…","err_github":"Ovaj revizor čita repozitorijume u studiju huba, koji otvara GitHub repozitorijume: unesite https://github.com/org/repo."}</script>
 </body>
 </html>

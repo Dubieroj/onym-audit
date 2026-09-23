@@ -61,7 +61,7 @@ func own(slug, p, content string) audit.DocRef {
 
 // manifest builds what the studio builds: shared profile, scale and
 // methodology; the auditor's own policies.
-func manifest(t *testing.T, slug string, statusKey string, k ed25519.PrivateKey) (json.RawMessage, map[string]string) {
+func manifest(t *testing.T, slug string, statusKey string, k ed25519.PrivateKey, offers ...string) (json.RawMessage, map[string]string) {
 	docs := map[string]string{"policies/independence.md": "independent", "policies/unsolicited.md": "notice first", "policies/liability.md": "opinion only", "policies/privacy.md": "no logs"}
 	m := audit.AuditorManifest{
 		Version: 1, ComponentID: "onym:component:" + slug, Seat: "audit", Operator: sig.KeyOf(k.Public().(ed25519.PublicKey)),
@@ -69,7 +69,7 @@ func manifest(t *testing.T, slug string, statusKey string, k ed25519.PrivateKey)
 		Methodologies:      []audit.Methodology{{Class: audit.SecurityReview, Specification: shared("methodology/security-review-manual.md", "manual"), ScopesOffered: []string{"source"}}},
 		IndependencePolicy: own(slug, "policies/independence.md", docs["policies/independence.md"]), UnsolicitedPolicy: own(slug, "policies/unsolicited.md", docs["policies/unsolicited.md"]),
 		Liability: own(slug, "policies/liability.md", docs["policies/liability.md"]), SeverityScale: shared("severity-v1.json", `{"s":1}`), PrivacyProfile: own(slug, "policies/privacy.md", docs["policies/privacy.md"]),
-		StatusEndpoint: pubBase + "a/" + slug + "/status.json", StatusKey: sig.Key(statusKey), Offers: []string{}, ValidUntil: "2027-09-24T00:00:00Z",
+		StatusEndpoint: pubBase + "a/" + slug + "/status.json", StatusKey: sig.Key(statusKey), Offers: append([]string{}, offers...), ValidUntil: "2027-09-24T00:00:00Z",
 	}
 	raw, err := audit.SignDoc(m, k)
 	if err != nil {

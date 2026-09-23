@@ -105,12 +105,18 @@ published at <https://foldy.io/audit/methodology/security-review-llm-prompt.md>.
 
 ## 8. Order an examination, as a subject would
 
-<https://foldy.io/audit/order/> (also `/ru/order/`, `/cnr/order/`): the page
-creates an Ed25519 key in your browser, signs a real `AuditOrder` as subject
-and sponsor, and queues it. The server verifies both signatures and that the
-scope text hashes to what the order pins. The auditor then works it in the
-local console (`bin/onym-audit console`), which countersigns the order on
-signing and publishes it at `orders/<orderId>.json` with the attestation.
+<https://foldy.io/audit/order/> (also `/ru/order/`, `/cnr/order/`): pick any
+auditor — this seat or any auditor on the hub — and one of their signed
+offers. The page pins the exact bytes, creates an Ed25519 key in your
+browser, signs a real `AuditOrder` as subject and sponsor, and queues it
+with the auditor. The server verifies both signatures, that the order takes
+the offer exactly (methodology, fee model, disclosure terms), and that the
+scope text hashes to what the order pins. This seat works its orders in the
+local console (`bin/onym-audit console`); a hub auditor takes them from the
+studio's dashboard. Either way the auditor countersigns the order on
+signing, and it is published at `orders/<orderId>.json` with the
+attestation; under an order that embargoes failures, the hub holds a `fail`
+until the embargo ends.
 
 ## 9. Become an auditor yourself
 
