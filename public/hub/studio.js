@@ -6,7 +6,8 @@
 // IndexedDB; the phrase is not stored and the hub never sees a key. Every
 // document is built to the static-Ed25519 profile and signed here.
 import { parseStrict, canonical, plain, digest, fingerprint, verifySig, verifyAttestation } from "../verify.js";
-import { normalize, check, generate, derive } from "../onym-id.js";
+import { normalize, check, generate, derive, orderKey, accountOfKey } from "../onym-id.js";
+import { RE as ORE, auditors as orderAuditors, load as loadAuditor, kindsOf, feeText, pin, subjectOf, newOrderID, sign as signOrder, send as sendOrder } from "../order-core.js";
 
 const $ = (id) => document.getElementById(id);
 const ROOT = new URL("../", import.meta.url); // …/audit/
@@ -66,17 +67,19 @@ const getText = async (url) => {
 
 function idb() {
   return new Promise((res, rej) => {
-    const req = indexedDB.open("onym-audit-app", 1);
-    req.onupgradeneeded = () => req.result.createObjectStore("identity");
+    const req = indexedDB.open("onym-audit-app", 2);
+    req.onupgradeneeded = () => {
+      for (const s of ["identity", "orders"]) if (!req.result.objectStoreNames.contains(s)) req.result.createObjectStore(s);
+    };
     req.onsuccess = () => res(req.result);
     req.onerror = () => rej(req.error);
   });
 }
-async function idbDo(mode, fn) {
+async function idbDo(mode, fn, store = "identity") {
   const d = await idb();
   return new Promise((res, rej) => {
-    const tx = d.transaction("identity", mode);
-    const r = fn(tx.objectStore("identity"));
+    const tx = d.transaction(store, mode);
+    const r = fn(tx.objectStore(store));
     tx.oncomplete = () => res(r?.result);
     tx.onerror = () => rej(tx.error);
   });
@@ -84,6 +87,11 @@ async function idbDo(mode, fn) {
 const loadIdentity = () => idbDo("readonly", (s) => s.get("me")).catch(() => null);
 const saveIdentity = (v) => idbDo("readwrite", (s) => s.put(v, "me"));
 const forgetIdentity = () => idbDo("readwrite", (s) => s.delete("me"));
+// The orders placed from this browser, each tagged with the identity that
+// placed it: per-order keys make them unlinkable, so only this list ties
+// them together, and it never leaves the browser.
+const myOrders = () => idbDo("readonly", (s) => s.getAll(), "orders").then((all) => (all || []).filter((o) => o.account === me.account));
+const saveOrder = (o) => idbDo("readwrite", (s) => s.put(o, o.orderId), "orders");
 
 
 // signDoc returns the published bytes: canonical JSON with the signature
@@ -157,22 +165,28 @@ async function buildOffers(methodologies, fee, id) {
 // ---------------------------------------------------------------- views
 
 let me = null; // {priv, key, account, seedKey} and, once registered, {slug, componentId, name, base}
-const views = ["login", "newphrase", "onboard", "dash", "audit", "library"];
+const views = ["login", "newphrase", "onboard", "dash", "audit", "customer", "library"];
+let wantTab = "auditor";
 function show(v) {
-  if (["onboard", "dash", "audit"].includes(v) && !me) v = "login";
+  if (["onboard", "dash", "audit", "customer"].includes(v) && !me) v = "login";
   for (const x of views) $("v-" + x).hidden = x !== v;
-  const tab = v === "library" ? "library" : "auditor";
+  const tab = v === "library" || v === "customer" ? v : v === "login" || v === "newphrase" ? wantTab : "auditor";
   for (const b of document.querySelectorAll("[data-tab]")) b.classList.toggle("on", b.dataset.tab === tab);
   window.scrollTo(0, 0);
   if (v === "dash") dash();
   if (v === "audit") startAudit();
   if (v === "login") listAuditors();
   if (v === "library") library();
+  if (v === "customer") customer();
   if (v === "onboard") $("ob-account").textContent = me.account;
   whoChip();
 }
-const home = () => show(!me ? "login" : me.slug ? "dash" : "onboard");
-for (const b of document.querySelectorAll("[data-tab]")) b.addEventListener("click", () => (b.dataset.tab === "library" ? show("library") : home()));
+const home = () => show(!me ? "login" : wantTab === "customer" ? "customer" : me.slug ? "dash" : "onboard");
+for (const b of document.querySelectorAll("[data-tab]")) b.addEventListener("click", () => {
+  if (b.dataset.tab === "library") return show("library");
+  wantTab = b.dataset.tab;
+  home();
+});
 async function whoChip() {
   $("who").hidden = !me;
   if (me) $("who").textContent = (me.name ? me.name + " · " : "") + me.account.slice(0, 4) + "…" + me.account.slice(-4);
@@ -453,12 +467,14 @@ $("d-export").addEventListener("click", guard(async () => {
   a.click();
   a.remove();
 }));
-$("d-forget").addEventListener("click", guard(async () => {
+const signOut = guard(async () => {
   if (!confirm(t("confirm_logout"))) return;
   await forgetIdentity();
   me = null;
   show("login");
-}));
+});
+$("d-forget").addEventListener("click", signOut);
+$("who").addEventListener("click", signOut);
 
 // ---------------------------------------------------------------- audit
 
@@ -873,6 +889,158 @@ $("a-publish").addEventListener("click", guard(async () => {
   done.hidden = false;
   done.scrollIntoView({ behavior: "smooth" });
 }));
+
+// ---------------------------------------------------------------- customer
+
+let AUD = null, cAud = null, cOffer = null, cKind = null;
+
+async function customer() {
+  $("c-form").hidden = true;
+  renderMine().catch((e) => $("c-mine").replaceChildren(el("p", { class: "bad", text: e.message })));
+  $("c-list").replaceChildren(el("p", { class: "muted", text: t("loading") }));
+  AUD = await orderAuditors(ROOT);
+  renderAuditors();
+}
+
+// renderAuditors sorts by public facts only — fulfilled orders or distinct
+// customers, recountable from each auditor's published orders — and says
+// so: they are not a measure of quality, and keys are free.
+function renderAuditors() {
+  const q = $("c-q").value.trim().toLowerCase(), by = $("c-sort").value;
+  const rows = AUD.filter((a) => !q || [a.name, a.slug, a.fingerprint, accountOfKey(a.operator)].some((x) => (x || "").toLowerCase().includes(q)))
+    .sort((a, b) => (by === "name" ? 0 : b[by] - a[by]) || a.name.localeCompare(b.name));
+  const count = by === "customers" ? "customers" : "completedOrders";
+  $("c-list").replaceChildren(...(rows.length ? rows.map((a) => el("article", { class: "entry" },
+    el("div", { class: "entry-side" }, el("span", { class: "stamp", text: String(a[count]) }), el("span", { class: "state", text: t(count === "customers" ? "c_customers" : "c_orders") })),
+    el("div", {}, el("h3", {}, el("a", { href: a.page, target: "_blank", rel: "noopener", text: a.name })),
+      el("p", { class: "small mono", text: `${accountOfKey(a.operator)} · ${a.fingerprint}` }),
+      el("p", { class: "who", text: t("c_facts", { orders: a.completedOrders, customers: a.customers, atts: a.attestations }) }),
+      el("p", { class: "row-inline" }, el("button", { class: "btn btn-ink small-btn", text: t("c_order"), onclick: guard(() => orderFrom(a)) })))))
+    : [el("p", { class: "empty", text: t("c_none") })]));
+}
+$("c-q").addEventListener("input", () => AUD && renderAuditors());
+$("c-sort").addEventListener("change", () => AUD && renderAuditors());
+
+function pickOne(box, card) {
+  for (const c of box.children) c.classList.toggle("on", c === card);
+}
+
+async function orderFrom(a) {
+  await loadAuditor(a);
+  if (!a.offerDocs.length) throw new Error(t("c_no_offers"));
+  cAud = a;
+  $("c-to").textContent = t("c_to", { name: a.manifest.displayName });
+  const box = $("c-offers");
+  box.replaceChildren(...a.offerDocs.map((o) => {
+    const c = el("button", { type: "button", class: "choice", onclick: () => pickCOffer(o, c) },
+      el("b", { text: t("m_" + o.methodologyClass) }), el("span", { text: `${feeText(o, t)} · ${t("due_days", { n: o.timelineDays })} · ${t("fee_same")}` }), el("code", { class: "small", text: o.offerId }));
+    return c;
+  }));
+  box.firstChild.click();
+  $("c-error").hidden = true;
+  $("c-form").hidden = false;
+  $("c-form").scrollIntoView({ behavior: "smooth" });
+}
+
+function pickCOffer(o, card) {
+  cOffer = o;
+  pickOne($("c-offers"), card);
+  const ks = kindsOf(cAud.manifest, o);
+  $("c-kinds").replaceChildren(...ks.map((k) => el("label", { class: "radio" }, el("input", { type: "radio", name: "c-kind", value: k, onchange: () => pickCKind(k) }), " ", t("k_" + k))));
+  $("c-kinds").querySelector("input").checked = true;
+  pickCKind(ks[0]);
+}
+
+function pickCKind(k) {
+  cKind = k;
+  for (const d of document.querySelectorAll("[data-ckind]")) d.hidden = !d.dataset.ckind.split(" ").includes(k);
+}
+
+// The order is signed with a key of its own, derived from the phrase for
+// this order only: no key file to keep, and nothing links it to the
+// auditor key or to the holder's other orders.
+$("c-form").addEventListener("submit", guard(async (ev) => {
+  ev.preventDefault();
+  const err = $("c-error");
+  err.hidden = true;
+  const bad = (m) => { err.textContent = m; err.hidden = false; };
+  const component = $("c-component").value.trim(), email = $("c-email").value.trim();
+  if (!ORE.component.test(component)) return bad(t("err_component"));
+  if (!$("c-scope").value.trim()) return bad(t("err_scope"));
+  if (!ORE.email.test(email)) return bad(t("err_email"));
+  if (!$("c-authority").checked || !$("c-terms").checked) return bad(t("err_checks"));
+  const btn = $("c-submit");
+  btn.disabled = true;
+  try {
+    const f = { repo: $("c-repo").value, commit: $("c-commit").value, file: $("c-file").value, manifestUrl: $("c-manifest").value };
+    const { artifact, preface } = await pin(ROOT, cKind, f, !cAud.only, t, (m) => (btn.textContent = m));
+    const scopeText = preface + $("c-scope").value.trim() + "\n";
+    if (enc.encode(scopeText).length > 8000) return bad(t("err_scope"));
+    btn.textContent = t("signing");
+    const orderId = newOrderID();
+    const { priv, key } = await orderKey(me.seedKey, orderId);
+    const signed = await signOrder({ auditor: cAud, offer: cOffer, artifact, scopeText, component, orderId, key, priv });
+    btn.textContent = t("sending");
+    const reply = await sendOrder(cAud.endpoint, signed, scopeText, email).catch((e) => { throw new Error(t("err_server", { err: e.message })); });
+    await saveOrder({ orderId, account: me.account, auditor: cAud.manifest.displayName, slug: cAud.slug, base: cAud.base, subject: component, kind: artifact.kind, source: artifact.source, createdAt: nowISO(), digest: reply.digest });
+    $("c-form").hidden = true;
+    toast(t("c_sent", { id: orderId }));
+    renderMine();
+    $("c-mine").scrollIntoView({ behavior: "smooth" });
+  } catch (e) {
+    bad(e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = t("c_submit");
+  }
+}));
+$("c-repo").addEventListener("input", () => {
+  const m = $("c-repo").value.trim().match(/\/([^/]+?)(?:\.git)?\/?$/);
+  if (m && !$("c-component").dataset.edited) $("c-component").value = "onym:component:" + m[1].toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 64);
+});
+$("c-component").addEventListener("input", () => ($("c-component").dataset.edited = "1"));
+$("c-manifest").addEventListener("change", async () => {
+  if ($("c-component").dataset.edited) return;
+  const id = await subjectOf(ROOT, $("c-manifest").value.trim()).catch(() => null);
+  if (id) $("c-component").value = id;
+});
+
+async function renderMine() {
+  const box = $("c-mine");
+  const mine = (await myOrders()).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  if (!mine.length) return box.replaceChildren(el("p", { class: "empty", text: t("c_no_mine") }));
+  const lib = await api("library").catch(() => []);
+  box.replaceChildren(...mine.map((o) => {
+    const state = el("span", { class: "state", text: t("loading") });
+    const extra = el("p", { class: "small" });
+    orderState(o, lib).then((s) => {
+      state.textContent = t("st_" + s.state);
+      if (s.att) extra.replaceChildren(el("a", { href: `#att=${s.att}`, text: t("st_open", { id: s.att }) }));
+    }, () => (state.textContent = "?"));
+    return el("article", { class: "entry" },
+      el("div", { class: "entry-side" }, el("span", { class: "stamp", text: t("order_stamp") }), state),
+      el("div", {}, el("h3", { text: o.subject }), el("p", { class: "who", text: `${o.auditor} · ${o.kind} · ${o.createdAt.slice(0, 10)}` }),
+        el("p", { class: "small mono", text: `${o.orderId} · ${o.source}` }), extra));
+  }));
+}
+
+// orderState: fulfilled once the auditor published the countersigned order
+// (the library then names the attestation it commissioned, unless a fail
+// is held under the embargo); otherwise the hub says, to the order's own
+// key only, whether it still waits in the queue.
+async function orderState(o, lib) {
+  const r = await fetch(new URL(`orders/${o.orderId}.json`, o.base), { credentials: "omit", cache: "no-cache" });
+  if (r.ok) {
+    const d = await digest(new Uint8Array(await r.arrayBuffer()));
+    const e = lib.find((x) => x.orderRef === d);
+    return e ? { state: "done", att: e.attestationId } : { state: "held" };
+  }
+  if (!o.slug) return { state: "sent" };
+  const { priv, key } = await orderKey(me.seedKey, o.orderId);
+  const req = { action: "order-status", orderId: o.orderId, sponsor: key, issuedAt: nowISO() };
+  const res = await api(`a/${o.slug}/order-status`, { request: JSON.parse(await signDoc(req, priv)) });
+  return { state: res.queued ? "queued" : "gone" };
+}
 
 // ---------------------------------------------------------------- library
 

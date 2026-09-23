@@ -318,3 +318,31 @@ func TestLibraryAndOrderStats(t *testing.T) {
 		t.Errorf("auditors %v", auds)
 	}
 }
+
+func TestOrderStatusOnlyForTheOrderer(t *testing.T) {
+	h, srv, _ := orderingHub(t)
+	scope := "src/\n"
+	id := "ord-0000000000000031"
+	call(srv, "POST", "/a/alice/orders", map[string]any{"order": order(t, id, scope, nil), "scopeText": scope, "contact": "mailto:bob@example.org"})
+	req := func(k ed25519.PrivateKey, sponsor sig.Key) map[string]any {
+		q := struct {
+			Action   string  `json:"action"`
+			OrderID  string  `json:"orderId"`
+			Sponsor  sig.Key `json:"sponsor"`
+			IssuedAt string  `json:"issuedAt"`
+		}{"order-status", id, sponsor, sig.FormatTime(h.Now())}
+		raw, _ := audit.SignDoc(q, k)
+		return map[string]any{"request": json.RawMessage(raw)}
+	}
+	bob := key("bob")
+	if code, out := call(srv, "POST", "/hub/api/a/alice/order-status", req(bob, pub(bob))); code != 200 || out["queued"] != true {
+		t.Errorf("orderer: %d %v", code, out)
+	}
+	mallory := key("mallory")
+	if code, _ := call(srv, "POST", "/hub/api/a/alice/order-status", req(mallory, pub(bob))); code != 403 {
+		t.Errorf("forged sponsor accepted: %d", code)
+	}
+	if _, out := call(srv, "POST", "/hub/api/a/alice/order-status", req(mallory, pub(mallory))); out["queued"] != false {
+		t.Errorf("another key learned the order is queued: %v", out)
+	}
+}

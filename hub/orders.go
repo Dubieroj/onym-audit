@@ -368,3 +368,49 @@ func (h *Hub) release(slug string) {
 		os.Remove(p)
 	}
 }
+
+// orderStatus tells an orderer whether their order still waits in the
+// auditor's queue. The request is signed by the order's sponsor key — the
+// per-order key only the orderer holds — so nobody else learns it.
+func (h *Hub) orderStatus(w http.ResponseWriter, r *http.Request) {
+	slug := r.PathValue("slug")
+	var in struct {
+		Request json.RawMessage `json:"request"`
+	}
+	if !h.body(w, r, 1, &in) {
+		return
+	}
+	if _, ok := h.tenant(w, slug); !ok {
+		return
+	}
+	raw, err := canonical(in.Request)
+	if err != nil {
+		fail(w, 422, err)
+		return
+	}
+	var q struct {
+		Action    string  `json:"action"`
+		OrderID   string  `json:"orderId"`
+		Sponsor   sig.Key `json:"sponsor"`
+		IssuedAt  string  `json:"issuedAt"`
+		Signature string  `json:"signature"`
+	}
+	dec := json.NewDecoder(bytes.NewReader(raw))
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(&q); err != nil || q.Action != "order-status" || !orderIDRE.MatchString(q.OrderID) {
+		fail(w, 422, errors.New("malformed status request"))
+		return
+	}
+	at, terr := sig.ParseTime(q.IssuedAt)
+	if terr != nil || at.Sub(h.Now()).Abs() > RequestSkew || sig.Verify(raw, "signature", q.Sponsor) != nil {
+		fail(w, 403, errors.New("the request must be signed by the order's sponsor key, now"))
+		return
+	}
+	queued := false
+	if b, err := os.ReadFile(filepath.Join(h.inboxDir(slug), q.OrderID, "order.json")); err == nil {
+		if o, err := audit.ParseOrderRequest(b, "onym:component:"+slug); err == nil && o.Sponsor == q.Sponsor {
+			queued = true
+		}
+	}
+	reply(w, 200, map[string]bool{"queued": queued})
+}

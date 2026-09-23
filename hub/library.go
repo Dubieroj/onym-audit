@@ -9,6 +9,7 @@ package hub
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -33,6 +34,7 @@ type libraryEntry struct {
 	Engagement    string `json:"engagement"`
 	IssuedAt      string `json:"issuedAt"`
 	ExpiresAt     string `json:"expiresAt"`
+	OrderRef      string `json:"orderRef"` // the countersigned order's digest, for commissioned results
 	URI           string `json:"uri"`
 }
 
@@ -66,14 +68,17 @@ func (h *Hub) tree(dir, base, slug string) ([]libraryEntry, *audit.AuditorManife
 		if err != nil {
 			continue
 		}
-		exp := ""
+		exp, ref := "", ""
 		if a.ExpiresAt != nil {
 			exp = *a.ExpiresAt
+		}
+		if a.OrderRef != nil {
+			ref = *a.OrderRef
 		}
 		out = append(out, libraryEntry{
 			AttestationID: a.AttestationID, Auditor: m.DisplayName, AuditorSlug: slug, AuditorBase: base, Fingerprint: m.Operator.Fingerprint(),
 			Subject: a.Subject, Result: a.Result, State: e.State, Methodology: a.MethodologyClass, Kind: a.Artifact.Kind, Source: a.Artifact.Source,
-			Engagement: a.Engagement, IssuedAt: a.IssuedAt, ExpiresAt: exp, URI: e.Attestation.URI,
+			Engagement: a.Engagement, IssuedAt: a.IssuedAt, ExpiresAt: exp, OrderRef: ref, URI: e.Attestation.URI,
 		})
 	}
 	return out, m
@@ -117,4 +122,16 @@ func (h *Hub) library(w http.ResponseWriter, r *http.Request) {
 	}
 	sort.Slice(all, func(i, j int) bool { return all[i].IssuedAt > all[j].IssuedAt })
 	reply(w, 200, all)
+}
+
+// seat describes the operator's own auditor seat with the same public facts
+// the hub lists for hosted auditors.
+func (h *Hub) seat(w http.ResponseWriter, r *http.Request) {
+	es, m := h.tree(h.PublicRoot, h.PublicBase, "")
+	if m == nil {
+		fail(w, 404, errors.New("this hub's operator runs no auditor seat"))
+		return
+	}
+	orders, customers := orderStats(h.PublicRoot)
+	reply(w, 200, map[string]any{"slug": "", "name": m.DisplayName, "operator": m.Operator, "fingerprint": m.Operator.Fingerprint(), "page": h.PublicBase, "attestations": len(es), "offers": len(m.Offers), "completedOrders": orders, "customers": customers})
 }

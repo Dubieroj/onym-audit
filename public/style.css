@@ -427,3 +427,7 @@ pre.quote { margin: 10px 0; padding: 10px 12px; background: var(--paper-2); bord
 .chip.on { border-color: var(--ink); color: var(--paper); background: var(--ink); }
 .ok-line { color: var(--clear); }
 .entry:target { outline: 2px solid var(--seal); outline-offset: 6px; }
+button.who-chip { background: none; cursor: pointer; font-family: var(--mono); }
+button.who-chip:hover { background: var(--seal-soft); }
+button.who-chip::after { content: " ⏻"; }
+@media (max-width: 520px) { button.who-chip { display: inline-block; max-width: 38vw; } }

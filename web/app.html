@@ -20,9 +20,10 @@
     </a>
     <nav class="tabs" aria-label="{{s_tabs}}">
       <button type="button" data-tab="auditor">{{s_tab_auditor}}</button>
+      <button type="button" data-tab="customer">{{s_tab_customer}}</button>
       <button type="button" data-tab="library">{{s_tab_library}}</button>
     </nav>
-    <span id="who" class="who-chip" hidden></span>
+    <button type="button" id="who" class="who-chip" hidden title="{{s_d_logout}}"></button>
     <div class="langs" role="navigation" aria-label="{{lang_label}}">{{switcher}}</div>
   </div>
 </header>
@@ -190,6 +191,43 @@
       </div>
       <div id="a-done" class="order-done solo" hidden></div>
     </div>
+  </section>
+
+  <!-- Customer -->
+  <section id="v-customer" class="view" hidden>
+    <p class="kicker">{{s_c_kicker}}</p>
+    <h1>{{s_c_h}}</h1>
+    <p class="lede">{{s_c_lede}}</p>
+    <h2 class="sub-h">{{s_c_mine}}</h2>
+    <div id="c-mine" class="entries"></div>
+    <h2 class="sub-h">{{s_c_auditors}}</h2>
+    <div class="lib-bar">
+      <input id="c-q" type="search" placeholder="{{s_c_search}}" aria-label="{{s_c_search}}" autocomplete="off" spellcheck="false">
+      <label class="row-inline small">{{s_c_sort}}
+        <select id="c-sort"><option value="completedOrders">{{s_c_sort_orders}}</option><option value="customers">{{s_c_sort_customers}}</option><option value="name">{{s_c_sort_name}}</option></select>
+      </label>
+    </div>
+    <p class="small muted">{{s_c_rule}}</p>
+    <div id="c-list" class="entries"></div>
+    <form id="c-form" class="order-form solo" hidden novalidate>
+      <p class="kicker" id="c-to"></p>
+      <div id="c-offers" class="pick-list" role="radiogroup"></div>
+      <div id="c-kinds" class="row-inline"></div>
+      <div data-ckind="source build">
+        <label>{{s_c_repo}}<input id="c-repo" type="url" placeholder="https://github.com/org/repo" autocomplete="off" spellcheck="false" class="mono"></label>
+        <label>{{s_c_commit}}<input id="c-commit" placeholder="40 hex" autocomplete="off" spellcheck="false" class="mono"></label>
+      </div>
+      <div data-ckind="build"><label>{{s_c_file}}<input id="c-file" type="url" placeholder="https://…/app.apk" autocomplete="off" spellcheck="false" class="mono"></label></div>
+      <div data-ckind="deployment discovery"><label>{{s_c_manifest}}<input id="c-manifest" type="url" placeholder="https://…/manifest.json" autocomplete="off" spellcheck="false" class="mono"></label></div>
+      <label>{{s_c_component}}<input id="c-component" placeholder="onym:component:…" autocomplete="off" spellcheck="false" class="mono"></label>
+      <label>{{s_c_scope}}<textarea id="c-scope" rows="4" maxlength="8000"></textarea></label>
+      <label>{{s_c_email}}<input id="c-email" type="email" autocomplete="email"></label>
+      <p class="hint">{{s_c_note}}</p>
+      <label class="check"><input id="c-authority" type="checkbox"> <span>{{s_c_authority}}</span></label>
+      <label class="check"><input id="c-terms" type="checkbox"> <span>{{s_c_terms}}</span></label>
+      <p id="c-error" class="form-error" role="alert" hidden></p>
+      <button class="btn btn-ink" type="submit" id="c-submit">{{s_c_submit}}</button>
+    </form>
   </section>
 
   <!-- Library -->

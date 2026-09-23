@@ -138,6 +138,8 @@ func (h *Hub) Handler() http.Handler {
 	mux.HandleFunc("POST /hub/api/conformance/discovery", h.conformance)
 	mux.HandleFunc("GET /hub/api/auditors", h.auditors)
 	mux.HandleFunc("GET /hub/api/library", h.library)
+	mux.HandleFunc("GET /hub/api/seat", h.seat)
+	mux.HandleFunc("POST /hub/api/a/{slug}/order-status", h.orderStatus)
 	mux.HandleFunc("GET /hub/api/a/{slug}/export", h.export)
 	mux.HandleFunc("POST /hub/api/a/{slug}/inbox", h.inbox)
 	mux.HandleFunc("POST /a/{slug}/orders", h.postOrder)
