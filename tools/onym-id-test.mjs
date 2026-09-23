@@ -2,7 +2,7 @@
 // fixture (onym-ios IdentityRepositoryTests, onym-android
 // CrossPlatformFixtureTest) and against the Go implementation's rules:
 // node tools/onym-id-test.mjs
-import { normalize, check, generate, derive, orderKey, accountID, keyOfAccount, accountOfKey } from "../public/onym-id.js";
+import { normalize, check, generate, derive, orderKey, accountID, keyOfAccount, accountOfKey, vaultKeys } from "../public/onym-id.js";
 
 const PHRASE = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 const PUB = "7a33c09cdb7f51fe723a4003d2f28272cddc8fa2cf3d74a374a5f2ee6fb1fcdc";
@@ -39,6 +39,11 @@ ok(a.key !== b.key && a.key !== id.key && a.key === a2.key, "order keys");
 // Pinned identically in onymid.TestOrderKeyMatchesBrowser (Go).
 ok(a.key === "onym:key:6e65953ba9a600d43d7b7bd87ec2eb26b85bd2aaae5ea516bd9d5f16291fb431", "order key matches Go " + a.key);
 ok(accountID(new Uint8Array(32)).length === 56, "account length");
+const v1 = await vaultKeys(id.seedKey), v2 = await vaultKeys((await derive(PHRASE)).seedKey);
+ok(v1.key === v2.key && v1.key !== id.key && v1.key !== a.key, "vault key deterministic and separate " + v1.key);
+const iv = new Uint8Array(12);
+const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, v1.aes, new TextEncoder().encode("list"));
+ok(new TextDecoder().decode(await crypto.subtle.decrypt({ name: "AES-GCM", iv }, v2.aes, ct)) === "list", "vault encryption key deterministic");
 
 if (failed) {
   console.log(`${failed} failed`);

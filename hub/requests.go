@@ -113,7 +113,7 @@ func (h *Hub) postRequest(w http.ResponseWriter, r *http.Request) {
 	var in struct {
 		Request json.RawMessage `json:"request"`
 	}
-	if !h.body(w, r, 20, &in) {
+	if !h.body(w, r, 5, &in) {
 		return
 	}
 	raw, err := canonical(in.Request)

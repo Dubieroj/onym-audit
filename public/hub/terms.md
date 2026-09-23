@@ -68,6 +68,15 @@ ordinary order under that offer and closes the request. Requests expire
 after at most 30 days. No contact details are part of a request: the email
 is given with the order, to the chosen auditor only.
 
+## Vaults
+
+So that one phrase finds its orders and requests on any device, the app
+keeps that list on the hub encrypted with AES-256-GCM, under a key derived
+from the phrase for this purpose alone. The hub stores ciphertext it cannot
+read, under a signing key that appears in no order, request, or manifest,
+and opens it only to that key's fresh signature. A vault holds at most
+256 KiB.
+
 ## Shared documents
 
 The audit profile, severity scale, and hub methodologies under

@@ -6,7 +6,7 @@
 // IndexedDB; the phrase is not stored and the hub never sees a key. Every
 // document is built to the static-Ed25519 profile and signed here.
 import { parseStrict, canonical, plain, digest, fingerprint, verifySig, verifyAttestation } from "../verify.js";
-import { normalize, check, generate, derive, orderKey, accountOfKey, keyOfAccount } from "../onym-id.js";
+import { normalize, check, generate, derive, orderKey, accountOfKey, keyOfAccount, vaultKeys } from "../onym-id.js";
 import { RE as ORE, auditors as orderAuditors, load as loadAuditor, kindsOf, feeText, pin, subjectOf, newOrderID, sign as signOrder, send as sendOrder } from "../order-core.js";
 
 const $ = (id) => document.getElementById(id);
@@ -87,13 +87,57 @@ async function idbDo(mode, fn, store = "identity") {
 const loadIdentity = () => idbDo("readonly", (s) => s.get("me")).catch(() => null);
 const saveIdentity = (v) => idbDo("readwrite", (s) => s.put(v, "me"));
 const forgetIdentity = () => idbDo("readwrite", (s) => s.delete("me"));
-// The orders placed from this browser, each tagged with the identity that
-// placed it: per-order keys make them unlinkable, so only this list ties
-// them together, and it never leaves the browser.
-const myOrders = () => idbDo("readonly", (s) => s.getAll(), "orders").then((all) => (all || []).filter((o) => o.account === me.account && o.orderId));
-const myRequests = () => idbDo("readonly", (s) => s.getAll(), "orders").then((all) => (all || []).filter((o) => o.account === me.account && o.requestId));
-const saveRequest = (q) => idbDo("readwrite", (s) => s.put(q, q.requestId), "orders");
-const saveOrder = (o) => idbDo("readwrite", (s) => s.put(o, o.orderId), "orders");
+// The orders and requests an identity placed. Per-order keys make them
+// unlinkable, so only this list ties them together: it is kept here and,
+// encrypted with a key derived from the phrase, in the identity's vault on
+// the hub — so the same phrase finds them on any device.
+const idOf = (r) => r.orderId || r.requestId;
+const mine = () => idbDo("readonly", (s) => s.getAll(), "orders").then((all) => (all || []).filter((o) => o.account === me.account));
+const myOrders = () => mine().then((all) => all.filter((o) => o.orderId));
+const myRequests = () => mine().then((all) => all.filter((o) => o.requestId));
+const keep = (r) => idbDo("readwrite", (s) => s.put(r, idOf(r)), "orders");
+// A record is kept here first; the vault catches up now or on the next sync.
+const later = (e) => toast(t("vault_unreachable", { err: e.message }), true);
+const saveOrder = (o) => keep(o).then(() => syncVault().catch(later));
+const saveRequest = (q) => keep(q).then(() => syncVault().catch(later));
+
+let VAULT = null;
+const vault = () => (VAULT ||= vaultKeys(me.seedKey));
+const b64d = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+const b64big = (u) => {
+  let s = "";
+  for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode(...u.subarray(i, i + 0x8000));
+  return btoa(s);
+};
+
+// syncVault merges the vault's list with this browser's, keeps the union
+// here, and writes it back when this browser knew something the vault did
+// not. An unreachable vault is never overwritten.
+async function syncVault() {
+  const v = await vault();
+  const res = await ask("vault", { action: "get", key: v.key, data: null }, v.priv);
+  let remote = [];
+  if (res.data) {
+    const raw = b64d(res.data);
+    const pt = await crypto.subtle.decrypt({ name: "AES-GCM", iv: raw.slice(0, 12), additionalData: enc.encode(v.key) }, v.aes, raw.slice(12));
+    remote = JSON.parse(new TextDecoder().decode(pt));
+  }
+  const byId = new Map(remote.map((r) => [idOf(r), r]));
+  let fresh = false;
+  for (const r of await mine()) {
+    if (!byId.has(idOf(r))) fresh = true;
+    byId.set(idOf(r), r);
+  }
+  for (const r of remote) await keep(r);
+  if (!fresh) return;
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv, additionalData: enc.encode(v.key) }, v.aes, enc.encode(JSON.stringify([...byId.values()]))));
+  const blob = new Uint8Array(iv.length + ct.length);
+  blob.set(iv);
+  blob.set(ct, iv.length);
+  await ask("vault", { action: "put", key: v.key, data: b64big(blob) }, v.priv);
+}
+
 
 
 // signDoc returns the published bytes: canonical JSON with the signature
@@ -217,6 +261,7 @@ async function listAuditors() {
 // signIn keeps what the phrase derives and finds the auditor registered
 // under its key, if any.
 async function signIn(id) {
+  VAULT = null;
   me = { priv: id.priv, key: id.key, account: id.account, seedKey: id.seedKey };
   const mine = (await api("auditors")).find((a) => a.operator === me.key);
   if (mine) Object.assign(me, { slug: mine.slug, componentId: "onym:component:" + mine.slug, name: mine.name, base: mine.page });
@@ -480,6 +525,7 @@ const signOut = guard(async () => {
   if (!confirm(t("confirm_logout"))) return;
   await forgetIdentity();
   me = null;
+  VAULT = null;
   show("login");
 });
 $("d-forget").addEventListener("click", signOut);
@@ -906,6 +952,7 @@ let AUD = null, cAud = null, cOffer = null, cKind = null;
 async function customer() {
   $("c-form").hidden = true;
   $("c-rfp").hidden = true;
+  await syncVault().catch(later);
   renderRequests().catch((e) => $("c-reqs").replaceChildren(el("p", { class: "bad", text: e.message })));
   renderMine().catch((e) => $("c-mine").replaceChildren(el("p", { class: "bad", text: e.message })));
   $("c-list").replaceChildren(el("p", { class: "muted", text: t("loading") }));

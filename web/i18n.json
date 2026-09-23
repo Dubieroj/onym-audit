@@ -540,7 +540,8 @@
    "rq_responses": "answers: {n}",
    "rq_send": "Sign and send the offer",
    "rq_sent": "Offer sent.",
-   "embargo_days": "a fail is held up to {n} days"
+   "embargo_days": "a fail is held up to {n} days",
+   "vault_unreachable": "Your order list is saved here but not yet in your vault ({err}); it syncs next time."
   },
   "o_brand": "Onym auditors",
   "o_rule": "Orders under signed offers · Onym audit seat",
@@ -1175,7 +1176,8 @@
    "rq_responses": "ответов: {n}",
    "rq_send": "Подписать и отправить предложение",
    "rq_sent": "Предложение отправлено.",
-   "embargo_days": "провал придерживается до {n} дней"
+   "embargo_days": "провал придерживается до {n} дней",
+   "vault_unreachable": "Список заказов сохранён здесь, но ещё не в вашем хранилище ({err}); синхронизируется в следующий раз."
   },
   "o_brand": "Аудиторы Onym",
   "o_rule": "Заказы по подписанным предложениям · место аудитора Onym",
@@ -1810,7 +1812,8 @@
    "rq_responses": "odgovora: {n}",
    "rq_send": "Potpiši i pošalji ponudu",
    "rq_sent": "Ponuda poslata.",
-   "embargo_days": "neuspjeh se zadržava do {n} dana"
+   "embargo_days": "neuspjeh se zadržava do {n} dana",
+   "vault_unreachable": "Lista narudžbi je sačuvana ovdje, ali još nije u vašem trezoru ({err}); sinhronizuje se sljedeći put."
   },
   "o_brand": "Onym revizori",
   "o_rule": "Narudžbe po potpisanim ponudama · Onym mjesto revizora",

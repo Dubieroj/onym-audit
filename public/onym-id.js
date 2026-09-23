@@ -120,3 +120,17 @@ export function keyOfAccount(id) {
 export function accountOfKey(key) {
   return accountID(Uint8Array.from(key.slice(9).match(/../g).map((x) => parseInt(x, 16))));
 }
+
+// vaultKeys: the key that signs requests for the holder's encrypted list of
+// orders and requests on the hub, and the AES-256-GCM key that encrypts it
+// — both derived from the phrase for this purpose alone, so the vault links
+// to no order, request, or auditor key.
+export async function vaultKeys(seedKey) {
+  const s = await hkdf(seedKey, "app.onym.bip39", "onym-audit-vault-sign-v1");
+  const { priv, pub } = await ed25519(s);
+  s.fill(0);
+  const a = await hkdf(seedKey, "app.onym.bip39", "onym-audit-vault-aes-v1");
+  const aes = await crypto.subtle.importKey("raw", a, "AES-GCM", false, ["encrypt", "decrypt"]);
+  a.fill(0);
+  return { priv, key: "onym:key:" + hex(pub), aes };
+}
