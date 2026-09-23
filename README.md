@@ -24,7 +24,9 @@ showed **"Audit report: Pending — no audits yet"**.
 | `audit/` | Every boundary object of Audit.md §5 with strict decoding, the signed status list, and the relying-client `verify` of §6–§7 |
 | `fixtures/` | 34 byte-pinned cross-platform fixtures (22 decision cases, 12 parse cases) covering the whole Audit.md §14 list — `cases.json` states every expected outcome |
 | `public/verify.js` | A **second, independent** relying client in JavaScript (WebCrypto), passing the same reference vectors and fixtures — `node tools/verify-js-test.mjs` |
-| `conformance/discovery/` | A black-box conformance suite for Discovery providers (Discovery-Static-Ed25519), the methodology behind this auditor's first attestation |
+| `conformance/discovery/` | A black-box conformance suite for Discovery providers: 42 checks, each citing its clause (Discovery-Static-Ed25519, Discovery.md §14.1) — the examination behind this auditor's first attestation; its scope document is generated from the code |
+| `tools/sandbox.sh` | The whole lifecycle on your machine in one command: issue, reply, order, supersede, revoke, byte drift |
+| [`EXERCISE.md`](EXERCISE.md) | How to exercise the submission — no credentials needed |
 | `server/`, `cmd/onym-audit` | The auditor CLI and the online server (status re-signing, `POST orders`, `POST responses`) |
 | `public/` | The published tree: manifest, profile, policies, methodology, scope, severity scale, privacy profile, web page |
 | `deploy/` | systemd unit, nginx snippet, idempotent deploy script |
@@ -47,6 +49,11 @@ showed **"Audit report: Pending — no audits yet"**.
 5. **Absence is absence.** An unattested component renders as unattested,
    never as failed; an adverse result renders exactly where a favorable one
    would; an uncredited issuer is labelled or omitted by the user's choice.
+
+## Live
+
+<https://foldy.io/audit/> — auditor manifest, signed status list, published
+attestations, and a page that verifies all of them in your browser.
 
 ## Run it
 

@@ -449,10 +449,12 @@ func verify(args []string) error {
 	manifest := fs.String("manifest", "", "auditor manifest URI or file")
 	att := fs.String("attestation", "", "attestation URI or file")
 	target := fs.String("target", "", "HTTPS URI of the component manifest you are about to use")
+	targetFile := fs.String("target-file", "", "local copy of the component manifest's bytes (then -target is only its identity URI)")
 	pinned := fs.String("target-document", "", "URI or file of the further served document you are about to use (e.g. the current catalog snapshot), when the attestation pins one")
 	statusRef := fs.String("status", "", "status list URI or file (default: the manifest's statusEndpoint)")
 	credit := fs.String("credit", "", "comma-separated auditor keys you credit")
 	asJSON := fs.Bool("json", false, "print the decision as JSON")
+	respFile := fs.String("response", "", "local copy of a subject response the status list names")
 	fs.Parse(args)
 	if err := need(fs, "manifest", "attestation", "target"); err != nil {
 		return err
@@ -466,7 +468,14 @@ func verify(args []string) error {
 	if in.Attestation, err = fetch(*att, 256<<10); err != nil {
 		return err
 	}
-	tb, err := fetch(*target, 256<<10)
+	src := *target
+	if *targetFile != "" {
+		if err := urirule.Check(*target); err != nil {
+			return err
+		}
+		src = *targetFile
+	}
+	tb, err := fetch(src, 256<<10)
 	if err != nil {
 		return err
 	}
@@ -507,6 +516,13 @@ func verify(args []string) error {
 				}
 			}
 		}
+	}
+	if *respFile != "" {
+		b, err := os.ReadFile(*respFile)
+		if err != nil {
+			return err
+		}
+		in.Responses[sig.Digest(b)] = b
 	}
 	d := audit.Verify(in)
 	if *asJSON {
@@ -803,6 +819,19 @@ func draftConformance(args []string) error {
 		IssuedAt:    sig.FormatTime(now), ExpiresAt: strPtr(sig.FormatTime(now.Add(30 * 24 * time.Hour))),
 	}
 	if snaps == 1 {
+		// The pinned snapshot must also still be what is served.
+		for _, d := range rep.Documents {
+			if d.Role != "catalog-snapshot" {
+				continue
+			}
+			cur, err := fetch(d.URI, 1<<20)
+			if err != nil {
+				return err
+			}
+			if sig.Digest(cur) != snapDigest {
+				return errors.New("the catalog snapshot changed since the run: run the suite again")
+			}
+		}
 		a.Artifact.ArtifactHash = &snapDigest
 	}
 	b, err := json.MarshalIndent(a, "", "  ")
