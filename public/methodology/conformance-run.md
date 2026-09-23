@@ -50,10 +50,19 @@ with its digest, so the run can be re-checked against the same bytes.
 
 ## Evidence
 
-The findings report is the suite's canonical JSON output: suite id and
-version, run time, every check with clause, level, outcome, and detail, and
-every fetched document's URI, digest, and size. It is published
-content-addressed at `reports/<sha256>.json`.
+The findings report is one canonical JSON document, published
+content-addressed at `reports/<sha256>.json`:
+
+- `suiteReport` — the suite's own canonical output, unedited: suite id and
+  version, run time, every check with clause, level, outcome, and detail,
+  and every fetched document's URI, exact-bytes digest, size, and role;
+- `observations` — anything the auditor noticed outside the suite, each
+  with a severity, a title, a detail, and the documents it rests on by
+  digest. An observation that rests on no clause the suite checks is
+  `informational` and does not change the result class.
+
+Anyone can re-check a run against the same bytes: every document is
+named by digest.
 
 ## Expiry
 

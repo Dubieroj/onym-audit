@@ -7,6 +7,8 @@ func TestCheck(t *testing.T) {
 		"https://discovery.onym.app/manifest.json",
 		"https://foldy.io/audit/status.json",
 		"https://example.org",
+		"HTTPS://example.org/x",
+		"https://xn--e1afmkfd.xn--p1ai/x",
 	} {
 		if err := Check(ok); err != nil {
 			t.Errorf("%s rejected: %v", ok, err)
@@ -26,6 +28,11 @@ func TestCheck(t *testing.T) {
 		"https://127.1/x",
 		"https://localhost/x",
 		"ftp://example.org/x",
+		"https://１２７.０.０.１/x",
+		"https://пример.рф/x",
+		"https://foo.123/x",
+		"https://1.2.3.4.5/x",
+		"https://foo.0x1f/x",
 	} {
 		if err := Check(bad); err == nil {
 			t.Errorf("%s accepted", bad)

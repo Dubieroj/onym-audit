@@ -23,7 +23,7 @@ var numericHost = regexp.MustCompile(`^(0x[0-9a-f]+|[0-9]+)(\.(0x[0-9a-f]+|[0-9]
 // redundant ":443" away before a parsed-port check is reachable.
 func Check(raw string) error {
 	const scheme = "https://"
-	if !strings.HasPrefix(raw, scheme) {
+	if len(raw) < len(scheme) || !strings.EqualFold(raw[:len(scheme)], scheme) {
 		return fmt.Errorf("%w: %q is not https", ErrURI, raw)
 	}
 	rest := raw[len(scheme):]
@@ -48,8 +48,20 @@ func Check(raw string) error {
 		return fmt.Errorf("%w: %q does not parse", ErrURI, raw)
 	}
 	host := strings.ToLower(strings.TrimSuffix(u.Hostname(), "."))
+	// Hosts must be ASCII (IDNs as A-labels): Unicode digits such as
+	// full-width "１２７.０.０.１" are IDNA-mapped to an IP literal by resolvers.
+	for i := 0; i < len(host); i++ {
+		if host[i] >= 0x80 {
+			return fmt.Errorf("%w: %q has a non-ASCII host; use its A-label form", ErrURI, raw)
+		}
+	}
 	if net.ParseIP(host) != nil || numericHost.MatchString(host) {
 		return fmt.Errorf("%w: %q has an IP literal host", ErrURI, raw)
+	}
+	// WHATWG URL parsing treats a host whose last label is numeric as IPv4
+	// (as the Rust reference does): "foo.123" and "1.2.3.4.5" are not DNS names.
+	if labels := strings.Split(host, "."); numericHost.MatchString(labels[len(labels)-1]) {
+		return fmt.Errorf("%w: %q ends in a numeric label", ErrURI, raw)
 	}
 	if !strings.Contains(host, ".") {
 		return fmt.Errorf("%w: %q is not a DNS name", ErrURI, raw)

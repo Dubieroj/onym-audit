@@ -24,6 +24,8 @@ import (
 	"time"
 
 	"onym-audit/audit"
+	"onym-audit/canon"
+	"onym-audit/conformance/discovery"
 	"onym-audit/server"
 	"onym-audit/sig"
 	"onym-audit/site"
@@ -51,6 +53,10 @@ Anyone:
   respond     -attestation URI|FILE -key FILE -id ID -text TEXT -out FILE   (subject's signed reply)
   sign-order  -in ORDER.json -role subject|sponsor -key FILE -out FILE
   fixtures    -dir DIR                               run the published fixture cases
+  conformance-discovery -manifest URL [-out FILE]    run the Discovery provider suite
+  conformance-discovery -scope-doc                   print the suite's scope document
+  draft-conformance -root DIR -config FILE -report FILE -id ID -contact C -notified-at T
+                    -relationships TEXT [-observations FILE] -out DRAFT.json
 `
 
 func main() {
@@ -63,7 +69,7 @@ func main() {
 		"keygen": keygen, "publish": publish, "attest": attest, "revoke": revoke,
 		"countersign": countersign, "offer": offer, "status": status, "serve": serve, "verify": verify,
 		"respond": respond, "sign-order": signOrder, "fixtures": fixtures,
-		"conformance-discovery": conformanceDiscovery,
+		"conformance-discovery": conformanceDiscovery, "draft-conformance": draftConformance,
 	}
 	run, ok := cmds[os.Args[1]]
 	if !ok {
@@ -599,7 +605,232 @@ func fixtures(args []string) error {
 	return nil
 }
 
-// conformanceDiscovery is wired in once the suite package lands.
-var conformanceDiscovery = func(args []string) error {
-	return errors.New("the Discovery conformance suite is not built into this binary")
+func conformanceDiscovery(args []string) error {
+	fs := flag.NewFlagSet("conformance-discovery", flag.ExitOnError)
+	manifest := fs.String("manifest", "", "provider manifest URL")
+	out := fs.String("out", "", "write the canonical report here")
+	scopeDoc := fs.Bool("scope-doc", false, "print the scope document and exit")
+	fs.Parse(args)
+	if *scopeDoc {
+		fmt.Print(discovery.ScopeMarkdown())
+		return nil
+	}
+	if err := need(fs, "manifest"); err != nil {
+		return err
+	}
+	rep := discovery.Run(context.Background(), discovery.NewHTTPFetcher(), *manifest, time.Now())
+	for _, c := range rep.Checks {
+		if c.Outcome != discovery.Pass {
+			fmt.Printf("%-14s %-6s %-36s %s\n", c.Outcome, c.Level, c.ID, c.Detail)
+		}
+	}
+	fmt.Printf("\n%d checks, %d documents fetched: result %s\n", len(rep.Checks), len(rep.Documents), strings.ToUpper(rep.Result))
+	if *out != "" {
+		b, err := rep.Canonical()
+		if err != nil {
+			return err
+		}
+		return site.WriteAtomic(*out, b)
+	}
+	return nil
+}
+
+// Observation is an auditor finding outside the suite (methodology:
+// severity "informational" unless it rests on a clause the suite omits).
+type Observation struct {
+	Severity string         `json:"severity"`
+	Title    string         `json:"title"`
+	Detail   string         `json:"detail"`
+	Evidence []audit.DocRef `json:"evidence"`
+}
+
+func draftConformance(args []string) error {
+	fs := flag.NewFlagSet("draft-conformance", flag.ExitOnError)
+	root := fs.String("root", "", "site root")
+	config := fs.String("config", "", "auditor config")
+	reportPath := fs.String("report", "", "canonical suite report")
+	obsPath := fs.String("observations", "", "JSON array of observations outside the suite")
+	id := fs.String("id", "", "attestation id")
+	contact := fs.String("contact", "", "subject contact the findings were sent to (mailto:… or https://…)")
+	notified := fs.String("notified-at", "", "when the subject was notified (RFC 3339 UTC)")
+	rel := fs.String("relationships", "", "declared relationships with the subject")
+	out := fs.String("out", "", "draft to write")
+	fs.Parse(args)
+	if err := need(fs, "root", "config", "report", "id", "contact", "notified-at", "relationships", "out"); err != nil {
+		return err
+	}
+	c, _, err := loadAll(*root, *config, "")
+	if err != nil {
+		return err
+	}
+	reportRaw, err := os.ReadFile(*reportPath)
+	if err != nil {
+		return err
+	}
+	var rep struct {
+		ManifestURI string `json:"manifestUri"`
+		Result      string `json:"result"`
+		RunAt       string `json:"runAt"`
+		Checks      []struct{ ID, Level, Outcome string }
+		Documents   []struct{ URI, Digest, Role string }
+	}
+	if err := json.Unmarshal(reportRaw, &rep); err != nil {
+		return err
+	}
+	suiteObj, err := canon.Parse(reportRaw)
+	if err != nil {
+		return err
+	}
+	var obs []Observation
+	if *obsPath != "" {
+		b, err := os.ReadFile(*obsPath)
+		if err != nil {
+			return err
+		}
+		if err := json.Unmarshal(b, &obs); err != nil {
+			return err
+		}
+	}
+	var manDigest, snapDigest string
+	snaps := 0
+	for _, d := range rep.Documents {
+		switch d.Role {
+		case "provider-manifest":
+			manDigest = d.Digest
+		case "catalog-snapshot":
+			snapDigest = d.Digest
+			snaps++
+		}
+	}
+	if manDigest == "" {
+		return errors.New("report has no provider manifest: nothing to bind")
+	}
+	// The manifest must still be the bytes the run examined.
+	manRaw, err := fetch(rep.ManifestURI, 64<<10)
+	if err != nil {
+		return err
+	}
+	if sig.Digest(manRaw) != manDigest {
+		return errors.New("the provider manifest changed since the run: run the suite again")
+	}
+	var man struct {
+		ProviderID string  `json:"providerId"`
+		Operator   sig.Key `json:"operator"`
+	}
+	if err := json.Unmarshal(manRaw, &man); err != nil {
+		return err
+	}
+	summary := map[string]int{}
+	for _, ch := range rep.Checks {
+		if ch.Outcome == "fail" {
+			if ch.Level == "MUST" {
+				summary["high"]++
+			} else {
+				summary["low"]++
+			}
+		}
+	}
+	result := rep.Result
+	for _, o := range obs {
+		if !oneOfStr(o.Severity, audit.SeverityLevels...) {
+			return fmt.Errorf("observation severity %q", o.Severity)
+		}
+		summary[o.Severity]++
+		if result == audit.Clear && o.Severity != "informational" {
+			result = audit.FindingsNoted
+		}
+	}
+	// The findings report: the suite's own canonical output plus the
+	// auditor's observations, content-addressed.
+	obsVals := []any{}
+	for _, o := range obs {
+		ov, err := audit.CanonicalOf(o)
+		if err != nil {
+			return err
+		}
+		po, _ := canon.Parse(ov)
+		obsVals = append(obsVals, po)
+	}
+	findings, err := canon.Encode(canon.Object{"findingsVersion": canon.Number("1"), "suiteReport": suiteObj, "observations": obsVals})
+	if err != nil {
+		return err
+	}
+	fd := sig.Digest(findings)
+	rpath := "reports/" + strings.TrimPrefix(fd, "sha256:") + ".json"
+	if err := site.WriteAtomic(filepath.Join(*root, rpath), findings); err != nil {
+		return err
+	}
+	ref := func(p string) (audit.DocRef, error) { return site.Ref(*root, c, p) }
+	meth, err := ref("methodology/conformance-run.md")
+	if err != nil {
+		return err
+	}
+	scope, err := ref("scopes/discovery-static-ed25519-provider.md")
+	if err != nil {
+		return err
+	}
+	scale, err := ref(site.SeverityPath)
+	if err != nil {
+		return err
+	}
+	unsol, err := ref(site.UnsolicitedPath)
+	if err != nil {
+		return err
+	}
+	auditorKey, err := manifestOperator(*root)
+	if err != nil {
+		return err
+	}
+	now := time.Now()
+	a := audit.Attestation{
+		AttestationVersion: 1, AttestationID: *id,
+		Subject: "onym:component:" + strings.TrimPrefix(man.ProviderID, "onym:component:"), SubjectOperator: man.Operator,
+		Artifact:         audit.Artifact{Kind: audit.KindDeployment, Source: rep.ManifestURI, Revision: manDigest},
+		MethodologyClass: audit.ConformanceRun, Methodology: meth, Scope: scope,
+		ScopeSummary: fmt.Sprintf("%s %s: Discovery-Static-Ed25519 provider obligations and client acceptance of the deployment as served at %s", discovery.SuiteID, discovery.SuiteVersion, rep.RunAt),
+		Exclusions: []string{
+			"client behaviour",
+			"availability, honesty, or security of the listed instances beyond their signed manifests' digests, fields, and signatures",
+			"host security and key custody",
+			"destination manifests' conformance to their own seat contracts",
+			"any state of the deployment other than the one served at run time",
+		},
+		Result: result, SeverityScale: &scale, SeverityFloor: strPtr("low"),
+		FindingsReport:  &audit.DocRef{URI: c.BaseURI + rpath, Digest: fd},
+		FindingsSummary: summary, Engagement: "unsolicited",
+		Sponsor: auditorKey, SponsorName: c.DisplayName + " (self-funded)", Relationships: *rel,
+		Unsolicited: &audit.UnsolicitedDisclosure{Policy: unsol.Digest, SubjectContact: *contact, SubjectNotifiedAt: *notified},
+		IssuedAt:    sig.FormatTime(now), ExpiresAt: strPtr(sig.FormatTime(now.Add(30 * 24 * time.Hour))),
+	}
+	if snaps == 1 {
+		a.Artifact.ArtifactHash = &snapDigest
+	}
+	b, err := json.MarshalIndent(a, "", "  ")
+	if err != nil {
+		return err
+	}
+	fmt.Printf("findings report %s%s\nresult %s, summary %v\n", c.BaseURI, rpath, result, summary)
+	return site.WriteAtomic(*out, append(b, '\n'))
+}
+
+func manifestOperator(root string) (sig.Key, error) {
+	b, err := os.ReadFile(filepath.Join(root, site.ManifestPath))
+	if err != nil {
+		return "", err
+	}
+	var m struct {
+		Operator sig.Key `json:"operator"`
+	}
+	return m.Operator, json.Unmarshal(b, &m)
+}
+
+func strPtr(s string) *string { return &s }
+
+func oneOfStr(v string, set ...string) bool {
+	for _, x := range set {
+		if v == x {
+			return true
+		}
+	}
+	return false
 }
