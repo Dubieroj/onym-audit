@@ -15,9 +15,11 @@ about any other commit, fork, build, or deployment.
 
 ## The examination engine
 
-- **Model:** Claude (`claude-opus-5` by default), adaptive thinking, effort
-  `xhigh`. The model id, effort, and turn cap are recorded in the findings
-  report of every run.
+- **Model:** Claude Opus 5, adaptive thinking, effort `xhigh` — reached
+  through OpenRouter's Anthropic-compatible endpoint (`anthropic/claude-opus-5`)
+  by default, or directly from Anthropic (`claude-opus-5`). The provider,
+  model id, effort, and turn cap are recorded in the findings report of every
+  run.
 - **Instructions:** [security-review-llm-prompt.md](security-review-llm-prompt.md),
   published verbatim; its `sha256` digest is recorded in every findings
   report, so a run can be tied to the exact instructions it followed.

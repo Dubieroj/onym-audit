@@ -209,3 +209,36 @@ func TestVerifyEdgeCases(t *testing.T) {
 		t.Errorf("whitespace-normalized quote rejected: %s", ok.Rejection)
 	}
 }
+
+// Through OpenRouter: bearer auth, the OpenRouter slug, no Anthropic fallback beta.
+func TestOpenRouterProvider(t *testing.T) {
+	api := &fakeAPI{turns: []string{`[` + tool("t1", "finish", map[string]any{"summary": "s", "examined": []string{}, "not_examined": []string{"all"}, "complete": false}) + `]`}}
+	srv := httptest.NewServer(api)
+	defer srv.Close()
+	t.Setenv("OPENROUTER_API_KEY", "or-test-key")
+	client, err := NewClient(ProviderOpenRouter)
+	if err != nil {
+		t.Fatal(err)
+	}
+	res, err := Review(context.Background(), client, Config{Provider: ProviderOpenRouter, RepoDir: repo(t), Source: "https://example.org/r", Revision: strings.Repeat("b", 40), Scope: "all"}, option.WithBaseURL(srv.URL), option.WithMaxRetries(0))
+	if err != nil {
+		t.Fatal(err)
+	}
+	h, req := api.headers[0], api.requests[0]
+	if h.Get("Authorization") != "Bearer or-test-key" {
+		t.Errorf("authorization %q", h.Get("Authorization"))
+	}
+	if req["model"] != DefaultOpenRouterModel {
+		t.Errorf("model %v", req["model"])
+	}
+	if _, ok := req["fallbacks"]; ok || strings.Contains(h.Get("anthropic-beta"), "fallback") {
+		t.Error("Anthropic fallback beta sent to OpenRouter")
+	}
+	if res.ResultClass() != "inconclusive" {
+		t.Errorf("class %s", res.ResultClass())
+	}
+	t.Setenv("OPENROUTER_API_KEY", "")
+	if _, err := NewClient(ProviderOpenRouter); err == nil {
+		t.Error("missing key accepted")
+	}
+}

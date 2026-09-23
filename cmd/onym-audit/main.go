@@ -25,8 +25,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/anthropics/anthropic-sdk-go"
-
 	"onym-audit/agent"
 	"onym-audit/audit"
 	"onym-audit/canon"
@@ -64,7 +62,7 @@ Anyone:
                     -relationships TEXT [-observations FILE] -out DRAFT.json
 
 LLM-assisted security review (drafts only; the auditor reviews and signs):
-  agent-review -repo URL -commit SHA -scope TEXT|-scope-file FILE -out DIR [-model M] [-effort E]
+  agent-review -repo URL -commit SHA -scope TEXT|-scope-file FILE -out DIR [-provider openrouter|anthropic] [-model M] [-effort E]
   draft-review -root DIR -config FILE -findings DIR/findings.json -id ID -relationships TEXT
                -contact C -notified-at T -subject ID -subject-operator KEY [-drop F2:reason ...] -out DRAFT.json
 `
@@ -947,7 +945,8 @@ func agentReview(args []string) error {
 	scope := fs.String("scope", "", "what is in scope, in plain words")
 	scopeFile := fs.String("scope-file", "", "file holding the scope")
 	out := fs.String("out", "", "output directory")
-	model := fs.String("model", agent.DefaultModel, "Claude model")
+	provider := fs.String("provider", agent.ProviderOpenRouter, "openrouter (OPENROUTER_API_KEY) or anthropic (ANTHROPIC_API_KEY)")
+	model := fs.String("model", "", "Claude model (default anthropic/claude-opus-5 via OpenRouter, claude-opus-5 direct)")
 	effort := fs.String("effort", agent.DefaultEffort, "effort: low|medium|high|xhigh|max")
 	maxIter := fs.Int("max-iterations", agent.DefaultMaxIterations, "cap on model turns")
 	fs.Parse(args)
@@ -964,16 +963,23 @@ func agentReview(args []string) error {
 	if strings.TrimSpace(*scope) == "" {
 		return errors.New("state the scope with -scope or -scope-file")
 	}
-	if os.Getenv("ANTHROPIC_API_KEY") == "" && os.Getenv("ANTHROPIC_AUTH_TOKEN") == "" {
-		return errors.New("no Claude API credentials: export ANTHROPIC_API_KEY in your own terminal (never paste it into a chat or a file in this repository)")
+	client, err := agent.NewClient(*provider)
+	if err != nil {
+		return fmt.Errorf("%w (never paste a key into a chat or a file in this repository)", err)
+	}
+	if *model == "" {
+		*model = agent.DefaultModel
+		if *provider == agent.ProviderOpenRouter {
+			*model = agent.DefaultOpenRouterModel
+		}
 	}
 	work := filepath.Join(*out, "workspace")
 	if err := checkout(*repo, *commit, work); err != nil {
 		return err
 	}
-	fmt.Printf("examining %s at %s with %s (effort %s)…\n", *repo, *commit, *model, *effort)
-	res, err := agent.Review(context.Background(), anthropic.NewClient(), agent.Config{
-		Model: *model, Effort: *effort, MaxIterations: *maxIter,
+	fmt.Printf("examining %s at %s with %s via %s (effort %s)…\n", *repo, *commit, *model, *provider, *effort)
+	res, err := agent.Review(context.Background(), client, agent.Config{
+		Provider: *provider, Model: *model, Effort: *effort, MaxIterations: *maxIter,
 		RepoDir: work, Source: *repo, Revision: *commit, Scope: *scope,
 	})
 	if err != nil {

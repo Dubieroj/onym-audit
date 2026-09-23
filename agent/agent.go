@@ -39,14 +39,44 @@ import (
 //go:embed prompt.md
 var SystemPrompt string
 
-// Defaults. The model follows the claude-api guidance: Claude Opus 5 with
-// adaptive thinking; xhigh effort suits long agentic code review.
+// Defaults: Claude Opus 5 with adaptive thinking; xhigh effort suits long
+// agentic code review. The engine reaches Claude either directly or through
+// OpenRouter's Anthropic-compatible endpoint (the "Anthropic Skin"), which
+// takes the same Messages API requests under its own model slugs.
 const (
-	DefaultModel         = "claude-opus-5"
-	DefaultEffort        = "xhigh"
-	DefaultMaxIterations = 80
-	Version              = "security-review-llm-v1"
+	ProviderAnthropic      = "anthropic"
+	ProviderOpenRouter     = "openrouter"
+	DefaultModel           = "claude-opus-5"
+	DefaultOpenRouterModel = "anthropic/claude-opus-5"
+	OpenRouterBaseURL      = "https://openrouter.ai/api/"
+	DefaultEffort          = "xhigh"
+	DefaultMaxIterations   = 80
+	Version                = "security-review-llm-v1"
 )
+
+// NewClient returns a Messages API client for the provider, reading the key
+// from the environment: ANTHROPIC_API_KEY, or OPENROUTER_API_KEY sent as a
+// bearer token to OpenRouter.
+func NewClient(provider string) (anthropic.Client, error) {
+	switch provider {
+	case ProviderAnthropic:
+		if os.Getenv("ANTHROPIC_API_KEY") == "" && os.Getenv("ANTHROPIC_AUTH_TOKEN") == "" {
+			return anthropic.Client{}, errors.New("export ANTHROPIC_API_KEY in your own terminal")
+		}
+		return anthropic.NewClient(), nil
+	case ProviderOpenRouter:
+		key := os.Getenv("OPENROUTER_API_KEY")
+		if key == "" {
+			return anthropic.Client{}, errors.New("export OPENROUTER_API_KEY in your own terminal")
+		}
+		return anthropic.NewClient(
+			option.WithBaseURL(OpenRouterBaseURL),
+			option.WithAuthToken(key),
+			option.WithHeader("X-Title", "onym-audit"),
+		), nil
+	}
+	return anthropic.Client{}, fmt.Errorf("unknown provider %q", provider)
+}
 
 // Bounds on what a single tool call returns.
 const (
@@ -63,6 +93,7 @@ var Severities = []string{"critical", "high", "medium", "low", "informational"}
 
 // Config describes one examination.
 type Config struct {
+	Provider      string // ProviderAnthropic (default) or ProviderOpenRouter
 	Model         string
 	Effort        string
 	MaxIterations int
@@ -403,8 +434,14 @@ func (s *state) tools() ([]anthropic.BetaTool, error) {
 
 // Review runs one examination.
 func Review(ctx context.Context, client anthropic.Client, cfg Config, opts ...option.RequestOption) (*Result, error) {
+	if cfg.Provider == "" {
+		cfg.Provider = ProviderAnthropic
+	}
 	if cfg.Model == "" {
 		cfg.Model = DefaultModel
+		if cfg.Provider == ProviderOpenRouter {
+			cfg.Model = DefaultOpenRouterModel
+		}
 	}
 	if cfg.Effort == "" {
 		cfg.Effort = DefaultEffort
@@ -421,7 +458,7 @@ func Review(ctx context.Context, client anthropic.Client, cfg Config, opts ...op
 		return nil, err
 	}
 	task := fmt.Sprintf("Artifact: %s at commit %s.\n\nScope:\n%s\n\nExamine the scope, report findings with verbatim evidence, then call finish.", cfg.Source, cfg.Revision, cfg.Scope)
-	runner := client.Beta.Messages.NewToolRunner(tools, anthropic.BetaToolRunnerParams{
+	params := anthropic.BetaToolRunnerParams{
 		BetaMessageNewParams: anthropic.BetaMessageNewParams{
 			Model:     anthropic.Model(cfg.Model),
 			MaxTokens: 16000,
@@ -434,12 +471,17 @@ func Review(ctx context.Context, client anthropic.Client, cfg Config, opts ...op
 			// Auto-placed breakpoint: every turn re-reads the growing history
 			// from cache instead of paying for it again.
 			CacheControl: anthropic.NewBetaCacheControlEphemeralParam(),
-			// A refused turn is re-served by a fallback model within the same call.
-			Fallbacks: anthropic.BetaFallbacksParamOfDefault(),
-			Betas:     []anthropic.AnthropicBeta{anthropic.AnthropicBetaServerSideFallback2026_07_01},
 		},
 		MaxIterations: cfg.MaxIterations,
-	}, opts...)
+	}
+	if cfg.Provider == ProviderAnthropic {
+		// A refused turn is re-served by a fallback model within the same
+		// call. OpenRouter routes around failing providers itself and does
+		// not take Anthropic's fallback beta.
+		params.Fallbacks = anthropic.BetaFallbacksParamOfDefault()
+		params.Betas = []anthropic.AnthropicBeta{anthropic.AnthropicBetaServerSideFallback2026_07_01}
+	}
+	runner := client.Beta.Messages.NewToolRunner(tools, params, opts...)
 
 	res := &Result{}
 	var last *anthropic.BetaMessage
