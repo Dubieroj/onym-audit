@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="{{lang_tag}}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{title}}</title>
+<meta name="description" content="{{description}}">
+<meta name="color-scheme" content="light dark">
+{{alternates}}
+<link rel="stylesheet" href="{{root}}style.css">
+<script type="module" src="{{root}}app.js"></script>
+</head>
+<body>
+<div class="grain" aria-hidden="true"></div>
+
+<header class="masthead">
+  <div class="wrap masthead-row">
+    <a class="brand" href="./">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span class="brand-text"><b id="brand-name">Dimitrii</b> <span class="muted">· {{brand_seat}}</span></span>
+    </a>
+    <nav aria-label="{{nav_label}}">
+      <a href="#use">{{nav_use}}</a>
+      <a href="#register">{{nav_register}}</a>
+      <a href="#rules">{{nav_rules}}</a>
+      <a href="#verify">{{nav_verify}}</a>
+      <a href="#instruments">{{nav_docs}}</a>
+    </nav>
+    <div class="langs" role="navigation" aria-label="{{lang_label}}">{{switcher}}</div>
+  </div>
+  <div class="rule-strip"><div class="wrap">{{strip}} · <code>onym:audit-profile:static-ed25519-v1</code></div></div>
+</header>
+
+<main>
+  <section class="hero wrap">
+    <div class="hero-copy">
+      <p class="kicker reveal">{{kicker}}</p>
+      <h1 class="reveal">{{h1}}</h1>
+      <p class="lede reveal">{{lede}}</p>
+      <div class="cta reveal">
+        <a class="btn btn-ink" href="#register">{{cta_register}}</a>
+        <a class="btn btn-line" href="#verify">{{cta_verify}}</a>
+      </div>
+    </div>
+
+    <figure class="seal-fig reveal" aria-live="polite">
+      <svg class="seal" id="seal" viewBox="0 0 240 240" role="img" aria-labelledby="seal-title">
+        <title id="seal-title">{{seal_title}}</title>
+        <defs>
+          <filter id="ink" x="-10%" y="-10%" width="120%" height="120%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="7" result="n"/>
+            <feDisplacementMap in="SourceGraphic" in2="n" scale="2.6"/>
+          </filter>
+          <path id="ring" d="M120,120 m-88,0 a88,88 0 1,1 176,0 a88,88 0 1,1 -176,0"/>
+        </defs>
+        <g class="seal-ink" filter="url(#ink)">
+          <circle cx="120" cy="120" r="112" class="seal-outer"/>
+          <circle cx="120" cy="120" r="74" class="seal-inner"/>
+          <g class="seal-ring">
+            <text class="seal-ringtext"><textPath href="#ring" startOffset="0" id="seal-ringtext" textLength="546" lengthAdjust="spacing">ONYM AUDIT SEAT · ED25519 · BYTES NOT BRANDS ·</textPath></text>
+          </g>
+          <text x="120" y="104" class="seal-small" text-anchor="middle" id="seal-state">{{seal_checking}}</text>
+          <text x="120" y="129" class="seal-print" text-anchor="middle" id="seal-print">··:··:··:··</text>
+          <text x="120" y="152" class="seal-small" text-anchor="middle" id="seal-epoch">{{seal_status_list}}</text>
+        </g>
+      </svg>
+      <figcaption id="seal-caption">{{seal_caption}}</figcaption>
+    </figure>
+  </section>
+
+  <section class="ledger-facts wrap" aria-label="{{facts_label}}">
+    <dl>
+      <div><dt>{{facts_key}}</dt><dd class="mono" id="f-key">—</dd></div>
+      <div><dt>{{facts_status}}</dt><dd class="mono" id="f-status">—</dd></div>
+      <div><dt>{{facts_next}}</dt><dd class="mono" id="f-next">—</dd></div>
+      <div><dt>{{facts_contact}}</dt><dd id="f-contact">—</dd></div>
+    </dl>
+  </section>
+
+  <section class="specimen-sec" aria-labelledby="anatomy">
+    <div class="wrap">
+      <header class="sec-head">
+        <p class="numeral">I.</p>
+        <h2 id="anatomy">{{anat_h}}</h2>
+        <p class="sec-lede">{{anat_lede}}</p>
+      </header>
+      <div class="specimen-grid">
+        <article class="specimen" aria-label="{{spec_label}}">
+          <span class="watermark" aria-hidden="true">{{spec_watermark}}</span>
+          <p class="spec-top"><span class="stamp stamp-clear">CLEAR</span><span class="mono small">att-0001 · conformance-run</span></p>
+          <h3>onym:component:example-courier</h3>
+          <dl class="spec-fields">
+            <div data-n="1"><dt>{{spec_issuer}}</dt><dd>Dimitrii <span class="mono">ea:ef:cb:ce:6e:48:ed:c1</span></dd></div>
+            <div data-n="2"><dt>{{spec_bytes}}</dt><dd class="mono">manifest sha256:4c29…a1f0<br>{{spec_pinned}} sha256:9b1e…0c77</dd></div>
+            <div data-n="3"><dt>{{spec_method}}</dt><dd>{{spec_method_v}}</dd></div>
+            <div data-n="4"><dt>{{spec_notexam}}</dt><dd>{{spec_notexam_v}}</dd></div>
+            <div data-n="5"><dt>{{spec_paid}}</dt><dd>{{spec_paid_v}}</dd></div>
+            <div data-n="6"><dt>{{spec_valid}}</dt><dd>{{spec_valid_v}}</dd></div>
+            <div data-n="7"><dt>{{spec_reply}}</dt><dd>{{spec_reply_v}}</dd></div>
+          </dl>
+        </article>
+        <ol class="annotations">
+          <li>{{ann_1}}</li>
+          <li>{{ann_2}}</li>
+          <li>{{ann_3}}</li>
+          <li>{{ann_4}}</li>
+          <li>{{ann_5}}</li>
+          <li>{{ann_6}}</li>
+          <li>{{ann_7}}</li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <section class="cases-sec wrap" id="use" aria-labelledby="use-h">
+    <header class="sec-head">
+      <p class="numeral">II.</p>
+      <h2 id="use-h">{{use_h}}</h2>
+      <p class="sec-lede">{{use_lede}}</p>
+    </header>
+    <div class="cases">
+      <article class="case">
+        <p class="who-tag">{{c1_who}}</p>
+        <h3>{{c1_h}}</h3>
+        <ol><li>{{c1_1}}</li><li>{{c1_2}}</li><li>{{c1_3}}</li></ol>
+        <p class="outcome">{{c1_out}}</p>
+      </article>
+      <article class="case">
+        <p class="who-tag">{{c2_who}}</p>
+        <h3>{{c2_h}}</h3>
+        <ol><li>{{c2_1}}</li><li>{{c2_2}}</li><li>{{c2_3}}</li></ol>
+        <p class="outcome">{{c2_out}}</p>
+      </article>
+      <article class="case">
+        <p class="who-tag">{{c3_who}}</p>
+        <h3>{{c3_h}}</h3>
+        <ol><li>{{c3_1}}</li><li>{{c3_2}}</li><li>{{c3_3}}</li></ol>
+        <p class="outcome">{{c3_out}}</p>
+      </article>
+      <article class="case live">
+        <p class="who-tag">{{c4_who}} <span class="live-dot">● {{live}}</span></p>
+        <h3>{{c4_h}}</h3>
+        <ol><li>{{c4_1}}</li><li>{{c4_2}}</li><li>{{c4_3}}</li></ol>
+        <p class="outcome">{{c4_out}}</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="register-sec wrap" id="register" aria-labelledby="register-h">
+    <header class="sec-head">
+      <p class="numeral">III.</p>
+      <h2 id="register-h">{{reg_h}}</h2>
+      <p class="sec-lede">{{reg_lede}}</p>
+    </header>
+    <label class="credit"><input type="checkbox" id="credit"><span>{{credit}} <span class="muted">{{credit_note}}</span></span></label>
+    <div id="atts" class="entries"><p class="empty">{{reg_loading}}</p></div>
+  </section>
+
+  <section class="rules-sec" id="rules" aria-labelledby="rules-h">
+    <div class="wrap">
+      <header class="sec-head">
+        <p class="numeral">IV.</p>
+        <h2 id="rules-h">{{rules_h}}</h2>
+        <p class="sec-lede">{{rules_lede}}</p>
+      </header>
+      <ol class="rules">
+        <li><h3>{{r1_h}}</h3><p>{{r1_p}}</p></li>
+        <li><h3>{{r2_h}}</h3><p>{{r2_p}}</p></li>
+        <li><h3>{{r3_h}}</h3><p>{{r3_p}}</p></li>
+        <li><h3>{{r4_h}}</h3><p>{{r4_p}}</p></li>
+        <li><h3>{{r5_h}}</h3><p>{{r5_p}}</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="life-sec wrap" aria-labelledby="life-h">
+    <header class="sec-head">
+      <p class="numeral">V.</p>
+      <h2 id="life-h">{{life_h}}</h2>
+    </header>
+    <ol class="lifeline">
+      <li><span class="dot"></span><b>{{l1_b}}</b><span>{{l1_s}}</span></li>
+      <li><span class="dot"></span><b>{{l2_b}}</b><span>{{l2_s}}</span></li>
+      <li><span class="dot"></span><b>{{l3_b}}</b><span>{{l3_s}}</span></li>
+      <li><span class="dot"></span><b>{{l4_b}}</b><span>{{l4_s}}</span></li>
+      <li><span class="dot"></span><b>{{l5_b}}</b><span>{{l5_s}}</span></li>
+      <li><span class="dot"></span><b>{{l6_b}}</b><span>{{l6_s}}</span></li>
+    </ol>
+  </section>
+
+  <section class="verify-sec" id="verify" aria-labelledby="verify-h">
+    <div class="wrap verify-grid">
+      <header class="sec-head">
+        <p class="numeral">VI.</p>
+        <h2 id="verify-h">{{ver_h}}</h2>
+        <p class="sec-lede">{{ver_lede}}</p>
+        <ul class="proof">
+          <li><b>34</b> {{proof_1}}</li>
+          <li><b>42</b> {{proof_2}}</li>
+          <li><b>2</b> {{proof_3}}</li>
+        </ul>
+      </header>
+      <div class="terminal" aria-label="{{term_label}}">
+        <div class="term-bar"><span></span><span></span><span></span><em>{{term_title}}</em></div>
+<pre><code><span class="c"># {{term_c1}}</span>
+onym-audit verify \
+  -manifest    https://foldy.io/audit/manifest.json \
+  -attestation https://foldy.io/audit/attestations/&lt;id&gt;.json \
+  -target      &lt;component manifest URL&gt; \
+  -credit      &lt;auditor key&gt;
+
+<span class="c"># {{term_c2}}</span>
+onym-audit conformance-discovery -manifest &lt;provider manifest URL&gt;
+
+<span class="c"># {{term_c3}}</span>
+tools/sandbox.sh</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <section class="commission-sec wrap" id="commission" aria-labelledby="comm-h">
+    <header class="sec-head">
+      <p class="numeral">VII.</p>
+      <h2 id="comm-h">{{comm_h}}</h2>
+    </header>
+    <div class="comm-grid">
+      <div><h3>{{cm1_h}}</h3><p>{{cm1_p}}</p><p class="mono small">POST https://foldy.io/audit/orders</p></div>
+      <div><h3>{{cm2_h}}</h3><p>{{cm2_p}}</p><p class="mono small">POST https://foldy.io/audit/responses</p></div>
+      <div><h3>{{cm3_h}}</h3><p>{{cm3_p}}</p><p class="mono small">offers: conformance-run-discovery · pro-bono</p></div>
+    </div>
+  </section>
+
+  <section class="instruments wrap" id="instruments" aria-labelledby="inst-h">
+    <header class="sec-head">
+      <p class="numeral">VIII.</p>
+      <h2 id="inst-h">{{inst_h}}</h2>
+      <p class="sec-lede">{{inst_lede}}</p>
+    </header>
+    <ul class="docs">
+      <li><a href="{{root}}profile/Audit-Static-Ed25519.md">{{d_profile}}</a><span>{{d_profile_s}}</span></li>
+      <li><a href="{{root}}manifest.json">{{d_manifest}}</a><span>{{d_manifest_s}} · <a href="{{root}}manifest.json.sig">.sig</a></span></li>
+      <li><a href="{{root}}status.json">{{d_status}}</a><span>{{d_status_s}}</span></li>
+      <li><a href="{{root}}methodology/conformance-run.md">{{d_method}}</a><span>{{d_method_s}}</span></li>
+      <li><a href="{{root}}scopes/discovery-static-ed25519-provider.md">{{d_scope}}</a><span>{{d_scope_s}}</span></li>
+      <li><a href="{{root}}policies/independence.md">{{d_indep}}</a><span>{{d_indep_s}}</span></li>
+      <li><a href="{{root}}policies/unsolicited.md">{{d_unsol}}</a><span>{{d_unsol_s}}</span></li>
+      <li><a href="{{root}}policies/liability.md">{{d_liab}}</a><span>{{d_liab_s}}</span></li>
+      <li><a href="{{root}}severity-v1.json">{{d_sev}}</a><span>{{d_sev_s}}</span></li>
+      <li><a href="{{root}}privacy.md">{{d_priv}}</a><span>{{d_priv_s}}</span></li>
+    </ul>
+    <p class="small muted docs-note">{{docs_english}}</p>
+  </section>
+</main>
+
+<footer class="colophon">
+  <div class="wrap">
+    <p class="motto">{{motto}}<span>— Onym Audit.md</span></p>
+    <p class="disclosure">{{disclosure}}</p>
+    <p class="small muted">Dimitrii · <a href="mailto:dubieroj@gmail.com">dubieroj@gmail.com</a> · {{served}}</p>
+  </div>
+</footer>
+<script type="application/json" id="strings">{{js}}</script>
+</body>
+</html>

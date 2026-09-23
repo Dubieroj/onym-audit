@@ -28,7 +28,8 @@ showed **"Audit report: Pending — no audits yet"**.
 | `tools/sandbox.sh` | The whole lifecycle on your machine in one command: issue, reply, order, supersede, revoke, byte drift |
 | [`EXERCISE.md`](EXERCISE.md) | How to exercise the submission — no credentials needed |
 | `server/`, `cmd/onym-audit` | The auditor CLI and the online server (status re-signing, `POST orders`, `POST responses`) |
-| `public/` | The published tree: manifest, profile, policies, methodology, scope, severity scale, privacy profile, web page |
+| `public/` | The published tree: manifest, profile, policies, methodology, scope, severity scale, privacy profile, landing page (EN, RU, CNR) |
+| `web/` | The landing's single template and its strings in all three languages — `python3 tools/build_landing.py` renders `public/{,ru/,cnr/}index.html`; `--check` fails on drift |
 | `deploy/` | systemd unit, nginx snippet, idempotent deploy script |
 
 ## Design in five decisions

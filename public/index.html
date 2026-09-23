@@ -3,54 +3,265 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Onym Auditor</title>
-<meta name="description" content="An independent audit seat on the Onym network: signed, expiring, revocable attestations about exact bytes.">
+<title>Onym Auditor · Dimitrii</title>
+<meta name="description" content="An independent audit seat on the Onym network: signed, expiring, revocable opinions about exact bytes — each naming who examined what, how, and at whose expense.">
+<meta name="color-scheme" content="light dark">
+<link rel="alternate" hreflang="en" href="https://foldy.io/audit/">
+<link rel="alternate" hreflang="ru" href="https://foldy.io/audit/ru/">
+<link rel="alternate" hreflang="sr-Latn-ME" href="https://foldy.io/audit/cnr/">
+<link rel="alternate" hreflang="x-default" href="https://foldy.io/audit/">
 <link rel="stylesheet" href="style.css">
 <script type="module" src="app.js"></script>
 </head>
 <body>
+<div class="grain" aria-hidden="true"></div>
+
+<header class="masthead">
+  <div class="wrap masthead-row">
+    <a class="brand" href="./">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span class="brand-text"><b id="brand-name">Dimitrii</b> <span class="muted">· Onym audit seat</span></span>
+    </a>
+    <nav aria-label="Sections">
+      <a href="#use">Use cases</a>
+      <a href="#register">Register</a>
+      <a href="#rules">Rules</a>
+      <a href="#verify">Verify</a>
+      <a href="#instruments">Documents</a>
+    </nav>
+    <div class="langs" role="navigation" aria-label="Language"><a href="" hreflang="en" lang="en" aria-current="page">EN</a><a href="ru/" hreflang="ru" lang="ru">RU</a><a href="cnr/" hreflang="sr-Latn-ME" lang="sr-Latn-ME">CNR</a></div>
+  </div>
+  <div class="rule-strip"><div class="wrap">Register of attestations · Onym network · seat <code>audit</code> · <code>onym:audit-profile:static-ed25519-v1</code></div></div>
+</header>
+
 <main>
-  <header>
-    <p class="eyebrow">Onym network · audit &amp; attestation seat</p>
-    <h1 id="who">Onym Auditor</h1>
-    <p class="lede">Signed, expiring, revocable opinions about <em>exact bytes</em> — each one naming who examined what, how, and at whose expense. An attestation is one auditor's visible opinion, never a licence or a gate.</p>
-    <dl class="facts" id="facts">
-      <div><dt>Operator key</dt><dd id="opkey">…</dd></div>
-      <div><dt>Status list</dt><dd id="statusline">…</dd></div>
-      <div><dt>Profile</dt><dd><a href="profile/Audit-Static-Ed25519.md">onym:audit-profile:static-ed25519-v1</a></dd></div>
+  <section class="hero wrap">
+    <div class="hero-copy">
+      <p class="kicker reveal">Built at Sobor 2026 · Montelibero City, Bar</p>
+      <h1 class="reveal">Trust claims need a&nbsp;return address.</h1>
+      <p class="lede reveal">Before this seat existed, “audited” was an adjective in a README, and the Onym app read <q>Audit report: Pending — no audits yet</q>. Here every opinion is a signed object: who examined what, which exact bytes, how, at whose expense, and until when.</p>
+      <div class="cta reveal">
+        <a class="btn btn-ink" href="#register">Read the register</a>
+        <a class="btn btn-line" href="#verify">Verify it yourself</a>
+      </div>
+    </div>
+
+    <figure class="seal-fig reveal" aria-live="polite">
+      <svg class="seal" id="seal" viewBox="0 0 240 240" role="img" aria-labelledby="seal-title">
+        <title id="seal-title">Status list signature: checking</title>
+        <defs>
+          <filter id="ink" x="-10%" y="-10%" width="120%" height="120%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="7" result="n"/>
+            <feDisplacementMap in="SourceGraphic" in2="n" scale="2.6"/>
+          </filter>
+          <path id="ring" d="M120,120 m-88,0 a88,88 0 1,1 176,0 a88,88 0 1,1 -176,0"/>
+        </defs>
+        <g class="seal-ink" filter="url(#ink)">
+          <circle cx="120" cy="120" r="112" class="seal-outer"/>
+          <circle cx="120" cy="120" r="74" class="seal-inner"/>
+          <g class="seal-ring">
+            <text class="seal-ringtext"><textPath href="#ring" startOffset="0" id="seal-ringtext" textLength="546" lengthAdjust="spacing">ONYM AUDIT SEAT · ED25519 · BYTES NOT BRANDS ·</textPath></text>
+          </g>
+          <text x="120" y="104" class="seal-small" text-anchor="middle" id="seal-state">CHECKING</text>
+          <text x="120" y="129" class="seal-print" text-anchor="middle" id="seal-print">··:··:··:··</text>
+          <text x="120" y="152" class="seal-small" text-anchor="middle" id="seal-epoch">STATUS LIST</text>
+        </g>
+      </svg>
+      <figcaption id="seal-caption">Your browser is fetching this auditor’s manifest and signed status list, and checking both Ed25519 signatures itself. Nothing on this page is trusted because this server says so.</figcaption>
+    </figure>
+  </section>
+
+  <section class="ledger-facts wrap" aria-label="Auditor identity">
+    <dl>
+      <div><dt>Operator key</dt><dd class="mono" id="f-key">—</dd></div>
+      <div><dt>Status list</dt><dd class="mono" id="f-status">—</dd></div>
+      <div><dt>Next update by</dt><dd class="mono" id="f-next">—</dd></div>
+      <div><dt>Contact</dt><dd id="f-contact">—</dd></div>
     </dl>
-  </header>
-
-  <section>
-    <h2>Attestations</h2>
-    <p class="hint">Everything below is verified in your browser: the manifest and each attestation against the operator key, the status list against the delegated status key. Nothing on this page is trusted because this server says so.</p>
-    <label class="credit"><input type="checkbox" id="credit"> I credit this auditor (otherwise results show as from an uncredited issuer)</label>
-    <div id="atts"><p class="hint">Loading…</p></div>
   </section>
 
-  <section>
-    <h2>Check it yourself</h2>
-    <p>From a terminal, with the reference client:</p>
-    <pre><code>go install ./cmd/onym-audit   # from the source repository
-onym-audit verify -manifest MANIFEST_URL \
-  -attestation ATTESTATION_URL \
-  -target COMPONENT_MANIFEST_URL [-target-document PINNED_DOCUMENT_URL] \
-  -credit OPERATOR_KEY</code></pre>
-    <p>Or compare digests by hand: an attestation applies only while <code>sha256</code> of the component's manifest (and of the pinned document, if any) equals what it names.</p>
-    <pre><code>curl -s COMPONENT_MANIFEST_URL | shasum -a 256</code></pre>
+  <section class="specimen-sec" aria-labelledby="anatomy">
+    <div class="wrap">
+      <header class="sec-head">
+        <p class="numeral">I.</p>
+        <h2 id="anatomy">Anatomy of an attestation</h2>
+        <p class="sec-lede">One auditor’s visible opinion — never a licence, a gate, or a substitute for your own trust decision. Every field below is mandatory, and a client that cannot render one must not show the attestation at all.</p>
+      </header>
+      <div class="specimen-grid">
+        <article class="specimen" aria-label="Specimen attestation">
+          <span class="watermark" aria-hidden="true">SPECIMEN</span>
+          <p class="spec-top"><span class="stamp stamp-clear">CLEAR</span><span class="mono small">att-0001 · conformance-run</span></p>
+          <h3>onym:component:example-courier</h3>
+          <dl class="spec-fields">
+            <div data-n="1"><dt>Issuer</dt><dd>Dimitrii <span class="mono">ea:ef:cb:ce:6e:48:ed:c1</span></dd></div>
+            <div data-n="2"><dt>Exact bytes</dt><dd class="mono">manifest sha256:4c29…a1f0<br>pinned document sha256:9b1e…0c77</dd></div>
+            <div data-n="3"><dt>Method</dt><dd>conformance-run v1, 42 checks, each citing its clause</dd></div>
+            <div data-n="4"><dt>Not examined</dt><dd>client behaviour; host security; history</dd></div>
+            <div data-n="5"><dt>Paid by</dt><dd>self-funded · relationships: none</dd></div>
+            <div data-n="6"><dt>Valid</dt><dd>issued 2 days ago · expires in 28 days</dd></div>
+            <div data-n="7"><dt>Reply</dt><dd><i>“Acknowledged; next audit scheduled.”</i> — signed by the subject</dd></div>
+          </dl>
+        </article>
+        <ol class="annotations">
+          <li><b>A name you can hold to account.</b> The auditor signs with a key its manifest ties to a person, a contact, and published liability terms.</li>
+          <li><b>Bytes, not brands.</b> The digest of the component’s signed manifest — and of the one served document the result depends on. Change a byte and the attestation stops applying.</li>
+          <li><b>A named, versioned method.</b> A result class is only as good as the suite behind it; the suite is published and re-runnable.</li>
+          <li><b>Scope is the whole claim.</b> What was <em>not</em> examined travels with what was. A reader of the result alone must not be more reassured than a reader of the scope.</li>
+          <li><b>The money is visible.</b> Who paid, and every relationship with the subject, sits in the signed object — not a footnote.</li>
+          <li><b>Opinions expire.</b> Judgment ages; a deployment examination lasts 30 days, then says nothing.</li>
+          <li><b>The subject answers back.</b> Its signed reply is served beside the verdict, and the auditor cannot edit it.</li>
+        </ol>
+      </div>
+    </div>
   </section>
 
-  <section class="docs">
-    <h2>Documents this auditor is bound by</h2>
-    <ul>
-      <li><a href="manifest.json">Auditor manifest</a> (<a href="manifest.json.sig">.sig</a>)</li>
-      <li><a href="methodology/conformance-run.md">Methodology: conformance-run v1</a></li>
-      <li><a href="scopes/discovery-static-ed25519-provider.md">Scope: Discovery provider suite</a></li>
-      <li><a href="policies/independence.md">Independence policy</a> · <a href="policies/unsolicited.md">Unsolicited disclosure policy</a> · <a href="policies/liability.md">Liability terms</a></li>
-      <li><a href="severity-v1.json">Severity scale</a> · <a href="privacy.md">Privacy profile</a></li>
-      <li><a href="status.json">Signed status list</a> · subjects reply by <code>POST responses</code> (a signed SubjectResponse)</li>
+  <section class="cases-sec wrap" id="use" aria-labelledby="use-h">
+    <header class="sec-head">
+      <p class="numeral">II.</p>
+      <h2 id="use-h">Who uses it, and how</h2>
+      <p class="sec-lede">Four people, one object. The attestation is the same signed file in every story; what changes is who reads it and what they decide.</p>
+    </header>
+    <div class="cases">
+      <article class="case">
+        <p class="who-tag">A person using Onym</p>
+        <h3>Choosing where her backups live</h3>
+        <ol><li>Settings → Backup operators lists three operators her Discovery catalogs found.</li><li>Her app fetches their attestations and checks each one against the operator’s <em>exact</em> signed manifest, the auditor’s key, and a fresh status list.</li><li>One reads <q>conformance-run · clear · 12 days ago · paid by the operator (declared)</q>. One is unexamined. The third was examined, but its manifest changed last night — so the old verdict no longer shows.</li></ol>
+        <p class="outcome"><b>She decides with evidence, and nothing is blocked.</b> <span class="muted">Shipping clients don’t read attestations yet — Discovery’s <code>evidence</code> field is deferred to its v2, and this profile is the candidate shape. Today: this page and the CLI.</span></p>
+      </article>
+      <article class="case">
+        <p class="who-tag">An operator</p>
+        <h3>Proving a new courier is conformant</h3>
+        <ol><li>He runs a relay and publishes its signed manifest.</li><li>He sends a signed order. The fee is the same whatever the result — no other kind can be written.</li><li>The suite runs; findings reach him first; he fixes them; the re-run is <b>clear</b>, bound to his manifest’s digest. He staples the status list beside his manifest.</li></ol>
+        <p class="outcome"><b>Users and catalogs get a claim they can check, instead of “trust me”.</b> If he ships new bytes, he needs a new examination.</p>
+      </article>
+      <article class="case">
+        <p class="who-tag">A catalog curator</p>
+        <h3>Curating without becoming a gatekeeper</h3>
+        <ol><li>Her Discovery policy says: <q>couriers with a current conformance-run, at most 30 days old, from auditors on this list.</q></li><li>The attestations are portable: a rival catalog can weigh the same ones differently, and users can still import any courier directly.</li><li>When a verdict is revoked or expires, her next snapshot follows — on evidence anyone can re-check.</li></ol>
+        <p class="outcome"><b>Her curation becomes auditable</b>, instead of a private opinion with a logo.</p>
+      </article>
+      <article class="case live">
+        <p class="who-tag">The first examination <span class="live-dot">● live</span></p>
+        <h3>Onym’s own Discovery catalog</h3>
+        <ol><li>On 23 September the 42-check suite ran against <span class="mono">discovery.onym.app</span>, from public bytes only.</li><li>The findings went to the maintainer first. Under the unsolicited policy, the attestation is published no sooner than 12 hours after that notice.</li><li>Onym can answer with a signed reply shown beside it. When the catalog is republished, the attestation stops matching and a re-run supersedes it.</li></ol>
+        <p class="outcome"><b>The whole lifecycle, on a real component, this week.</b> Its entry appears in the register below once published.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="register-sec wrap" id="register" aria-labelledby="register-h">
+    <header class="sec-head">
+      <p class="numeral">III.</p>
+      <h2 id="register-h">The register</h2>
+      <p class="sec-lede">Every attestation this auditor has issued, read from the signed status list and verified in your browser. Adverse results are shown exactly where favorable ones would be.</p>
+    </header>
+    <label class="credit"><input type="checkbox" id="credit"><span>I credit this auditor <span class="muted">— otherwise entries are labelled as from an uncredited issuer; there is no mandatory auditor.</span></span></label>
+    <div id="atts" class="entries"><p class="empty">Reading the register…</p></div>
+  </section>
+
+  <section class="rules-sec" id="rules" aria-labelledby="rules-h">
+    <div class="wrap">
+      <header class="sec-head">
+        <p class="numeral">IV.</p>
+        <h2 id="rules-h">Five rules this auditor cannot break</h2>
+        <p class="sec-lede">Not promises — properties of the documents and the code. Each one is checked by the published fixtures.</p>
+      </header>
+      <ol class="rules">
+        <li><h3>Bytes, not brands</h3><p>An attestation names a git commit, a build hash, or a deployment’s signed manifest digest. A fixed deployment never inherits a <b>fail</b>; a broken one never inherits a <b>clear</b>.</p></li>
+        <li><h3>The seal stays at home</h3><p>The auditor’s key signs attestations offline. The server holds only a delegated status key: it can refresh freshness every six hours, but cannot mint, alter, or revoke a single verdict.</p></li>
+        <li><h3>Checking status reveals nothing</h3><p>One signed list covers every attestation. There is no per-attestation lookup, so asking “is this still valid?” never tells the auditor what you are about to rely on.</p></li>
+        <li><h3>Verdicts are not for sale</h3><p>The only fee models that parse are <code>pro-bono</code> and <code>fixed-verdict-independent</code>. A bonus for a clean result is not forbidden by policy — it is unexpressible.</p></li>
+        <li><h3>Absence is absence</h3><p>An unexamined component shows as unexamined, never as failed. Which auditors count is the reader’s choice; nothing here is a gate to using anything.</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="life-sec wrap" aria-labelledby="life-h">
+    <header class="sec-head">
+      <p class="numeral">V.</p>
+      <h2 id="life-h">From examination to expiry</h2>
+    </header>
+    <ol class="lifeline">
+      <li><span class="dot"></span><b>Examine</b><span>A published suite runs black-box against public bytes.</span></li>
+      <li><span class="dot"></span><b>Notify</b><span>Findings go to the subject first. Exploitable ones are embargoed up to 90 days.</span></li>
+      <li><span class="dot"></span><b>Publish</b><span>A signed attestation, bound to the exact bytes examined.</span></li>
+      <li><span class="dot"></span><b>Reply</b><span>The subject posts a signed answer; it appears beside the verdict.</span></li>
+      <li><span class="dot"></span><b>Supersede · revoke</b><span>A re-run replaces it; a mistake withdraws it, with a reason.</span></li>
+      <li><span class="dot"></span><b>Expire</b><span>Thirty days on, the opinion says nothing more.</span></li>
+    </ol>
+  </section>
+
+  <section class="verify-sec" id="verify" aria-labelledby="verify-h">
+    <div class="wrap verify-grid">
+      <header class="sec-head">
+        <p class="numeral">VI.</p>
+        <h2 id="verify-h">Don’t trust this page</h2>
+        <p class="sec-lede">It verifies itself, but you can do better: two independent clients — Go and JavaScript — pass the same byte-pinned fixtures and reproduce the Onym Discovery reference’s canonical bytes exactly.</p>
+        <ul class="proof">
+          <li><b>34</b> cross-platform fixtures covering the whole Audit.md §14 list</li>
+          <li><b>42</b> conformance checks for Discovery providers, each citing its clause</li>
+          <li><b>2</b> relying clients in two languages, one set of vectors</li>
+        </ul>
+      </header>
+      <div class="terminal" aria-label="Command line">
+        <div class="term-bar"><span></span><span></span><span></span><em>relying client</em></div>
+<pre><code><span class="c"># check a published attestation against the bytes you are about to use</span>
+onym-audit verify \
+  -manifest    https://foldy.io/audit/manifest.json \
+  -attestation https://foldy.io/audit/attestations/&lt;id&gt;.json \
+  -target      &lt;component manifest URL&gt; \
+  -credit      &lt;auditor key&gt;
+
+<span class="c"># re-run the examination yourself</span>
+onym-audit conformance-discovery -manifest &lt;provider manifest URL&gt;
+
+<span class="c"># the whole lifecycle, locally, in one command</span>
+tools/sandbox.sh</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <section class="commission-sec wrap" id="commission" aria-labelledby="comm-h">
+    <header class="sec-head">
+      <p class="numeral">VII.</p>
+      <h2 id="comm-h">Commission an examination</h2>
+    </header>
+    <div class="comm-grid">
+      <div><h3>For operators</h3><p>Run a courier, a catalog, a notary? Send a signed <code>AuditOrder</code> — subject and sponsor sign, the auditor countersigns only after checking its independence policy.</p><p class="mono small">POST https://foldy.io/audit/orders</p></div>
+      <div><h3>For subjects</h3><p>Examined without asking? Unsolicited examinations cover public bytes only, and you are notified before publication. Reply with a signed <code>SubjectResponse</code>; it is published beside the attestation, unedited.</p><p class="mono small">POST https://foldy.io/audit/responses</p></div>
+      <div><h3>For everyone</h3><p>Payment buys examination effort under a published method. It cannot buy a result class, an early exploit, silence, or display priority.</p><p class="mono small">offers: conformance-run-discovery · pro-bono</p></div>
+    </div>
+  </section>
+
+  <section class="instruments wrap" id="instruments" aria-labelledby="inst-h">
+    <header class="sec-head">
+      <p class="numeral">VIII.</p>
+      <h2 id="inst-h">Instruments of this office</h2>
+      <p class="sec-lede">Every document the manifest pins by digest. If a byte changes, the signature no longer covers it.</p>
+    </header>
+    <ul class="docs">
+      <li><a href="profile/Audit-Static-Ed25519.md">Implementation profile</a><span>the first concrete profile of Onym’s audit seat</span></li>
+      <li><a href="manifest.json">Auditor manifest</a><span>signed · <a href="manifest.json.sig">.sig</a></span></li>
+      <li><a href="status.json">Status list</a><span>re-signed every six hours by the delegated key</span></li>
+      <li><a href="methodology/conformance-run.md">Methodology: conformance-run v1</a><span>checks → result class → severity</span></li>
+      <li><a href="scopes/discovery-static-ed25519-provider.md">Scope: Discovery provider suite</a><span>generated from the code that runs it</span></li>
+      <li><a href="policies/independence.md">Independence policy</a><span>ownership, recusal, declared relationships</span></li>
+      <li><a href="policies/unsolicited.md">Unsolicited disclosure policy</a><span>notice first, embargo for exploitable findings</span></li>
+      <li><a href="policies/liability.md">Liability terms</a><span>what the auditor answers for, and what not</span></li>
+      <li><a href="severity-v1.json">Severity scale</a><span>critical → informational</span></li>
+      <li><a href="privacy.md">Privacy profile</a><span>no cookies, no access logs, no third parties</span></li>
     </ul>
+    <p class="small muted docs-note"></p>
   </section>
 </main>
+
+<footer class="colophon">
+  <div class="wrap">
+    <p class="motto">“An attestation is one institution’s visible opinion — never a license, a gate, or a substitute for the reader’s own trust decision.”<span>— Onym Audit.md</span></p>
+    <p class="disclosure">Declared relationship: this seat was built as a participant in Sobor 2026, a contest organized by the maintainer of the Onym reference components. Every attestation about an Onym-operated component states it.</p>
+    <p class="small muted">Dimitrii · <a href="mailto:dubieroj@gmail.com">dubieroj@gmail.com</a> · served from foldy.io without cookies, access logs, or third-party requests.</p>
+  </div>
+</footer>
+<script type="application/json" id="strings">{"verified":"VERIFIED","unverified":"UNVERIFIED","epoch":"epoch {n}","signed":"epoch {n} · signed {ago}","cap_ok":"Verified in your browser just now: the manifest is signed by operator key {print}, and the status list — signed {ago} — by the delegated status key the manifest names. Nothing on this page is trusted because this server says so.","cap_fail":"Not verified: {why}. Treat every entry below as unconfirmed.","why_manifest":"the manifest signature did not verify","why_nostatus":"no status list was served","why_badsig":"the status list signature did not verify","why_stale":"the status list is stale","no_manifest":"The auditor manifest could not be loaded: {err}","reg_no_manifest":"The register cannot be read without the auditor manifest.","reg_no_status":"No status list is being served, so no entry can be confirmed as current.","reg_empty_b":"No entries yet. ","reg_empty":"The first examination is in its notice period: under the unsolicited policy, findings are published no sooner than 12 hours after the subject has been notified.","fetch_fail":"{id}: could not be fetched ({err})","issued":"issued {ago}","expires":"expires {date}","k_scope":"Scope","k_notexam":"Not examined","k_findings":"Findings","k_paid":"Paid by","k_rel":"Relationships","k_notice":"Notice","k_applies":"Applies only to","notice_v":"unsolicited; subject notified {at} via {via}","applies_v":"{src} — manifest {rev}","applies_pin":", pinned document {pin}","none":"none","floor":"floor: {f}","l_att":"attestation","l_report":"findings report","l_method":"methodology","l_scope":"scope","replied":"The subject replied: ","ago_lt1h":"less than an hour ago","ago_h":"{n} h ago","ago_d":"{n} days ago","d_attested":"attested","d_uncredited":"uncredited issuer","d_status-unknown":"status unknown","d_expired":"expired","d_superseded":"superseded","d_revoked":"revoked","d_no-attestation":"does not apply"}</script>
 </body>
 </html>

@@ -113,6 +113,15 @@ func (s *Server) static(w http.ResponseWriter, r *http.Request) {
 	}
 	full := filepath.Join(s.Root, filepath.FromSlash(p))
 	fi, err := os.Stat(full)
+	if err == nil && fi.IsDir() {
+		// A language directory serves its index page, as nginx does.
+		if !strings.HasSuffix(r.URL.Path, "/") {
+			http.Redirect(w, r, r.URL.Path+"/", http.StatusMovedPermanently)
+			return
+		}
+		full = filepath.Join(full, "index.html")
+		fi, err = os.Stat(full)
+	}
 	if err != nil || fi.IsDir() {
 		http.NotFound(w, r)
 		return

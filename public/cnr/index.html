@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="sr-Latn-ME">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Onym Auditor · Dimitrii</title>
+<meta name="description" content="Nezavisni revizor mreže Onym: potpisana, vremenski ograničena i opoziva mišljenja o tačno određenim bajtovima — uz navod ko je šta pregledao, kako i o čijem trošku.">
+<meta name="color-scheme" content="light dark">
+<link rel="alternate" hreflang="en" href="https://foldy.io/audit/">
+<link rel="alternate" hreflang="ru" href="https://foldy.io/audit/ru/">
+<link rel="alternate" hreflang="sr-Latn-ME" href="https://foldy.io/audit/cnr/">
+<link rel="alternate" hreflang="x-default" href="https://foldy.io/audit/">
+<link rel="stylesheet" href="../style.css">
+<script type="module" src="../app.js"></script>
+</head>
+<body>
+<div class="grain" aria-hidden="true"></div>
+
+<header class="masthead">
+  <div class="wrap masthead-row">
+    <a class="brand" href="./">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span class="brand-text"><b id="brand-name">Dimitrii</b> <span class="muted">· revizor mreže Onym</span></span>
+    </a>
+    <nav aria-label="Odjeljci">
+      <a href="#use">Primjeri</a>
+      <a href="#register">Registar</a>
+      <a href="#rules">Pravila</a>
+      <a href="#verify">Provjera</a>
+      <a href="#instruments">Dokumenti</a>
+    </nav>
+    <div class="langs" role="navigation" aria-label="Jezik"><a href="../" hreflang="en" lang="en">EN</a><a href="../ru/" hreflang="ru" lang="ru">RU</a><a href="../cnr/" hreflang="sr-Latn-ME" lang="sr-Latn-ME" aria-current="page">CNR</a></div>
+  </div>
+  <div class="rule-strip"><div class="wrap">Registar atestacija · mreža Onym · uloga <code>audit</code> · <code>onym:audit-profile:static-ed25519-v1</code></div></div>
+</header>
+
+<main>
+  <section class="hero wrap">
+    <div class="hero-copy">
+      <p class="kicker reveal">Napravljeno na Sobor 2026 · Montelibero City, Bar</p>
+      <h1 class="reveal">Povjerenje mora imati povratnu adresu.</h1>
+      <p class="lede reveal">Prije ove uloge, „provjereno“ je bila samo riječ u README fajlu, a aplikacija Onym je pisala <q>Audit report: Pending — no audits yet</q>. Ovdje je svako mišljenje potpisan dokument: ko je pregledao, šta tačno, koje bajtove, kojom metodom, o čijem trošku i do kada.</p>
+      <div class="cta reveal">
+        <a class="btn btn-ink" href="#register">Otvori registar</a>
+        <a class="btn btn-line" href="#verify">Provjeri sam</a>
+      </div>
+    </div>
+
+    <figure class="seal-fig reveal" aria-live="polite">
+      <svg class="seal" id="seal" viewBox="0 0 240 240" role="img" aria-labelledby="seal-title">
+        <title id="seal-title">Potpis liste statusa: provjerava se</title>
+        <defs>
+          <filter id="ink" x="-10%" y="-10%" width="120%" height="120%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="7" result="n"/>
+            <feDisplacementMap in="SourceGraphic" in2="n" scale="2.6"/>
+          </filter>
+          <path id="ring" d="M120,120 m-88,0 a88,88 0 1,1 176,0 a88,88 0 1,1 -176,0"/>
+        </defs>
+        <g class="seal-ink" filter="url(#ink)">
+          <circle cx="120" cy="120" r="112" class="seal-outer"/>
+          <circle cx="120" cy="120" r="74" class="seal-inner"/>
+          <g class="seal-ring">
+            <text class="seal-ringtext"><textPath href="#ring" startOffset="0" id="seal-ringtext" textLength="546" lengthAdjust="spacing">ONYM AUDIT SEAT · ED25519 · BYTES NOT BRANDS ·</textPath></text>
+          </g>
+          <text x="120" y="104" class="seal-small" text-anchor="middle" id="seal-state">PROVJERA</text>
+          <text x="120" y="129" class="seal-print" text-anchor="middle" id="seal-print">··:··:··:··</text>
+          <text x="120" y="152" class="seal-small" text-anchor="middle" id="seal-epoch">LISTA STATUSA</text>
+        </g>
+      </svg>
+      <figcaption id="seal-caption">Vaš pregledač upravo sam preuzima manifest revizora i potpisanu listu statusa i provjerava oba Ed25519 potpisa. Ništa na ovoj stranici ne morate vjerovati na riječ servera.</figcaption>
+    </figure>
+  </section>
+
+  <section class="ledger-facts wrap" aria-label="Ko je revizor">
+    <dl>
+      <div><dt>Ključ operatora</dt><dd class="mono" id="f-key">—</dd></div>
+      <div><dt>Lista statusa</dt><dd class="mono" id="f-status">—</dd></div>
+      <div><dt>Sljedeće ažuriranje najkasnije</dt><dd class="mono" id="f-next">—</dd></div>
+      <div><dt>Kontakt</dt><dd id="f-contact">—</dd></div>
+    </dl>
+  </section>
+
+  <section class="specimen-sec" aria-labelledby="anatomy">
+    <div class="wrap">
+      <header class="sec-head">
+        <p class="numeral">I.</p>
+        <h2 id="anatomy">Od čega se sastoji atestacija</h2>
+        <p class="sec-lede">Javno mišljenje jednog revizora — nikada licenca, rampa ili zamjena za vašu sopstvenu odluku o povjerenju. Svako polje ispod je obavezno: klijent koji ne može prikazati neko od njih ne smije prikazati atestaciju uopšte.</p>
+      </header>
+      <div class="specimen-grid">
+        <article class="specimen" aria-label="Primjerak atestacije">
+          <span class="watermark" aria-hidden="true">PRIMJERAK</span>
+          <p class="spec-top"><span class="stamp stamp-clear">CLEAR</span><span class="mono small">att-0001 · conformance-run</span></p>
+          <h3>onym:component:example-courier</h3>
+          <dl class="spec-fields">
+            <div data-n="1"><dt>Izdao</dt><dd>Dimitrii <span class="mono">ea:ef:cb:ce:6e:48:ed:c1</span></dd></div>
+            <div data-n="2"><dt>Tačni bajtovi</dt><dd class="mono">manifest sha256:4c29…a1f0<br>prikovani dokument sha256:9b1e…0c77</dd></div>
+            <div data-n="3"><dt>Metoda</dt><dd>conformance-run v1, 42 provjere, svaka s pozivom na odredbu</dd></div>
+            <div data-n="4"><dt>Nije pregledano</dt><dd>ponašanje klijenata; bezbjednost hosta; istorija</dd></div>
+            <div data-n="5"><dt>Platio</dt><dd>o sopstvenom trošku · veze sa subjektom: nema</dd></div>
+            <div data-n="6"><dt>Važi</dt><dd>izdata prije 2 dana · ističe za 28 dana</dd></div>
+            <div data-n="7"><dt>Odgovor</dt><dd><i>„Primljeno; sljedeća revizija je zakazana.“</i> — potpisao subjekt</dd></div>
+          </dl>
+        </article>
+        <ol class="annotations">
+          <li><b>Ime od kojeg se može tražiti odgovornost.</b> Revizor potpisuje ključem koji njegov manifest vezuje za osobu, kontakt i objavljene uslove odgovornosti.</li>
+          <li><b>Bajtovi, a ne brendovi.</b> Heš potpisanog manifesta komponente — i jednog dokumenta od kojeg rezultat zavisi. Promijeni se ijedan bajt i atestacija prestaje da važi.</li>
+          <li><b>Imenovana metoda s verzijom.</b> Rezultat vrijedi onoliko koliko skup provjera iza njega, a skup je objavljen i može se ponovo pokrenuti.</li>
+          <li><b>Obim je cijela tvrdnja.</b> Ono što <em>nije</em> pregledano ide zajedno s onim što jeste. Ko pročita samo rezultat ne smije biti mirniji od onoga ko pročita obim.</li>
+          <li><b>Novac je vidljiv.</b> Ko je platio i svaka veza sa subjektom stoje u potpisanom dokumentu, a ne u fusnoti.</li>
+          <li><b>Mišljenja ističu.</b> Procjene zastarijevaju: pregled pokrenutog servisa važi 30 dana, a onda više ništa ne tvrdi.</li>
+          <li><b>Subjekt odgovara.</b> Njegov potpisani odgovor stoji pored mišljenja, a revizor ga ne može mijenjati.</li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <section class="cases-sec wrap" id="use" aria-labelledby="use-h">
+    <header class="sec-head">
+      <p class="numeral">II.</p>
+      <h2 id="use-h">Ko ovo koristi i kako</h2>
+      <p class="sec-lede">Četiri osobe, jedan dokument. U svakoj priči atestacija je isti potpisani fajl; mijenja se samo ko ga čita i šta odlučuje.</p>
+    </header>
+    <div class="cases">
+      <article class="case">
+        <p class="who-tag">Korisnica Onym-a</p>
+        <h3>Bira gdje će čuvati rezervne kopije</h3>
+        <ol><li>U podešavanjima, među operatorima rezervnih kopija, tri operatora koje su pronašli njeni Discovery katalozi.</li><li>Aplikacija preuzima njihove atestacije i svaku upoređuje s <em>tačnim</em> potpisanim manifestom operatora, ključem revizora i svježom listom statusa.</li><li>Kod jednog piše <q>conformance-run · clear · prije 12 dana · platio sam operator (prijavljeno)</q>. Drugi nije pregledan. Treći jeste, ali mu se manifest sinoć promijenio — pa se staro mišljenje više ne prikazuje.</li></ol>
+        <p class="outcome"><b>Odlučuje na osnovu dokaza, a ništa nije blokirano.</b> <span class="muted">Objavljeni klijenti još ne čitaju atestacije — polje <code>evidence</code> u Discovery-ju odloženo je za v2, a ovaj profil je kandidat za njegov oblik. Danas: ova stranica i alat iz komandne linije.</span></p>
+      </article>
+      <article class="case">
+        <p class="who-tag">Operator</p>
+        <h3>Dokazuje da je novi kurir usklađen</h3>
+        <ol><li>Drži relej i objavljuje njegov potpisani manifest.</li><li>Šalje potpisanu narudžbu. Cijena je ista bez obzira na rezultat — drugačija se ne može ni zapisati.</li><li>Provjera se pokreće; nalazi prvo stižu njemu; on ih ispravlja; ponovljeni pregled je <b>clear</b>, vezan za heš njegovog manifesta. Listu statusa stavlja pored manifesta.</li></ol>
+        <p class="outcome"><b>Korisnici i katalozi dobijaju provjerljivu tvrdnju umjesto „vjerujte mi“.</b> Ako objavi nove bajtove, treba mu novi pregled.</p>
+      </article>
+      <article class="case">
+        <p class="who-tag">Kustoskinja kataloga</p>
+        <h3>Bira bez uloge vratara</h3>
+        <ol><li>Njena Discovery politika kaže: <q>kuriri s važećim conformance-run pregledom, ne starijim od 30 dana, od revizora s ove liste.</q></li><li>Atestacije su prenosive: konkurentski katalog može iste odmjeriti drugačije, a korisnici i dalje mogu direktno dodati bilo kojeg kurira.</li><li>Kad je mišljenje opozvano ili istekne, njen sljedeći snimak to prati — na osnovu dokaza koje svako može ponovo provjeriti.</li></ol>
+        <p class="outcome"><b>Njen izbor postaje provjerljiv</b>, umjesto privatnog mišljenja s logom.</p>
+      </article>
+      <article class="case live">
+        <p class="who-tag">Prvi pregled <span class="live-dot">● u toku</span></p>
+        <h3>Onym-ov sopstveni Discovery katalog</h3>
+        <ol><li>23. septembra skup od 42 provjere pokrenut je nad <span class="mono">discovery.onym.app</span>, samo nad javnim bajtovima.</li><li>Nalazi su prvo poslati održavaocu. Po politici nenaručenih pregleda, atestacija se objavljuje najranije 12 sati nakon tog obavještenja.</li><li>Onym može odgovoriti potpisanim odgovorom koji će stajati pored nje. Kad se katalog ponovo objavi, atestacija prestaje da se poklapa i zamjenjuje je novi pregled.</li></ol>
+        <p class="outcome"><b>Cijeli životni ciklus, na stvarnoj komponenti, ove sedmice.</b> Zapis se pojavljuje u registru ispod čim bude objavljen.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="register-sec wrap" id="register" aria-labelledby="register-h">
+    <header class="sec-head">
+      <p class="numeral">III.</p>
+      <h2 id="register-h">Registar</h2>
+      <p class="sec-lede">Sve atestacije koje je ovaj revizor izdao, pročitane iz potpisane liste statusa i provjerene u vašem pregledaču. Nepovoljni rezultati prikazuju se tačno tamo gdje i povoljni.</p>
+    </header>
+    <label class="credit"><input type="checkbox" id="credit"><span>Vjerujem ovom revizoru <span class="muted">— inače su zapisi označeni kao od revizora kojem ne vjerujete; obaveznog revizora nema.</span></span></label>
+    <div id="atts" class="entries"><p class="empty">Čitam registar…</p></div>
+  </section>
+
+  <section class="rules-sec" id="rules" aria-labelledby="rules-h">
+    <div class="wrap">
+      <header class="sec-head">
+        <p class="numeral">IV.</p>
+        <h2 id="rules-h">Pet pravila koja ovaj revizor ne može prekršiti</h2>
+        <p class="sec-lede">Nisu obećanja, već svojstva dokumenata i koda. Svako provjeravaju objavljeni test vektori.</p>
+      </header>
+      <ol class="rules">
+        <li><h3>Bajtovi, a ne brendovi</h3><p>Atestacija imenuje git komit, heš build-a ili heš potpisanog manifesta pokrenutog servisa. Popravljeni servis nikad ne nasljeđuje <b>fail</b>, a pokvareni nikad <b>clear</b>.</p></li>
+        <li><h3>Pečat ostaje kod kuće</h3><p>Ključ revizora potpisuje atestacije van mreže. Na serveru je samo delegirani ključ statusa: svakih šest sati osvježava svježinu, ali ne može izdati, izmijeniti ni opozvati nijedno mišljenje.</p></li>
+        <li><h3>Provjera statusa ništa ne otkriva</h3><p>Jedna potpisana lista pokriva sve atestacije. Nema upita za pojedinačnu atestaciju, pa pitanje „da li ovo još važi?“ ne govori revizoru na šta se spremate osloniti.</p></li>
+        <li><h3>Mišljenja nisu na prodaju</h3><p>Jedini modeli naplate koji prolaze su <code>pro-bono</code> i <code>fixed-verdict-independent</code>. Bonus za čist rezultat nije zabranjen pravilima — jednostavno se ne može zapisati.</p></li>
+        <li><h3>Odsustvo je odsustvo</h3><p>Nepregledana komponenta prikazuje se kao nepregledana, nikad kao neuspješna. Kojim revizorima vjerovati bira čitalac; ništa ovdje nije rampa za korišćenje bilo čega.</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="life-sec wrap" aria-labelledby="life-h">
+    <header class="sec-head">
+      <p class="numeral">V.</p>
+      <h2 id="life-h">Od pregleda do isteka</h2>
+    </header>
+    <ol class="lifeline">
+      <li><span class="dot"></span><b>Pregled</b><span>Objavljeni skup provjera pokreće se kao crna kutija nad javnim bajtovima.</span></li>
+      <li><span class="dot"></span><b>Obavještenje</b><span>Nalazi prvo idu subjektu. Iskoristivi su pod embargom do 90 dana.</span></li>
+      <li><span class="dot"></span><b>Objava</b><span>Potpisana atestacija, vezana za tačne pregledane bajtove.</span></li>
+      <li><span class="dot"></span><b>Odgovor</b><span>Subjekt objavljuje potpisani odgovor; pojavljuje se pored mišljenja.</span></li>
+      <li><span class="dot"></span><b>Zamjena · opoziv</b><span>Ponovljeni pregled je zamjenjuje; greška je povlači, uz razlog.</span></li>
+      <li><span class="dot"></span><b>Istek</b><span>Nakon trideset dana mišljenje više ništa ne tvrdi.</span></li>
+    </ol>
+  </section>
+
+  <section class="verify-sec" id="verify" aria-labelledby="verify-h">
+    <div class="wrap verify-grid">
+      <header class="sec-head">
+        <p class="numeral">VI.</p>
+        <h2 id="verify-h">Ne vjerujte ovoj stranici</h2>
+        <p class="sec-lede">Ona sama sebe provjerava, ali možete i bolje: dva nezavisna klijenta — u Go-u i JavaScript-u — prolaze iste bajt po bajt prikovane vektore i tačno reprodukuju kanonske bajtove Onym-ove referentne Discovery implementacije.</p>
+        <ul class="proof">
+          <li><b>34</b> međuplatformskih vektora za cijelu listu iz §14 Audit.md</li>
+          <li><b>42</b> provjere usklađenosti za Discovery provajdere, svaka s odredbom</li>
+          <li><b>2</b> klijenta na dva jezika, jedan skup vektora</li>
+        </ul>
+      </header>
+      <div class="terminal" aria-label="Komandna linija">
+        <div class="term-bar"><span></span><span></span><span></span><em>klijent koji provjerava</em></div>
+<pre><code><span class="c"># uporedi objavljenu atestaciju s bajtovima koje ćete koristiti</span>
+onym-audit verify \
+  -manifest    https://foldy.io/audit/manifest.json \
+  -attestation https://foldy.io/audit/attestations/&lt;id&gt;.json \
+  -target      &lt;component manifest URL&gt; \
+  -credit      &lt;auditor key&gt;
+
+<span class="c"># sami ponovite pregled</span>
+onym-audit conformance-discovery -manifest &lt;provider manifest URL&gt;
+
+<span class="c"># cijeli životni ciklus lokalno, jednom komandom</span>
+tools/sandbox.sh</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <section class="commission-sec wrap" id="commission" aria-labelledby="comm-h">
+    <header class="sec-head">
+      <p class="numeral">VII.</p>
+      <h2 id="comm-h">Naručite pregled</h2>
+    </header>
+    <div class="comm-grid">
+      <div><h3>Operatorima</h3><p>Držite kurira, katalog, notara? Pošaljite potpisani <code>AuditOrder</code>: potpisuju subjekt i sponzor, a revizor supotpisuje tek nakon provjere svoje politike nezavisnosti.</p><p class="mono small">POST https://foldy.io/audit/orders</p></div>
+      <div><h3>Subjektima</h3><p>Pregledani ste bez pitanja? Nenaručeni pregledi obuhvataju samo javne bajtove, a obavještavaju vas prije objave. Odgovorite potpisanim <code>SubjectResponse</code>; objavljuje se pored atestacije, bez izmjena.</p><p class="mono small">POST https://foldy.io/audit/responses</p></div>
+      <div><h3>Svima</h3><p>Plaćanje kupuje rad na pregledu po objavljenoj metodi. Ne kupuje rezultat, rani pristup ranjivostima, ćutanje niti prioritet prikaza.</p><p class="mono small">offers: conformance-run-discovery · pro-bono</p></div>
+    </div>
+  </section>
+
+  <section class="instruments wrap" id="instruments" aria-labelledby="inst-h">
+    <header class="sec-head">
+      <p class="numeral">VIII.</p>
+      <h2 id="inst-h">Dokumenti ovog revizora</h2>
+      <p class="sec-lede">Svaki dokument koji manifest prikiva hešom. Promijeni se ijedan bajt i potpis ga više ne pokriva.</p>
+    </header>
+    <ul class="docs">
+      <li><a href="../profile/Audit-Static-Ed25519.md">Profil implementacije</a><span>prvi konkretni profil revizorske uloge u Onym-u</span></li>
+      <li><a href="../manifest.json">Manifest revizora</a><span>potpisan · <a href="../manifest.json.sig">.sig</a></span></li>
+      <li><a href="../status.json">Lista statusa</a><span>ponovo se potpisuje svakih šest sati delegiranim ključem</span></li>
+      <li><a href="../methodology/conformance-run.md">Metodologija: conformance-run v1</a><span>provjere → klasa rezultata → ozbiljnost</span></li>
+      <li><a href="../scopes/discovery-static-ed25519-provider.md">Obim: skup za Discovery provajdere</a><span>generisan iz koda koji ga izvršava</span></li>
+      <li><a href="../policies/independence.md">Politika nezavisnosti</a><span>vlasništvo, izuzeće, prijavljene veze</span></li>
+      <li><a href="../policies/unsolicited.md">Politika nenaručenih pregleda</a><span>prvo obavještenje, embargo za iskoristive nalaze</span></li>
+      <li><a href="../policies/liability.md">Uslovi odgovornosti</a><span>za šta revizor odgovara, a za šta ne</span></li>
+      <li><a href="../severity-v1.json">Skala ozbiljnosti</a><span>critical → informational</span></li>
+      <li><a href="../privacy.md">Profil privatnosti</a><span>bez kolačića, bez dnevnika pristupa, bez trećih strana</span></li>
+    </ul>
+    <p class="small muted docs-note">Normativni dokumenti objavljeni su na engleskom: potpis prikiva upravo njihove bajtove.</p>
+  </section>
+</main>
+
+<footer class="colophon">
+  <div class="wrap">
+    <p class="motto">„Atestacija je javno mišljenje jedne institucije — nikada licenca, rampa ili zamjena za čitaočevu sopstvenu odluku o povjerenju.“<span>— Onym Audit.md</span></p>
+    <p class="disclosure">Prijavljena veza: ova uloga napravljena je kao učešće na Sobor 2026, takmičenju koje organizuje održavalac Onym-ovih referentnih komponenti. Svaka atestacija o komponenti kojom upravlja Onym to navodi.</p>
+    <p class="small muted">Dimitrii · <a href="mailto:dubieroj@gmail.com">dubieroj@gmail.com</a> · servira se s foldy.io bez kolačića, dnevnika pristupa i zahtjeva ka trećim stranama.</p>
+  </div>
+</footer>
+<script type="application/json" id="strings">{"verified":"PROVJERENO","unverified":"NEPROVJERENO","epoch":"epoha {n}","signed":"epoha {n} · potpisana {ago}","cap_ok":"Upravo provjereno u vašem pregledaču: manifest je potpisan ključem operatora {print}, a lista statusa, potpisana {ago}, delegiranim ključem koji manifest imenuje. Ništa na ovoj stranici ne morate vjerovati na riječ servera.","cap_fail":"Nije provjereno: {why}. Smatrajte sve zapise ispod nepotvrđenim.","why_manifest":"potpis manifesta se ne slaže","why_nostatus":"lista statusa se ne servira","why_badsig":"potpis liste statusa se ne slaže","why_stale":"lista statusa je zastarjela","no_manifest":"Manifest revizora nije mogao da se učita: {err}","reg_no_manifest":"Registar se ne može pročitati bez manifesta revizora.","reg_no_status":"Lista statusa se ne servira, pa se nijedan zapis ne može potvrditi kao važeći.","reg_empty_b":"Još nema zapisa. ","reg_empty":"Prvi pregled je u periodu obavještenja: po politici nenaručenih pregleda, nalazi se objavljuju najranije 12 sati nakon što je subjekt obaviješten.","fetch_fail":"{id}: nije moglo da se preuzme ({err})","issued":"izdata {ago}","expires":"ističe {date}","k_scope":"Obim","k_notexam":"Nije pregledano","k_findings":"Nalazi","k_paid":"Platio","k_rel":"Veze","k_notice":"Obavještenje","k_applies":"Važi samo za","notice_v":"nenaručeno; subjekt obaviješten {at} preko {via}","applies_v":"{src} — manifest {rev}","applies_pin":", prikovani dokument {pin}","none":"nema","floor":"prag: {f}","l_att":"atestacija","l_report":"izvještaj o nalazima","l_method":"metodologija","l_scope":"obim","replied":"Subjekt je odgovorio: ","ago_lt1h":"prije manje od sat","ago_h":"prije {n} h","ago_d":"prije {n} dana","d_attested":"važi","d_uncredited":"revizor van vašeg povjerenja","d_status-unknown":"status nepoznat","d_expired":"istekla","d_superseded":"zamijenjena","d_revoked":"opozvana","d_no-attestation":"ne primjenjuje se"}</script>
+</body>
+</html>

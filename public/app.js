@@ -1,6 +1,10 @@
-import { verifyAttestation, parseStrict, plain, fingerprint, digest } from "./verify.js";
+import { verifyAttestation, verifySig, parseStrict, plain, fingerprint, digest } from "./verify.js";
 
 const $ = (id) => document.getElementById(id);
+const ROOT = new URL(".", import.meta.url); // the auditor's root, whatever page loaded us
+const T = JSON.parse(document.getElementById("strings")?.textContent || "{}");
+const t = (k, vars = {}) => (T[k] ?? k).replace(/\{(\w+)\}/g, (_, v) => vars[v] ?? "");
+const at = (p) => new URL(p, ROOT).href;
 const el = (tag, cls, text) => {
   const n = document.createElement(tag);
   if (cls) n.className = cls;
@@ -8,31 +12,71 @@ const el = (tag, cls, text) => {
   return n;
 };
 const get = async (url) => {
-  const r = await fetch(url, { credentials: "omit", cache: "no-cache" });
+  const r = await fetch(at(url), { credentials: "omit", cache: "no-cache" });
   if (!r.ok) throw new Error(`${url}: HTTP ${r.status}`);
   return r.text();
 };
-const days = (iso) => Math.floor((Date.now() - Date.parse(iso)) / 86400000);
+const ago = (iso) => {
+  const h = Math.floor((Date.now() - Date.parse(iso)) / 3600000);
+  if (h < 1) return t("ago_lt1h");
+  if (h < 48) return t("ago_h", { n: h });
+  return t("ago_d", { n: Math.floor(h / 24) });
+};
+// Documents are named by absolute URI under the manifest's base; fetch them
+// from wherever this page is served.
+let base = "";
+const local = (u) => (base && u.startsWith(base) ? at(u.slice(base.length)) : u);
 
 let manifestText, statusText, manifest;
+
+function seal(state, print, epoch, caption) {
+  const s = $("seal");
+  s.classList.remove("verified", "failed");
+  if (state === t("verified")) s.classList.add("verified");
+  if (state === t("unverified")) s.classList.add("failed");
+  $("seal-state").textContent = state;
+  $("seal-print").textContent = print;
+  $("seal-epoch").textContent = epoch;
+  s.querySelector("title").textContent = state;
+  if (caption) $("seal-caption").textContent = caption;
+}
 
 async function main() {
   try {
     manifestText = await get("manifest.json");
     manifest = plain(parseStrict(manifestText));
   } catch (e) {
-    $("atts").replaceChildren(el("p", "bad", "Could not load the auditor manifest: " + e.message));
+    seal(t("unverified"), "—", "", t("no_manifest", { err: e.message }));
+    $("atts").replaceChildren(el("p", "empty", t("reg_no_manifest")));
     return;
   }
-  document.title = `${manifest.displayName} · Onym auditor`;
-  $("who").textContent = manifest.displayName;
-  $("opkey").textContent = `${await fingerprint(manifest.operator)}  (${manifest.operator})`;
+  base = manifest.statusEndpoint.replace(/status\.json$/, "");
+  const print = await fingerprint(manifest.operator);
+  $("brand-name").textContent = manifest.displayName;
+  // The ring's textLength spreads the words evenly around the circle.
+  $("seal-ringtext").textContent = `${manifest.displayName.toUpperCase()} · ONYM AUDIT SEAT · ED25519 ·`;
+  $("f-key").textContent = print;
+  $("f-key").title = manifest.operator;
+  const mail = manifest.contact.replace(/^mailto:/, "");
+  const a = el("a", "", mail);
+  a.href = manifest.contact;
+  $("f-contact").replaceChildren(a);
+
+  const manifestOK = await verifySig(manifestText, manifest.operator).catch(() => false);
   try { statusText = await get("status.json"); } catch { statusText = null; }
+  let statusOK = false, st = null;
   if (statusText) {
-    const st = plain(parseStrict(statusText));
-    $("statusline").textContent = `epoch ${st.statusEpoch}, signed ${st.issuedAt}, next update by ${st.nextUpdate}`;
+    st = plain(parseStrict(statusText));
+    statusOK = st.statusKey === manifest.statusKey && st.auditorKey === manifest.operator && (await verifySig(statusText, manifest.statusKey).catch(() => false));
+    $("f-status").textContent = t("signed", { n: st.statusEpoch, ago: ago(st.issuedAt) });
+    $("f-next").textContent = st.nextUpdate.replace("T", " ").replace("Z", " UTC");
+  }
+  const fresh = st && Date.parse(st.nextUpdate) > Date.now();
+  if (manifestOK && statusOK && fresh) {
+    seal(t("verified"), print.slice(0, 11), t("epoch", { n: st.statusEpoch }), t("cap_ok", { print, ago: ago(st.issuedAt) }));
   } else {
-    $("statusline").textContent = "unavailable";
+    const why = !manifestOK ? t("why_manifest") : !statusText ? t("why_nostatus") : !statusOK ? t("why_badsig") : t("why_stale");
+    seal(t("unverified"), print.slice(0, 11), "", t("cap_fail", { why }));
   }
   $("credit").addEventListener("change", render);
   await render();
@@ -40,63 +84,69 @@ async function main() {
 
 async function render() {
   const box = $("atts");
-  if (!statusText) { box.replaceChildren(el("p", "bad", "No status list: attestations cannot be checked as current.")); return; }
+  if (!statusText) { box.replaceChildren(el("p", "empty", t("reg_no_status"))); return; }
   const st = plain(parseStrict(statusText));
-  if (st.entries.length === 0) { box.replaceChildren(el("p", "hint", "No attestations issued yet.")); return; }
-  const cards = [];
-  for (const e of st.entries) cards.push(await card(e));
-  box.replaceChildren(...cards);
+  if (st.entries.length === 0) {
+    const p = el("p", "empty");
+    p.append(el("b", "", t("reg_empty_b")), document.createTextNode(t("reg_empty")));
+    box.replaceChildren(p);
+    return;
+  }
+  const rows = [];
+  for (const e of st.entries) rows.push(await entry(e));
+  box.replaceChildren(...rows);
 }
 
-async function card(entry) {
-  const c = el("article", "card");
+async function entry(e) {
+  const row = el("article", "entry");
   let attText;
-  try { attText = await get(entry.attestation.uri.replace(/^.*\/attestations\//, "attestations/")); } catch (e) {
-    c.append(el("p", "bad", `Attestation ${entry.attestationId} could not be fetched: ${e.message}`));
-    return c;
+  try { attText = await get(local(e.attestation.uri)); } catch (err) {
+    row.append(el("p", "note", t("fetch_fail", { id: e.attestationId, err: err.message })));
+    return row;
   }
   const credited = $("credit").checked;
   const d = await verifyAttestation({ manifestText, attText, statusText, target: null, credited });
   const a = d.att ?? plain(parseStrict(attText));
 
-  const head = el("div", "cardhead");
-  head.append(el("span", `result r-${a.result}`, a.result.toUpperCase()), el("span", `state s-${d.display}`, d.display));
-  c.append(head);
-  c.append(el("h3", "", `${a.subject} — ${a.methodologyClass}`));
-  const line = `${manifest.displayName} attested this ${days(a.issuedAt)} day(s) ago` + (a.expiresAt ? `; expires ${a.expiresAt}.` : ".");
-  c.append(el("p", "who", line));
+  const side = el("div", "entry-side");
+  side.append(el("span", `stamp r-${a.result}`, a.result.toUpperCase()), el("span", `state s-${d.display}`, t("d_" + d.display)), el("span", "state", e.attestationId));
+  const body = el("div");
+  body.append(el("h3", "", a.subject));
+  body.append(el("p", "who", `${a.methodologyClass} · ${t("issued", { ago: ago(a.issuedAt) })}` + (a.expiresAt ? ` · ${t("expires", { date: a.expiresAt.slice(0, 10) })}` : "")));
 
   const dl = el("dl", "kv");
-  const row = (k, v) => { const w = el("div"); w.append(el("dt", "", k), el("dd", "", v)); dl.append(w); };
-  row("Scope", a.scopeSummary);
-  row("Not examined", a.exclusions.join("; ") || "—");
-  row("Findings", (Object.entries(a.findingsSummary).map(([k, v]) => `${v} ${k}`).join(", ") || "none") + (a.severityFloor ? ` (floor: ${a.severityFloor})` : ""));
-  row("Paid by", `${a.sponsorName} (${await fingerprint(a.sponsor)})`);
-  row("Relationships", a.relationships);
-  row("Engagement", a.engagement + (a.unsolicited ? ` — subject notified ${a.unsolicited.subjectNotifiedAt} via ${a.unsolicited.subjectContact}` : ""));
-  row("Applies only to", `${a.artifact.source} with sha256 ${a.artifact.revision.slice(7, 23)}…` + (a.artifact.artifactHash ? ` and a pinned served document ${a.artifact.artifactHash.slice(7, 23)}…` : ""));
-  c.append(dl);
+  const kv = (k, v) => { const w = el("div"); w.append(el("dt", "", k), el("dd", "", v)); dl.append(w); };
+  kv(t("k_scope"), a.scopeSummary);
+  kv(t("k_notexam"), a.exclusions.join("; ") || "—");
+  kv(t("k_findings"), (Object.entries(a.findingsSummary).map(([k, v]) => `${v} ${k}`).join(", ") || t("none")) + (a.severityFloor ? ` (${t("floor", { f: a.severityFloor })})` : ""));
+  kv(t("k_paid"), `${a.sponsorName} · ${await fingerprint(a.sponsor)}`);
+  kv(t("k_rel"), a.relationships);
+  if (a.unsolicited) kv(t("k_notice"), t("notice_v", { at: a.unsolicited.subjectNotifiedAt.replace("T", " ").replace("Z", " UTC"), via: a.unsolicited.subjectContact.replace(/^mailto:/, "") }));
+  kv(t("k_applies"), t("applies_v", { src: a.artifact.source, rev: a.artifact.revision.slice(0, 19) + "…" }) + (a.artifact.artifactHash ? t("applies_pin", { pin: a.artifact.artifactHash.slice(0, 19) + "…" }) : ""));
+  body.append(dl);
 
   const links = el("p", "links");
-  const link = (href, text) => { const x = el("a", "", text); x.href = href; links.append(x, document.createTextNode("  ")); };
-  link(entry.attestation.uri.replace(/^.*\/attestations\//, "attestations/"), "attestation");
-  if (a.findingsReport) link(a.findingsReport.uri.replace(/^.*\/reports\//, "reports/"), "findings report");
-  link(a.methodology.uri.replace(/^.*\/methodology\//, "methodology/"), "methodology");
-  c.append(links);
+  const link = (href, text) => { const x = el("a", "", text); x.href = href; links.append(x); };
+  link(local(e.attestation.uri), t("l_att"));
+  if (a.findingsReport) link(local(a.findingsReport.uri), t("l_report"));
+  link(local(a.methodology.uri), t("l_method"));
+  link(local(a.scope.uri), t("l_scope"));
+  body.append(links);
 
-  for (const r of entry.responses ?? []) {
+  for (const r of e.responses ?? []) {
     try {
-      const txt = await get(r.uri.replace(/^.*\/responses\//, "responses/"));
+      const txt = await get(local(r.uri));
       if ((await digest(new TextEncoder().encode(txt))) !== r.digest) continue;
       const resp = plain(parseStrict(txt));
       const q = el("blockquote", "reply");
-      q.append(el("strong", "", "Subject's reply: "), document.createTextNode(resp.text));
-      c.append(q);
+      q.append(el("b", "", t("replied")), document.createTextNode(resp.text));
+      body.append(q);
     } catch { /* a missing reply is shown as nothing, never as agreement */ }
   }
-  if (d.error && d.display !== "status-unknown") c.append(el("p", "note", `verify: ${d.error}`));
-  for (const n of d.notes ?? []) c.append(el("p", "note", n));
-  return c;
+  if (d.error && !["status-unknown", "uncredited"].includes(d.display)) body.append(el("p", "note", `verify: ${d.error}`));
+  for (const n of d.notes ?? []) body.append(el("p", "note", n));
+  row.append(side, body);
+  return row;
 }
 
 main();
