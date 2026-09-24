@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="{{lang_tag}}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{v_title}}</title>
+<meta name="description" content="{{v_description}}">
+<meta name="color-scheme" content="light dark">
+{{alternates}}
+<link rel="stylesheet" href="{{root}}style.css">
+<script type="module" src="{{root}}verdict.js"></script>
+</head>
+<body class="verdict-page">
+<div class="grain" aria-hidden="true"></div>
+<header class="masthead">
+  <div class="wrap masthead-row">
+    <a class="brand" href="{{home}}">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span class="brand-text"><b>onym audit</b> <span class="muted">· {{brand_seat}}</span></span>
+    </a>
+    <nav aria-label="{{nav_label}}">
+      <a href="{{home}}app/#library">{{nav_library}}</a>
+      <a href="{{home}}judge/">{{nav_judge}}</a>
+    </nav>
+    <div class="langs" role="navigation" aria-label="{{lang_label}}">{{switcher}}</div>
+  </div>
+</header>
+
+<main class="wrap verdict-main" id="verdict" aria-live="polite">
+  <p class="muted">{{v_loading}}</p>
+</main>
+
+<footer class="colophon">
+  <div class="wrap">
+    <p class="small muted">{{v_footer}}</p>
+  </div>
+</footer>
+<script type="application/json" id="strings">{{js}}</script>
+</body>
+</html>

@@ -157,6 +157,7 @@ async function sharedRef(path) {
   return ref(PUB + path, text);
 }
 const LANG_PATH = { ru: "ru/", "sr-Latn-ME": "cnr/" }[document.documentElement.lang] || "";
+const verdictPage = (id, slug) => new URL(`${LANG_PATH}verdict/?${slug ? `a=${encodeURIComponent(slug)}&` : ""}id=${encodeURIComponent(id)}`, ROOT).href;
 
 // ---------------------------------------------------------------- offers
 
@@ -425,10 +426,10 @@ async function dash() {
       const a = plain(parseStrict(await getText(e.attestation.uri)));
       const row = el("article", { class: "entry" },
         el("div", { class: "entry-side" }, el("span", { class: `stamp r-${a.result}`, text: a.result.toUpperCase() }), el("span", { class: "state", text: e.state })),
-        el("div", {}, el("h3", { text: a.subject }),
+        el("div", {}, el("h3", {}, el("a", { href: verdictPage(a.attestationId, me.slug), text: a.subject })),
           el("p", { class: "who", text: `${a.methodologyClass} · ${a.artifact.kind} · ${a.issuedAt.slice(0, 10)}` }),
           el("p", { class: "small mono", text: a.artifact.source }),
-          el("p", { class: "links" }, el("a", { href: e.attestation.uri, text: t("l_att") }), a.findingsReport ? el("a", { href: a.findingsReport.uri, text: t("l_report") }) : null)));
+          el("p", { class: "links" }, el("a", { href: verdictPage(a.attestationId, me.slug), text: t("l_verdict") }), el("a", { href: e.attestation.uri, text: t("l_att") }), a.findingsReport ? el("a", { href: a.findingsReport.uri, text: t("l_report") }) : null)));
       if (e.state === "active") {
         const reason = el("select", {}, ["withdrawal", "new-information", "methodology-error", "compromise-of-auditor-key"].map((r) => el("option", { value: r, text: r })));
         row.lastChild.append(el("div", { class: "row-inline" }, reason, el("button", { class: "btn btn-line small-btn", text: t("revoke"), onclick: guard(() => revoke(a.attestationId, reason.value)) })));
@@ -1109,7 +1110,7 @@ async function renderMine() {
     const extra = el("p", { class: "small" });
     orderState(o, lib).then((s) => {
       state.textContent = t("st_" + s.state);
-      if (s.att) extra.replaceChildren(el("a", { href: `#att=${s.att}`, text: t("st_open", { id: s.att }) }));
+      if (s.att) extra.replaceChildren(el("a", { href: verdictPage(s.att, o.slug), text: t("st_open", { id: s.att }) }));
     }, () => (state.textContent = "?"));
     return el("article", { class: "entry" },
       el("div", { class: "entry-side" }, el("span", { class: "stamp", text: t("order_stamp") }), state),
@@ -1323,11 +1324,11 @@ function renderLibrary() {
     const verdict = el("p", { class: "small muted", text: t("lib_checking") });
     const row = el("article", { class: "entry", id: "att-" + e.attestationId },
       el("div", { class: "entry-side" }, el("span", { class: `stamp r-${e.result}`, text: e.result.toUpperCase() }), el("span", { class: "state", text: e.state })),
-      el("div", {}, el("h3", { text: e.subject }),
+      el("div", {}, el("h3", {}, el("a", { href: verdictPage(e.attestationId, e.auditorSlug), text: e.subject })),
         el("p", { class: "who" }, el("a", { href: libPage(e), text: e.auditor }), ` · ${e.fingerprint} · ${e.methodologyClass} · ${e.engagement} · ${e.issuedAt.slice(0, 10)}`),
         el("p", { class: "small mono", text: `${e.attestationId} · ${e.kind} · ${e.source}` }),
         verdict,
-        el("p", { class: "links" }, el("a", { href: e.uri, text: t("l_att") }), el("a", { href: `#att=${e.attestationId}`, text: t("lib_link") }))));
+        el("p", { class: "links" }, el("a", { href: verdictPage(e.attestationId, e.auditorSlug), text: t("l_verdict") }), el("a", { href: e.uri, text: t("l_att") }))));
     verifyEntry(e, verdict);
     return row;
   }));

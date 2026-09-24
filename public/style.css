@@ -388,7 +388,7 @@ pre.quote { margin: 10px 0; padding: 10px 12px; background: var(--paper-2); bord
 .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); max-width: min(560px, calc(100vw - 32px)); padding: 12px 16px; background: var(--ink); color: var(--paper); font: 14px/1.45 var(--mono); border-radius: 2px; box-shadow: 0 16px 40px -18px rgba(0, 0, 0, .6); z-index: 20; }
 .toast.bad { background: var(--seal); color: #fff; }
 .studio .order-done { grid-column: auto; }
-.studio .entry h3 a { color: inherit; }
+.entry h3 a { color: inherit; }
 @media (max-width: 520px) { .who-chip { display: none; } }
 
 /* ordering from any auditor */
@@ -449,3 +449,17 @@ button.who-chip::after { content: " ⏻"; }
 .judge-list { margin: 0; padding-left: 18px; display: grid; gap: 8px; color: var(--ink-2); font-size: 16px; }
 .judge-verified h3 { margin-bottom: 12px; }
 .case .links { margin-top: 12px; }
+
+/* one attestation's page */
+.verdict-main { padding-top: 40px; padding-bottom: 56px; }
+.verdict-head { display: grid; grid-template-columns: 150px 1fr; gap: 28px; padding-bottom: 20px; border-bottom: 1px solid var(--rule); }
+.verdict-head .entry-side { display: grid; gap: 14px; align-content: start; }
+.verdict-head .stamp { justify-self: start; font-size: 20px; }
+.verdict-h1 { font: 600 clamp(26px, 4vw, 40px)/1.2 var(--mono); overflow-wrap: anywhere; margin: 6px 0 12px; }
+.verdict-head .lede { font-size: 17px; }
+.verdict-sec .sub-h { margin-top: 36px; }
+.verdict-sec > .kv, .verdict-sec > div > .kv { margin-top: 12px; }
+.state.s-active { color: var(--clear); } .state.s-revoked { color: var(--seal); } .state.s-superseded { color: var(--warn); }
+@media (max-width: 720px) { .verdict-head { grid-template-columns: 1fr; gap: 14px; } .verdict-head .entry-side { grid-auto-flow: column; justify-content: start; align-items: center; } }
+.verdict-doc { margin-top: 22px; }
+.verdict-doc > summary { cursor: pointer; font: 600 16px/1.4 var(--mono); }

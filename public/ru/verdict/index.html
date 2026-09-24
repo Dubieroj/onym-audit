@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Аттестация · onym audit</title>
+<meta name="description" content="Одна аттестация места аудита Onym, проверенная в вашем браузере: что проверено, находки, кто платил и её статус.">
+<meta name="color-scheme" content="light dark">
+<link rel="alternate" hreflang="en" href="https://foldy.io/audit/verdict/">
+<link rel="alternate" hreflang="ru" href="https://foldy.io/audit/ru/verdict/">
+<link rel="alternate" hreflang="sr-Latn-ME" href="https://foldy.io/audit/cnr/verdict/">
+<link rel="alternate" hreflang="x-default" href="https://foldy.io/audit/verdict/">
+<link rel="stylesheet" href="../../style.css">
+<script type="module" src="../../verdict.js"></script>
+</head>
+<body class="verdict-page">
+<div class="grain" aria-hidden="true"></div>
+<header class="masthead">
+  <div class="wrap masthead-row">
+    <a class="brand" href="../">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span class="brand-text"><b>onym audit</b> <span class="muted">· аудитор сети Onym</span></span>
+    </a>
+    <nav aria-label="Разделы">
+      <a href="../app/#library">Библиотека аудитов</a>
+      <a href="../judge/">Для судей</a>
+    </nav>
+    <div class="langs" role="navigation" aria-label="Язык"><a href="../../verdict/" hreflang="en" lang="en">EN</a><a href="../../ru/verdict/" hreflang="ru" lang="ru" aria-current="page">RU</a><a href="../../cnr/verdict/" hreflang="sr-Latn-ME" lang="sr-Latn-ME">CNR</a></div>
+  </div>
+</header>
+
+<main class="wrap verdict-main" id="verdict" aria-live="polite">
+  <p class="muted">Загружаю подписанные документы и проверяю каждую подпись…</p>
+</main>
+
+<footer class="colophon">
+  <div class="wrap">
+    <p class="small muted">Каждый документ на этой странице загружается как подписанные байты и проверяется в вашем браузере; ничему не нужно верить на слово этому серверу.</p>
+  </div>
+</footer>
+<script type="application/json" id="strings">{"bad_link":"Эта ссылка не указывает на аттестацию.","not_found":"Аттестация {id} этим аудитором не опубликована.","state_active":"действует","state_revoked":"отозвана","state_superseded":"заменена","state_unknown":"статус неизвестен","kicker":"Аттестация · {cls}","by":"Аудитор","issued":"выдана {at}","expires":"действует до {at}","h_verify":"Проверено в вашем браузере","verdict_ok":"Подписи и список статусов сходятся: это подписанное мнение аудитора, и сейчас оно в силе.","verdict_bad":"Не подтверждается как действующая: {state} {err}","c_manifest":"манифест аудитора подписан его ключом оператора {fp}","c_attestation":"аттестация подписана этим ключом","c_status":"подписанный список статусов говорит: {state} (список подписан {at})","c_status_missing":"список статусов не упоминает эту аттестацию","c_expiry":"действует до {at}","c_anchor_checking":"спрашиваю у публичного узла Stellar якорь реестра…","anchor_match":"⚓ реестр совпадает со своим якорем в Stellar testnet ({at})","anchor_stale":"⚓ реестр изменился после последнего закрепления в Stellar","anchor_none":"⚓ реестр не закреплён в Stellar","anchor_unknown":"⚓ Stellar не ответил","h_what":"Что проверено","k_kind":"Вид","kind_source":"исходный код на коммите","kind_deployment":"работающее развёртывание","kind_build":"сборка","k_source":"Источник","k_manifest_digest":"Байты манифеста","k_revision":"Коммит","k_build_digest":"Байты сборки","k_document_digest":"Отданный документ","k_method":"Методика","k_scope_summary":"Область","k_not_examined":"Не проверялось","h_scope":"Документ области проверки","pinned_ok":"✓ совпадает с хешем, закреплённым в аттестации","pinned_bad":"✗ не совпадает с хешем, закреплённым в аттестации","loading":"загружаю…","h_findings":"Находки","summary":"Находки по серьёзности:","none":"нет","floor":"(учитываются от уровня {floor})","report_withheld":"Отчёт о находках придержан по эмбарго заказа; опубликованы только счётчики.","report_ok":"✓ отчёт о находках совпадает с хешем, закреплённым в аттестации","all_checks":"Все проверки ({n})","documents_fetched":"Загруженные документы ({n}), по хешам","k_coverage":"Покрытие","k_examined":"Проверено","no_findings":"Находок нет.","fix":"Исправление:","dropped":"Находок, отклонённых аудитором с объяснением: {n}","engine":"Черновик подготовлен моделью {model} через {provider}, затем аудитор проверил каждую находку.","l_transcript":"журнал движка","h_engagement":"Кто платил, какие связи, кого уведомили","k_engagement":"Основание","eng_unsolicited":"непрошеная — никто не заказывал","eng_commissioned":"по подписанному заказу","k_sponsor":"Оплатил","k_relationships":"Связи","k_notice":"Уведомление","notice":"проверяемый уведомлён через {contact} в {at}, до публикации","k_policy":"Политика раскрытия","policy_link":"политика непрошеных проверок аудитора","k_embargo":"Эмбарго до","k_order":"Заказ (хеш)","k_subject_key":"Ключ проверяемого (может ответить)","h_status":"Статус и ответы","k_state":"Состояние","k_superseded":"Заменена на","revoked":"Отозвана с {at}: {reason}","h_replies":"Ответы проверяемого","no_replies":"Ответов нет. Проверяемый может в любой момент опубликовать подписанный ответ рядом с аттестацией.","reply_ok":"✓ подписан ключом проверяемого, {at}","reply_bad":"✗ этот ответ не проходит проверку ключом проверяемого","h_documents":"Документы и проверка без этой страницы","l_attestation":"аттестация","l_manifest":"манифест аудитора","l_status":"список статусов","l_report":"отчёт о находках","cli_h":"Те же проверки из командной строки, проверяющей программой из репозитория:","to_library":"Вернуться в библиотеку"}</script>
+</body>
+</html>

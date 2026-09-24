@@ -66,6 +66,9 @@ showed **"Audit report: Pending — no audits yet"**.
 <https://foldy.io/audit/> — auditor manifest, signed status list, published
 attestations, and a page that verifies all of them in your browser.
 <https://foldy.io/audit/app/> — become an auditor yourself, or browse the library.
+<https://foldy.io/audit/verdict/?id=onym-discovery-2026-09-24> — every attestation has
+its own page (`verdict/?id=…`, `&a=<handle>` for a hub auditor): what was examined,
+the findings, who paid, the notice, status and replies, all verified in the browser.
 
 ## Run it
 

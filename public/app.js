@@ -8,6 +8,10 @@ const ROOT = rootMeta ? new URL(rootMeta.content, document.baseURI) : new URL(".
 const T = JSON.parse(document.getElementById("strings")?.textContent || "{}");
 const t = (k, vars = {}) => (T[k] ?? k).replace(/\{(\w+)\}/g, (_, v) => vars[v] ?? "");
 const at = (p) => new URL(p, ROOT).href;
+// Each attestation's own page lives in the shared tree, in this page's language.
+const LANG_PATH = { ru: "ru/", "sr-Latn-ME": "cnr/" }[document.documentElement.lang] || "";
+const SLUG = rootMeta ? ROOT.pathname.split("/").filter(Boolean).pop() : "";
+const verdictPage = (id) => new URL(`${LANG_PATH}verdict/?${SLUG ? `a=${encodeURIComponent(SLUG)}&` : ""}id=${encodeURIComponent(id)}`, new URL(".", import.meta.url)).href;
 const el = (tag, cls, text) => {
   const n = document.createElement(tag);
   if (cls) n.className = cls;
@@ -120,7 +124,11 @@ async function entry(e) {
   const side = el("div", "entry-side");
   side.append(el("span", `stamp r-${a.result}`, a.result.toUpperCase()), el("span", `state s-${d.display}`, t("d_" + d.display)), el("span", "state", e.attestationId));
   const body = el("div");
-  body.append(el("h3", "", a.subject));
+  const title = el("a", "", a.subject);
+  title.href = verdictPage(e.attestationId);
+  const h3 = el("h3");
+  h3.append(title);
+  body.append(h3);
   body.append(el("p", "who", `${a.methodologyClass} · ${t("issued", { ago: ago(a.issuedAt) })}` + (a.expiresAt ? ` · ${t("expires", { date: a.expiresAt.slice(0, 10) })}` : "")));
 
   const dl = el("dl", "kv");
@@ -136,6 +144,7 @@ async function entry(e) {
 
   const links = el("p", "links");
   const link = (href, text) => { const x = el("a", "", text); x.href = href; links.append(x); };
+  link(verdictPage(e.attestationId), t("l_verdict"));
   link(local(e.attestation.uri), t("l_att"));
   if (a.findingsReport) link(local(a.findingsReport.uri), t("l_report"));
   link(local(a.methodology.uri), t("l_method"));
