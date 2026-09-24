@@ -20,7 +20,7 @@
       <span class="brand-text"><b id="brand-name">onym audit</b> <span class="muted">· {{brand_seat}}</span></span>
     </a>
     <nav aria-label="{{nav_label}}">
-      <a href="#register">{{nav_register}}</a>
+      <a href="app/#library">{{nav_library}}</a>
       <a href="#how">{{nav_how}}</a>
     </nav>
     <div class="cabinets">
@@ -39,6 +39,7 @@
     <div class="cta">
       <a class="btn btn-ink" href="order/">{{nav_order}}</a>
       <a class="btn btn-line" href="app/#auditor">{{cta_auditor}}</a>
+      <a class="btn btn-line" href="app/#library">{{nav_library}}</a>
       <a class="btn btn-line" href="#connect" data-open="connect">{{conn_btn}}</a>
     </div>
   </section>
@@ -58,16 +59,6 @@
     <p class="small muted">{{conn_note}}</p>
     <p><a href="{{root}}discovery/manifest.json" target="_blank" rel="noopener">{{conn_view}}</a></p>
   </dialog>
-
-  <section class="register-sec wrap" id="register" aria-labelledby="register-h">
-    <header class="sec-head">
-      <h2 id="register-h">{{reg_h}}</h2>
-      <p class="sec-lede">{{reg_lede}}</p>
-    </header>
-    <label class="credit"><input type="checkbox" id="credit"><span>{{credit}} <span class="muted">{{credit_note}}</span></span></label>
-    <div id="atts" class="entries"><p class="empty">{{reg_loading}}</p></div>
-    <p class="links"><a href="app/#library">{{nav_library}}</a></p>
-  </section>
 
   <section class="how-sec wrap" id="how" aria-labelledby="how-h">
     <header class="sec-head">

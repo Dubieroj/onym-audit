@@ -198,4 +198,5 @@ if (dlg) {
   });
 }
 
-main();
+// The register is on a hosted auditor's page; the landing has none.
+if ($("atts")) main();

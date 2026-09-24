@@ -10,8 +10,8 @@
 <link rel="alternate" hreflang="ru" href="https://foldy.io/audit/ru/">
 <link rel="alternate" hreflang="sr-Latn-ME" href="https://foldy.io/audit/cnr/">
 <link rel="alternate" hreflang="x-default" href="https://foldy.io/audit/">
-<link rel="stylesheet" href="style.css?v=2bf4be7d30">
-<script type="module" src="app.js?v=2bf4be7d30"></script>
+<link rel="stylesheet" href="style.css?v=1f75bc98ea">
+<script type="module" src="app.js?v=1f75bc98ea"></script>
 </head>
 <body>
 <div class="grain" aria-hidden="true"></div>
@@ -23,7 +23,7 @@
       <span class="brand-text"><b id="brand-name">onym audit</b> <span class="muted">· Onym audit seat</span></span>
     </a>
     <nav aria-label="Sections">
-      <a href="#register">Register</a>
+      <a href="app/#library">Library of audits</a>
       <a href="#how">How it works</a>
     </nav>
     <div class="cabinets">
@@ -42,6 +42,7 @@
     <div class="cta">
       <a class="btn btn-ink" href="order/">Order a review</a>
       <a class="btn btn-line" href="app/#auditor">Become an auditor</a>
+      <a class="btn btn-line" href="app/#library">Library of audits</a>
       <a class="btn btn-line" href="#connect" data-open="connect">Connect to Onym</a>
     </div>
   </section>
@@ -62,16 +63,6 @@
     <p><a href="discovery/manifest.json" target="_blank" rel="noopener">View the manifest ↗</a></p>
   </dialog>
 
-  <section class="register-sec wrap" id="register" aria-labelledby="register-h">
-    <header class="sec-head">
-      <h2 id="register-h">The register</h2>
-      <p class="sec-lede">Every attestation this auditor has issued, read from the signed status list and verified in your browser. Adverse results are shown exactly where favorable ones would be.</p>
-    </header>
-    <label class="credit"><input type="checkbox" id="credit"><span>I credit this auditor <span class="muted">— otherwise entries are labelled as from an uncredited issuer; there is no mandatory auditor.</span></span></label>
-    <div id="atts" class="entries"><p class="empty">Reading the register…</p></div>
-    <p class="links"><a href="app/#library">Library of audits</a></p>
-  </section>
-
   <section class="how-sec wrap" id="how" aria-labelledby="how-h">
     <header class="sec-head">
       <h2 id="how-h">How it works</h2>
@@ -89,6 +80,6 @@
     <p class="small muted">onym audit · <a href="https://github.com/Dubieroj/onym-audit">GitHub</a> · <a href="profile/Audit-Static-Ed25519.md">Implementation profile</a> · <a href="hub/terms.md">Hub terms</a> · <a href="api/">API</a> · <a href="discovery/manifest.json">Discovery</a> · served from foldy.io without cookies, access logs, or third-party requests.</p>
   </div>
 </footer>
-<script type="application/json" id="strings">{"verified":"VERIFIED","unverified":"UNVERIFIED","epoch":"epoch {n}","signed":"epoch {n} · signed {ago}","cap_ok":"Verified in your browser just now: the manifest is signed by operator key {print}, and the status list — signed {ago} — by the delegated status key the manifest names. Nothing on this page is trusted because this server says so.","cap_fail":"Not verified: {why}. Treat every entry below as unconfirmed.","why_manifest":"the manifest signature did not verify","why_nostatus":"no status list was served","why_badsig":"the status list signature did not verify","why_stale":"the status list is stale","no_manifest":"The auditor manifest could not be loaded: {err}","reg_no_manifest":"The register cannot be read without the auditor manifest.","reg_no_status":"No status list is being served, so no entry can be confirmed as current.","reg_empty_b":"No entries yet. ","reg_empty":"This auditor has not issued an attestation yet.","fetch_fail":"{id}: could not be fetched ({err})","issued":"issued {ago}","expires":"expires {date}","k_scope":"Scope","k_notexam":"Not examined","k_findings":"Findings","k_paid":"Paid by","k_rel":"Relationships","k_notice":"Notice","k_applies":"Applies only to","notice_v":"unsolicited; subject notified {at} via {via}","applies_v":"{src} @ {rev}","applies_pin":", pinned document {pin}","none":"none","floor":"floor: {f}","l_att":"attestation","l_report":"findings report","l_method":"methodology","l_scope":"scope","replied":"The subject replied: ","ago_lt1h":"less than an hour ago","ago_h":"{n} h ago","ago_d":"{n} days ago","d_attested":"attested","d_uncredited":"uncredited issuer","d_status-unknown":"status unknown","d_expired":"expired","d_superseded":"superseded","d_revoked":"revoked","d_no-attestation":"does not apply","l_verdict":"attestation page","m_security-review":"Security review","m_conformance-run":"Conformance run","sev_critical":"critical","sev_high":"high","sev_medium":"medium","sev_low":"low","sev_informational":"informational","note_unlisted":"The status list does not list this attestation."}</script>
+<script type="application/json" id="strings">{"verified":"VERIFIED","unverified":"UNVERIFIED","epoch":"epoch {n}","signed":"epoch {n} · signed {ago}","cap_ok":"Verified in your browser just now: the manifest is signed by operator key {print}, and the status list — signed {ago} — by the delegated status key the manifest names. Nothing on this page is trusted because this server says so.","cap_fail":"Not verified: {why}. Treat every entry below as unconfirmed.","why_manifest":"the manifest signature did not verify","why_nostatus":"no status list was served","why_badsig":"the status list signature did not verify","why_stale":"the status list is stale","no_manifest":"The auditor manifest could not be loaded: {err}","reg_no_manifest":"The register cannot be read without the auditor manifest.","reg_no_status":"No status list is being served, so no entry can be confirmed as current.","reg_empty_b":"No attestations yet.","reg_empty":"","fetch_fail":"{id}: could not be fetched ({err})","issued":"issued {ago}","expires":"expires {date}","k_scope":"Scope","k_notexam":"Not examined","k_findings":"Findings","k_paid":"Paid by","k_rel":"Relationships","k_notice":"Notice","k_applies":"Applies only to","notice_v":"unsolicited; subject notified {at} via {via}","applies_v":"{src} @ {rev}","applies_pin":", pinned document {pin}","none":"none","floor":"floor: {f}","l_att":"attestation","l_report":"findings report","l_method":"methodology","l_scope":"scope","replied":"The subject replied: ","ago_lt1h":"less than an hour ago","ago_h":"{n} h ago","ago_d":"{n} days ago","d_attested":"attested","d_uncredited":"uncredited issuer","d_status-unknown":"status unknown","d_expired":"expired","d_superseded":"superseded","d_revoked":"revoked","d_no-attestation":"does not apply","l_verdict":"attestation page","m_security-review":"Security review","m_conformance-run":"Conformance run","sev_critical":"critical","sev_high":"high","sev_medium":"medium","sev_low":"low","sev_informational":"informational","note_unlisted":"The status list does not list this attestation."}</script>
 </body>
 </html>
