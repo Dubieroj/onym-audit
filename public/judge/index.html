@@ -98,11 +98,11 @@ bin/onym-audit conformance-discovery -manifest https://foldy.io/audit/discovery/
     <div class="comm-grid judge-verified">
       <div>
         <h3>Verified</h3>
-        <ul class="judge-list"><li>97 Go tests and subtests; the browser verifier, identity derivation and Stellar encoding on the same vectors as Go.</li><li>Identity keys match the Onym apps' cross-platform fixture; the Stellar test network accepted the anchor transactions.</li><li>Every flow on the live site — register, examine, order, request, respond, publish, revoke, restore on another device — with test data removed afterwards.</li><li>This site's Discovery catalog passes its own suite: CLEAR.</li></ul>
+        <ul class="judge-list"><li>97 Go tests and subtests; the browser verifier, identity derivation and Stellar encoding on the same vectors as Go.</li><li>Identity keys match the Onym apps' cross-platform fixture; the Stellar test network accepted the anchor transactions.</li><li>Every flow on the live site — register, examine, order, request, respond, publish, revoke, restore on another device — with test data removed afterwards.</li><li>This site's Discovery catalog passes the suite: CLEAR. Onym's own fails it on an expired snapshot — the published, Stellar-anchored attestation shows exactly why.</li></ul>
       </div>
       <div>
         <h3>Not yet</h3>
-        <ul class="judge-list"><li>Onym's apps do not read attestations yet: their contract screen still says “Pending — no audits yet”; a pull request needs the maintainer's consent.</li><li>Anchors are on the Stellar test network, like Onym's own contracts today.</li><li>The first attestation about a real Onym component waits for the notice period of this seat's own unsolicited-examination policy.</li><li>One host; no reproducible build of Onym's contracts yet, so no build-provenance attestation for them.</li></ul>
+        <ul class="judge-list"><li>Onym's apps do not read attestations yet: their contract screen still says “Pending — no audits yet”; a pull request needs the maintainer's consent.</li><li>Anchors are on the Stellar test network, like Onym's own contracts today.</li><li>Only one real Onym component is attested so far: its Discovery catalog.</li><li>One host; no reproducible build of Onym's contracts yet, so no build-provenance attestation for them.</li></ul>
       </div>
       <div>
         <h3>Relationship</h3>

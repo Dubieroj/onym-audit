@@ -1,0 +1,21 @@
+[
+  {
+    "severity": "informational",
+    "title": "The pinned inclusion policy admits four seat types; the catalog declares and lists five",
+    "detail": "The inclusion policy pinned by the manifest's policy digest states \"This catalog lists services for four seat types\" (moderation, notary, transport.message, blob.storage) and \"Nothing else is eligible in this catalog version.\" The manifest's onym-services descriptor declares storage.backup among its seatTypes, and snapshot 4 lists onym:component:onym-backup under storage.backup. Discovery.md §14.1(2) asks a provider to publish the exact inclusion policy each snapshot pins; the pinned text does not describe the inclusion applied. Recorded as informational: the suite does not examine policy prose, and the entry itself verifies.",
+    "evidence": [
+      {
+        "uri": "https://discovery.onym.app/policies/onym-services.md",
+        "digest": "sha256:735edc67068e9474ee177ad7e751ee1920be124b1a6fa357d8a058881450b8ac"
+      },
+      {
+        "uri": "https://discovery.onym.app/manifest.json",
+        "digest": "sha256:6949d6c22c7ecda406c47ce6ed460171ae1bdea3dfe224e6c1d6c66a41743ab3"
+      },
+      {
+        "uri": "https://discovery.onym.app/catalogs/onym-services.json",
+        "digest": "sha256:bf38e1ea62864a9d6900380af23a962f16a33726ca4e8916e3367d64098bd338"
+      }
+    ]
+  }
+]
