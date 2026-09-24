@@ -63,7 +63,7 @@
     <div class="terminal" role="region" aria-label="terminal">
       <div class="term-bar"><span></span><span></span><span></span><em>terminal</em></div>
 <pre><code>git clone https://github.com/Dubieroj/onym-audit && cd onym-audit
-go test ./...                                   <span class="c"># 107 tests and subtests, incl. byte-pinned fixtures</span>
+go test ./...                                   <span class="c"># 110 tests and subtests, incl. byte-pinned fixtures</span>
 node tools/verify-js-test.mjs                   <span class="c"># the independent browser verifier, same vectors</span>
 node tools/onym-id-test.mjs && node tools/stellar-test.mjs
 tools/sandbox.sh                                <span class="c"># issue, reply, order, supersede, revoke, byte drift</span>
@@ -98,7 +98,7 @@ bin/onym-audit conformance-discovery -manifest https://foldy.io/audit/discovery/
     <div class="comm-grid judge-verified">
       <div>
         <h3>Verified</h3>
-        <ul class="judge-list"><li>107 Go tests and subtests; the browser verifier, identity derivation and Stellar encoding on the same vectors as Go.</li><li>Identity keys match the Onym apps' cross-platform fixture; the Stellar test network accepted the anchor transactions.</li><li>Every flow on the live site — register, examine, order, request, respond, publish, revoke, restore on another device — with test data removed afterwards.</li><li>This site's Discovery catalog passes the suite: CLEAR. Onym's own fails it on an expired snapshot — <a href="../verdict/?id=onym-discovery-2026-09-24">the published, Stellar-anchored attestation</a> shows exactly why.</li></ul>
+        <ul class="judge-list"><li>110 Go tests and subtests; the browser verifier, identity derivation and Stellar encoding on the same vectors as Go.</li><li>Identity keys match the Onym apps' cross-platform fixture; the Stellar test network accepted the anchor transactions.</li><li>Every flow on the live site — register, examine, order, request, respond, publish, revoke, restore on another device — with test data removed afterwards.</li><li>This site's Discovery catalog passes the suite: CLEAR. Onym's own fails it on an expired snapshot — <a href="../verdict/?id=onym-discovery-2026-09-24">the published, Stellar-anchored attestation</a> shows exactly why.</li></ul>
       </div>
       <div>
         <h3>Not yet</h3>
