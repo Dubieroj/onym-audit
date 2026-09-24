@@ -8,3 +8,7 @@
 /dist/
 /reviews/
 /inbox/
+
+# Runs and observations about a subject stay private until its notice period ends.
+testdata/live-run-*.json
+observations-*.json
