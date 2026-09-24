@@ -63,7 +63,7 @@
     <div class="terminal" role="region" aria-label="терминал">
       <div class="term-bar"><span></span><span></span><span></span><em>терминал</em></div>
 <pre><code>git clone https://github.com/Dubieroj/onym-audit && cd onym-audit
-go test ./...                                   <span class="c"># 97 тестов и подтестов, включая закреплённые фикстуры</span>
+go test ./...                                   <span class="c"># 107 тестов и подтестов, включая закреплённые фикстуры</span>
 node tools/verify-js-test.mjs                   <span class="c"># независимый браузерный клиент, те же векторы</span>
 node tools/onym-id-test.mjs && node tools/stellar-test.mjs
 tools/sandbox.sh                                <span class="c"># выдача, ответ, заказ, замена, отзыв, подмена байт</span>
@@ -98,7 +98,7 @@ bin/onym-audit conformance-discovery -manifest https://foldy.io/audit/discovery/
     <div class="comm-grid judge-verified">
       <div>
         <h3>Проверено</h3>
-        <ul class="judge-list"><li>97 тестов и подтестов на Go; браузерный клиент, вывод ключей и кодирование Stellar — на тех же векторах, что и Go.</li><li>Ключи личности совпадают с межплатформенной фикстурой приложений Onym; тестовая сеть Stellar приняла транзакции якоря.</li><li>Каждый сценарий на живом сайте — регистрация, проверка, заказ, заявка, отклик, публикация, отзыв, вход с другого устройства — с удалением тестовых данных после.</li><li>Каталог Discovery этого сайта проходит набор: CLEAR. Каталог самого Onym не проходит из-за истёкшего снимка — <a href="../../ru/verdict/?id=onym-discovery-2026-09-24">опубликованная и закреплённая в Stellar аттестация</a> показывает, почему именно.</li></ul>
+        <ul class="judge-list"><li>107 тестов и подтестов на Go; браузерный клиент, вывод ключей и кодирование Stellar — на тех же векторах, что и Go.</li><li>Ключи личности совпадают с межплатформенной фикстурой приложений Onym; тестовая сеть Stellar приняла транзакции якоря.</li><li>Каждый сценарий на живом сайте — регистрация, проверка, заказ, заявка, отклик, публикация, отзыв, вход с другого устройства — с удалением тестовых данных после.</li><li>Каталог Discovery этого сайта проходит набор: CLEAR. Каталог самого Onym не проходит из-за истёкшего снимка — <a href="../../ru/verdict/?id=onym-discovery-2026-09-24">опубликованная и закреплённая в Stellar аттестация</a> показывает, почему именно.</li></ul>
       </div>
       <div>
         <h3>Пока нет</h3>

@@ -63,7 +63,7 @@
     <div class="terminal" role="region" aria-label="terminal">
       <div class="term-bar"><span></span><span></span><span></span><em>terminal</em></div>
 <pre><code>git clone https://github.com/Dubieroj/onym-audit && cd onym-audit
-go test ./...                                   <span class="c"># 97 testova i podtestova, uključujući fiksirane testne primjere</span>
+go test ./...                                   <span class="c"># 107 testova i podtestova, uključujući fiksirane testne primjere</span>
 node tools/verify-js-test.mjs                   <span class="c"># nezavisni klijent u pregledaču, isti vektori</span>
 node tools/onym-id-test.mjs && node tools/stellar-test.mjs
 tools/sandbox.sh                                <span class="c"># izdavanje, odgovor, narudžba, zamjena, opoziv, promjena bajtova</span>
@@ -98,7 +98,7 @@ bin/onym-audit conformance-discovery -manifest https://foldy.io/audit/discovery/
     <div class="comm-grid judge-verified">
       <div>
         <h3>Provjereno</h3>
-        <ul class="judge-list"><li>97 Go testova i podtestova; klijent u pregledaču, izvođenje ključeva i Stellar kodiranje na istim vektorima kao Go.</li><li>Ključevi identiteta se poklapaju s međuplatformskim testnim primjerom Onym aplikacija; Stellar test mreža je prihvatila transakcije sidra.</li><li>Svaki tok na živom sajtu — registracija, pregled, narudžba, zahtjev, odgovor, objava, opoziv, prijava s drugog uređaja — uz brisanje test podataka nakon toga.</li><li>Discovery katalog ovog sajta prolazi skup: CLEAR. Onym sopstveni pada zbog isteklog snimka — <a href="../../cnr/verdict/?id=onym-discovery-2026-09-24">objavljena atestacija, učvršćena u Stellar</a>, pokazuje tačno zašto.</li></ul>
+        <ul class="judge-list"><li>107 Go testova i podtestova; klijent u pregledaču, izvođenje ključeva i Stellar kodiranje na istim vektorima kao Go.</li><li>Ključevi identiteta se poklapaju s međuplatformskim testnim primjerom Onym aplikacija; Stellar test mreža je prihvatila transakcije sidra.</li><li>Svaki tok na živom sajtu — registracija, pregled, narudžba, zahtjev, odgovor, objava, opoziv, prijava s drugog uređaja — uz brisanje test podataka nakon toga.</li><li>Discovery katalog ovog sajta prolazi skup: CLEAR. Onym sopstveni pada zbog isteklog snimka — <a href="../../cnr/verdict/?id=onym-discovery-2026-09-24">objavljena atestacija, učvršćena u Stellar</a>, pokazuje tačno zašto.</li></ul>
       </div>
       <div>
         <h3>Još ne</h3>
