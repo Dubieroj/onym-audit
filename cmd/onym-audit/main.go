@@ -999,7 +999,8 @@ func checkout(repo, commit, dir string) error {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err
 	}
-	for _, args := range [][]string{{"init", "-q"}, {"remote", "add", "origin", repo}, {"fetch", "-q", "--depth", "1", "origin", commit}, {"checkout", "-q", "--detach", "FETCH_HEAD"}} {
+	// core.symlinks=false: a symlink in the repository becomes a plain file.
+	for _, args := range [][]string{{"init", "-q"}, {"config", "core.symlinks", "false"}, {"remote", "add", "origin", repo}, {"fetch", "-q", "--depth", "1", "origin", commit}, {"checkout", "-q", "--detach", "FETCH_HEAD"}} {
 		if _, err := git(dir, args...); err != nil {
 			return err
 		}

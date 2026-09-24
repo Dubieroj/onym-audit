@@ -272,6 +272,9 @@ func (h *Hub) respond(w http.ResponseWriter, r *http.Request) {
 	if err == nil {
 		err = h.pinned(in.Slug, of.Scope, map[string][]byte{})
 	}
+	if err == nil {
+		err = h.offerUpdate(in.Slug, of, raw)
+	}
 	if err != nil {
 		fail(w, 422, err)
 		return

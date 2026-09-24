@@ -47,6 +47,7 @@ import (
 // Limits on what one auditor may store and send.
 const (
 	MaxTenantBytes = 20 << 20
+	MaxResponses   = 10 // a subject's replies per attestation
 	MaxDocBytes    = 1 << 20
 	MaxBodyBytes   = 4 << 20
 	MaxFetchBytes  = 1 << 20
@@ -335,7 +336,7 @@ func (h *Hub) writeFiles(slug string, files map[string][]byte, quota bool) error
 			add -= fi.Size()
 		}
 	}
-	if quota && h.usage(slug)+add > MaxTenantBytes {
+	if quota && h.usage(slug)+h.heldUsage(slug)+add > MaxTenantBytes {
 		return errors.New("this auditor's storage on the hub is full (20 MiB); self-host the tree to grow")
 	}
 	for p, b := range files {
@@ -430,7 +431,7 @@ func (h *Hub) register(w http.ResponseWriter, r *http.Request) {
 		// Manifests are public, so a replayed older one must not roll the
 		// auditor back: each re-signing moves validUntil forward.
 		if pu, err := sig.ParseTime(p.ValidUntil); err == nil {
-			if nu, err := sig.ParseTime(m.ValidUntil); err != nil || nu.Before(pu) {
+			if nu, err := sig.ParseTime(m.ValidUntil); err != nil || nu.Before(pu) || (nu.Equal(pu) && !bytes.Equal(prev, mraw)) {
 				fail(w, 409, errors.New("an older manifest than the one registered"))
 				return
 			}
@@ -468,6 +469,9 @@ func (h *Hub) register(w http.ResponseWriter, r *http.Request) {
 		of, err := audit.ParseOffer(b)
 		if err == nil && (of.OfferID != id || of.Auditor != m.ComponentID || of.AuditorKey != m.Operator || !classes[of.MethodologyClass]) {
 			err = errors.New("it must be signed by this auditor's key, for a methodology the manifest names")
+		}
+		if err == nil && ok {
+			err = h.offerUpdate(in.Slug, of, b)
 		}
 		if err != nil {
 			fail(w, 422, fmt.Errorf("offer %s: %v", id, err))
@@ -511,6 +515,40 @@ func (h *Hub) register(w http.ResponseWriter, r *http.Request) {
 	}
 	h.changed()
 	reply(w, 201, map[string]string{"page": h.base(in.Slug), "manifest": h.base(in.Slug) + "manifest.json", "digest": sig.Digest(mraw)})
+}
+
+// heldUsage is the size of a tenant's held files, which count against its
+// quota before they are published.
+func (h *Hub) heldUsage(slug string) int64 {
+	var n int64
+	entries, _ := os.ReadDir(h.heldDir(slug))
+	for _, e := range entries {
+		if fi, err := e.Info(); err == nil && !e.IsDir() {
+			n += fi.Size()
+		}
+	}
+	return n
+}
+
+// offerUpdate refuses an expired offer, and refuses to replace a published
+// offer with other bytes unless the new one is valid longer: offers are
+// public, so any version the auditor ever signed could otherwise be
+// replayed over the current one.
+func (h *Hub) offerUpdate(slug string, of *audit.Offer, b []byte) error {
+	until, err := sig.ParseTime(of.ValidUntil)
+	if err != nil || !h.Now().Before(until) {
+		return fmt.Errorf("offer %s has expired", of.OfferID)
+	}
+	prev, err := os.ReadFile(filepath.Join(h.tenantDir(slug), "offers", of.OfferID+".json"))
+	if err != nil || bytes.Equal(prev, b) {
+		return nil
+	}
+	if po, err := audit.ParseOffer(prev); err == nil {
+		if pu, err := sig.ParseTime(po.ValidUntil); err == nil && !until.After(pu) {
+			return fmt.Errorf("offer %s is older than the one published", of.OfferID)
+		}
+	}
+	return nil
 }
 
 // changed tells the operator (the Discovery provider) that an auditor's
@@ -621,6 +659,19 @@ func (h *Hub) publish(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	// Only what this attestation references (and its order) is written.
+	wanted := map[string]bool{opath: order != nil}
+	for _, ref := range refs {
+		if strings.HasPrefix(ref.URI, h.base(slug)) {
+			wanted[strings.TrimPrefix(ref.URI, h.base(slug))] = true
+		}
+	}
+	for p := range offered {
+		if !wanted[p] {
+			fail(w, 422, fmt.Errorf("%s is not a document this attestation references", p))
+			return
+		}
+	}
 	offered[apath] = araw
 	fulfilled := func() {
 		if order != nil {
@@ -633,6 +684,15 @@ func (h *Hub) publish(w http.ResponseWriter, r *http.Request) {
 	// would tell everyone that the result was a fail.
 	if order != nil && a.Result == audit.Fail && order.Disclosure.FailPublication == "public-after-embargo" && order.Disclosure.EmbargoDays > 0 {
 		releaseAt := h.Now().Add(time.Duration(order.Disclosure.EmbargoDays) * 24 * time.Hour)
+		var size int64
+		for _, b := range offered {
+			size += int64(len(b))
+		}
+		// Held bytes count now: they are written outside the quota on release.
+		if h.usage(slug)+h.heldUsage(slug)+size > MaxTenantBytes {
+			fail(w, 507, errors.New("this auditor's storage on the hub is full (20 MiB); self-host the tree to grow"))
+			return
+		}
 		if err := h.hold(slug, a.AttestationID, releaseAt, offered); err != nil {
 			fail(w, 500, err)
 			return
@@ -692,7 +752,9 @@ func (h *Hub) revoke(w http.ResponseWriter, r *http.Request) {
 		fail(w, 409, errors.New("already revoked"))
 		return
 	}
-	if err := h.write(slug, map[string][]byte{rpath: rraw}); err != nil {
+	// Outside the quota: an auditor must always be able to revoke, however
+	// full its tree (subjects' replies count against it too).
+	if err := h.writeFiles(slug, map[string][]byte{rpath: rraw}, false); err != nil {
 		fail(w, 507, err)
 		return
 	}
@@ -745,6 +807,10 @@ func (h *Hub) response(w http.ResponseWriter, r *http.Request) {
 	p := "responses/" + att.AttestationID + "/" + head.ResponseID + ".json"
 	if _, err := os.Stat(filepath.Join(h.tenantDir(slug), p)); err == nil {
 		fail(w, 409, errors.New("responses are immutable; use a new responseId"))
+		return
+	}
+	if n, _ := os.ReadDir(filepath.Join(h.tenantDir(slug), "responses", att.AttestationID)); len(n) >= MaxResponses {
+		fail(w, 409, fmt.Errorf("an attestation takes at most %d replies", MaxResponses))
 		return
 	}
 	if err := h.write(slug, map[string][]byte{p: raw}); err != nil {

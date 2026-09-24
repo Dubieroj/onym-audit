@@ -28,8 +28,10 @@ test -f public/manifest.json || { echo "run onym-audit publish first" >&2; exit 
 # it compiles. Every package must have its Go files tracked by git.
 for dir in $(go list -f '{{.Dir}}' ./...); do
   rel=${dir#"$PWD"/}
-  if [ -z "$(git ls-files -- "$rel/*.go")" ] || [ -n "$(git ls-files --others --exclude-standard -- "$rel/*.go"; git ls-files --others --ignored --exclude-standard -- "$rel/*.go")" ]; then
-    echo "refusing to test: $rel holds Go files that are not committed (review checkouts belong in reviews/, fenced by its go.mod)" >&2
+  # Any untracked or ignored file counts: .s, .syso or .c files are
+  # compiled or linked into a package too.
+  if [ -z "$(git ls-files -- "$rel/*.go")" ] || [ -n "$(git ls-files --others -- "$rel")" ]; then
+    echo "refusing to test: $rel holds files that are not committed (review checkouts belong in reviews/, fenced by its go.mod)" >&2
     exit 1
   fi
 done

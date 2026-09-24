@@ -47,8 +47,11 @@ A manifest is registered with the documents it references — policies,
 methodologies, offers and their scopes — and nothing else: manifests are
 public, and re-sending one cannot add or replace any other file in the
 auditor's tree. A manifest older than the registered one (an earlier
-`validUntil`) is refused. The contact is a `mailto:` address or an
-`https://` URL, since pages show it as a link.
+`validUntil`) is refused, and so is an offer older than the published one
+or already expired. The contact is a `mailto:` address or an `https://`
+URL, since pages show it as a link. Revocations are always accepted, even
+when the auditor's storage is full; a subject may publish up to 10 replies
+to one attestation.
 
 ## Orders
 
