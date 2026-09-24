@@ -22,6 +22,7 @@ PAGES = [  # template, page path under the language, the JS strings key
     ("landing.html", "", "js"),
     ("order.html", "order/", "order_js"),
     ("app.html", "app/", "studio_js"),
+    ("judge.html", "judge/", "js"),
 ]
 # Old addresses that now live elsewhere: a small page per language that
 # sends the reader on (relative, so it works under any prefix).

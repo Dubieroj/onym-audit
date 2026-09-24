@@ -441,3 +441,11 @@ button.who-chip::after { content: " ⏻"; }
 .respond-box { margin-top: 10px; padding: 12px 14px; background: var(--paper-2); border: 1px solid var(--rule); }
 .anchor-line { margin: -10px 0 20px; font-size: 15px; display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: baseline; }
 .anchor-line a { font: 13px var(--mono); }
+
+/* judge page */
+.judge-hero { padding-bottom: 8px; }
+.judge-steps li { margin-bottom: 6px; }
+.judge-steps + .terminal { margin-top: 18px; }
+.judge-list { margin: 0; padding-left: 18px; display: grid; gap: 8px; color: var(--ink-2); font-size: 16px; }
+.judge-verified h3 { margin-bottom: 12px; }
+.case .links { margin-top: 12px; }

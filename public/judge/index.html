@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>For the judges · Onym audit seat · Sobor 2026</title>
+<meta name="description" content="The Onym audit & attestation seat, checked in five minutes: the repository, the running instance, and what was built and verified.">
+<meta name="color-scheme" content="light dark">
+<link rel="alternate" hreflang="en" href="https://foldy.io/audit/judge/">
+<link rel="alternate" hreflang="ru" href="https://foldy.io/audit/ru/judge/">
+<link rel="alternate" hreflang="sr-Latn-ME" href="https://foldy.io/audit/cnr/judge/">
+<link rel="alternate" hreflang="x-default" href="https://foldy.io/audit/judge/">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body class="judge-page">
+<div class="grain" aria-hidden="true"></div>
+<header class="masthead">
+  <div class="wrap masthead-row">
+    <a class="brand" href="../">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span class="brand-text"><b>Dimitrii</b> <span class="muted">· Onym audit seat</span></span>
+    </a>
+    <nav aria-label="Sections">
+      <a href="#start">Start here</a>
+      <a href="#results">Results</a>
+      <a href="#verified">Verified</a>
+      <a href="https://github.com/Dubieroj/onym-audit" class="nav-cta">GitHub ↗</a>
+    </nav>
+    <div class="langs" role="navigation" aria-label="Language"><a href="../judge/" hreflang="en" lang="en" aria-current="page">EN</a><a href="../ru/judge/" hreflang="ru" lang="ru">RU</a><a href="../cnr/judge/" hreflang="sr-Latn-ME" lang="sr-Latn-ME">CNR</a></div>
+  </div>
+  <div class="rule-strip"><div class="wrap">Sobor 2026 · for the judges · <code>onym:audit-profile:static-ed25519-v1</code></div></div>
+</header>
+
+<main>
+  <section class="hero wrap judge-hero">
+    <div class="hero-copy">
+      <p class="kicker">For the judges · five minutes</p>
+      <h1>The Onym audit seat, checked in five minutes</h1>
+      <p class="lede">Audit.md described the audit seat and said no concrete profile existed. This submission is that profile, two independent verifiers, a conformance suite, and a running seat anyone can take — from their browser, with an Onym identity.</p>
+    </div>
+  </section>
+
+  <section class="wrap ledger-facts" aria-label="Submission">
+    <dl>
+      <div><dt>Repository</dt><dd><a href="https://github.com/Dubieroj/onym-audit">github.com/Dubieroj/onym-audit</a></dd></div>
+      <div><dt>Running instance</dt><dd><a href="../">foldy.io/audit</a> · <a href="../app/">the app</a></dd></div>
+      <div><dt>Credentials</dt><dd>none needed — create an identity in the app</dd></div>
+      <div><dt>Contract</dt><dd><a href="https://github.com/onymchat/onym-system/blob/main/audit/Audit.md">onym-system/audit/Audit.md</a></dd></div>
+    </dl>
+  </section>
+
+  <section class="wrap" id="start">
+    <div class="sec-head">
+      <p class="numeral">I.</p>
+      <h2>Start here</h2>
+      <p class="sec-lede">Three paths, a few minutes each. Everything you do is signed in your browser and verified by the code in the repository.</p>
+    </div>
+    <ol class="order-steps judge-steps">
+      <li>Open the app, create an auditor identity (twelve words — the key is derived exactly as the Onym apps derive it), register, and examine something: a Discovery catalog such as https://foldy.io/audit/discovery/manifest.json runs the 42-check suite. Sign and publish; the Library verifies it in your browser and shows its Stellar anchor.</li>
+      <li>Switch to the Customer tab with a second identity, order an audit from the auditor you just created, then take the order as that auditor and sign: the published order carries three signatures — subject, sponsor, auditor.</li>
+      <li>From the repository, run the tests and the whole attestation lifecycle in one command:</li>
+    </ol>
+    <div class="terminal" role="region" aria-label="terminal">
+      <div class="term-bar"><span></span><span></span><span></span><em>terminal</em></div>
+<pre><code>git clone https://github.com/Dubieroj/onym-audit && cd onym-audit
+go test ./...                                   <span class="c"># 97 tests and subtests, incl. byte-pinned fixtures</span>
+node tools/verify-js-test.mjs                   <span class="c"># the independent browser verifier, same vectors</span>
+node tools/onym-id-test.mjs && node tools/stellar-test.mjs
+tools/sandbox.sh                                <span class="c"># issue, reply, order, supersede, revoke, byte drift</span>
+go build -o bin/onym-audit ./cmd/onym-audit
+bin/onym-audit conformance-discovery -manifest https://foldy.io/audit/discovery/manifest.json</code></pre>
+    </div>
+  </section>
+
+  <section class="wrap" id="results">
+    <div class="sec-head">
+      <p class="numeral">II.</p>
+      <h2>What was built</h2>
+      <p class="sec-lede">Each result names its state honestly and links to its code.</p>
+    </div>
+    <div class="cases">
+      <article class="case"><p class="who-tag">01 · specification</p><h3>The first implementation profile for Audit.md</h3><p>Audit-Static-Ed25519: every document of the seat, canonical signing, serving and freshness, relying-client verification, error mapping, fixtures and gaps — and §12 maps all nine acceptance criteria of Audit.md §16 to where they are met.</p><p class="links"><a href="../profile/Audit-Static-Ed25519.md">the profile</a> <a href="https://github.com/Dubieroj/onym-audit/tree/main/audit">audit/</a></p></article>
+      <article class="case"><p class="who-tag">02 · tested</p><h3>Two independent verifiers, byte-identical to Onym's reference</h3><p>A relying client in Go and another in the browser (WebCrypto), both proven byte-identical to the Rust reference onym-discovery on its own vectors, and both passing 34 pinned fixtures: 22 decision cases and 12 malformed documents.</p><p class="links"><a href="https://github.com/Dubieroj/onym-audit/tree/main/fixtures">fixtures/</a> <a href="../verify.js">verify.js</a></p></article>
+      <article class="case"><p class="who-tag">03 · works</p><h3>A conformance suite for Discovery providers</h3><p>42 checks, each citing its clause, run black-box against any provider's public bytes. It is the examination behind conformance attestations; the hub runs it for any auditor, and it applies only to Discovery providers.</p><p class="links"><a href="../scopes/discovery-static-ed25519-provider.md">scope</a> <a href="https://github.com/Dubieroj/onym-audit/tree/main/conformance/discovery">conformance/discovery/</a></p></article>
+      <article class="case live"><p class="who-tag">04 · live</p><h3>The app: sign in with an Onym identity</h3><p>Twelve words derive the auditor key exactly as the Onym apps do — the apps' own fixture phrase shows the same Stellar address. Auditor cabinet with a pipeline, customer cabinet, requests for proposals, and a library that verifies every verdict in the reader's browser. Only non-extractable keys are kept.</p><p class="links"><a href="../app/">open the app</a> <a href="../app/#library">library</a></p></article>
+      <article class="case live"><p class="who-tag">05 · live</p><h3>An audit hub: anyone can take the seat, anyone can order</h3><p>Auditors publish signed, verdict-independent offers; orders are signed by subject and sponsor and countersigned by the auditor; the hub accepts an order only under an offer as published, and holds a fail until the order's embargo ends. Orders and requests follow the phrase to any device through an encrypted vault.</p><p class="links"><a href="../order/">order page</a> <a href="../hub/terms.md">hub terms</a></p></article>
+      <article class="case live"><p class="who-tag">06 · live · Stellar testnet</p><h3>Registers anchored in Stellar</h3><p>The digest of each auditor's register — attestations issued and revoked — is written to the auditor's own Stellar account after every change, signed in the browser. This seat's register is anchored; the library checks each anchor against a public Stellar node.</p><p class="links"><a href="https://stellar.expert/explorer/testnet/account/GBD7YCE26AVBINOTW74YWF6XYU5SNBJZQ22TLVTCJH3DSFWLRIECX2CF">stellar.expert ↗</a> <a href="https://github.com/Dubieroj/onym-audit/tree/main/stellar">stellar/</a></p></article>
+      <article class="case live"><p class="who-tag">07 · live</p><h3>A Discovery catalog of auditors</h3><p>Onym's default catalog lists four seat types and no audit seat; the Discovery contract keeps direct import open. This site's provider publishes the catalog onym-auditors — and it passes the 42-check suite: CLEAR.</p><p class="links"><a href="../discovery/manifest.json">provider manifest</a> <a href="../discovery/policies/onym-auditors.md">inclusion policy</a></p></article>
+      <article class="case"><p class="who-tag">08 · runs locally</p><h3>An LLM examination engine and an offline console</h3><p>Claude reads a repository at an exact commit through read-only tools; every finding must quote the lines it rests on, checked mechanically against the pinned bytes. The auditor keeps or drops each finding with a published reason and signs with a key that never leaves the machine.</p><p class="links"><a href="../methodology/security-review-llm.md">methodology</a> <a href="https://github.com/Dubieroj/onym-audit/tree/main/agent">agent/</a></p></article>
+    </div>
+  </section>
+
+  <section class="wrap" id="verified">
+    <div class="sec-head">
+      <p class="numeral">III.</p>
+      <h2>What is verified — and what is not</h2>
+    </div>
+    <div class="comm-grid judge-verified">
+      <div>
+        <h3>Verified</h3>
+        <ul class="judge-list"><li>97 Go tests and subtests; the browser verifier, identity derivation and Stellar encoding on the same vectors as Go.</li><li>Identity keys match the Onym apps' cross-platform fixture; the Stellar test network accepted the anchor transactions.</li><li>Every flow on the live site — register, examine, order, request, respond, publish, revoke, restore on another device — with test data removed afterwards.</li><li>This site's Discovery catalog passes its own suite: CLEAR.</li></ul>
+      </div>
+      <div>
+        <h3>Not yet</h3>
+        <ul class="judge-list"><li>Onym's apps do not read attestations yet: their contract screen still says “Pending — no audits yet”; a pull request needs the maintainer's consent.</li><li>Anchors are on the Stellar test network, like Onym's own contracts today.</li><li>The first attestation about a real Onym component waits for the notice period of this seat's own unsolicited-examination policy.</li><li>One host; no reproducible build of Onym's contracts yet, so no build-provenance attestation for them.</li></ul>
+      </div>
+      <div>
+        <h3>Relationship</h3>
+        <p>Built by Dimitrii as a participant in Sobor 2026, a contest organized by the maintainer of the Onym reference components. Every attestation about an Onym-operated component states this relationship.</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="colophon">
+  <div class="wrap">
+    <p class="small muted">Dimitrii · <a href="mailto:dubieroj@gmail.com">dubieroj@gmail.com</a> · <a href="https://github.com/Dubieroj/onym-audit">github.com/Dubieroj/onym-audit</a> · MIT licensed.</p>
+  </div>
+</footer>
+</body>
+</html>

@@ -23,7 +23,7 @@ go build -o bin/onym-audit ./cmd/onym-audit
 ## 2. Conformance of the implementation itself
 
 ```sh
-go test ./...                          # 66 tests and subtests, incl. the byte-pinned fixtures
+go test ./...                          # 97 tests and subtests, incl. the byte-pinned fixtures
 node tools/verify-js-test.mjs          # the independent JS client, same vectors
 bin/onym-audit fixtures -dir fixtures  # the published fixture cases, from files alone
 ```
