@@ -58,7 +58,7 @@ type Hub struct {
 	PublicRoot string // the operator's public tree: shared profile, scale, docs
 	PublicBase string // https://foldy.io/audit/
 	Now        func() time.Time
-	OnChange   func() // called after an auditor's manifest is published
+	OnChange   func() // called after an auditor registers, publishes, or revokes
 
 	mu      sync.Mutex
 	tenants map[string]*sync.Mutex
@@ -468,10 +468,16 @@ func (h *Hub) register(w http.ResponseWriter, r *http.Request) {
 		fail(w, 500, fmt.Errorf("registered, but the status list was not signed: %v", err))
 		return
 	}
+	h.changed()
+	reply(w, 201, map[string]string{"page": h.base(in.Slug), "manifest": h.base(in.Slug) + "manifest.json", "digest": sig.Digest(mraw)})
+}
+
+// changed tells the operator (the Discovery provider) that an auditor's
+// manifest or register changed.
+func (h *Hub) changed() {
 	if h.OnChange != nil {
 		go h.OnChange()
 	}
-	reply(w, 201, map[string]string{"page": h.base(in.Slug), "manifest": h.base(in.Slug) + "manifest.json", "digest": sig.Digest(mraw)})
 }
 
 func canonical(raw json.RawMessage) ([]byte, error) {
@@ -615,6 +621,7 @@ func (h *Hub) publish(w http.ResponseWriter, r *http.Request) {
 		fail(w, 500, fmt.Errorf("published, but the status list was not re-signed: %v", err))
 		return
 	}
+	h.changed()
 	reply(w, 201, map[string]string{"uri": h.base(slug) + apath, "digest": sig.Digest(araw)})
 }
 
@@ -664,6 +671,7 @@ func (h *Hub) revoke(w http.ResponseWriter, r *http.Request) {
 		fail(w, 500, err)
 		return
 	}
+	h.changed()
 	reply(w, 201, map[string]string{"uri": h.base(slug) + rpath})
 }
 
