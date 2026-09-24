@@ -36,8 +36,13 @@ const local = (u) => (base && u.startsWith(base) ? at(u.slice(base.length)) : u)
 
 let manifestText, statusText, manifest;
 
+// The seal and the facts appear on hosted auditor pages; the landing page
+// has neither, so writes to them are skipped there.
+const opt = (id) => $(id) || document.createElement("span");
+
 function seal(state, print, epoch, caption) {
   const s = $("seal");
+  if (!s) return;
   s.classList.remove("verified", "failed");
   if (state === t("verified")) s.classList.add("verified");
   if (state === t("unverified")) s.classList.add("failed");
@@ -67,14 +72,14 @@ async function main() {
     $("order-cta").hidden = false;
   }
   // The ring's textLength spreads the words evenly around the circle.
-  $("seal-ringtext").textContent = `${manifest.displayName.toUpperCase()} · ONYM AUDIT SEAT · ED25519 ·`;
-  $("f-key").textContent = print;
-  $("f-key").title = manifest.operator;
+  opt("seal-ringtext").textContent = `${manifest.displayName.toUpperCase()} · ONYM AUDIT SEAT · ED25519 ·`;
+  opt("f-key").textContent = print;
+  opt("f-key").title = manifest.operator;
   const mail = manifest.contact.replace(/^mailto:/, "");
   const a = el("a", "", mail);
   // The contact is the auditor's own text: only mailto: and https: become links.
   if (/^(mailto:|https:\/\/)/i.test(manifest.contact)) a.href = manifest.contact;
-  $("f-contact").replaceChildren(a);
+  opt("f-contact").replaceChildren(a);
 
   const manifestOK = await verifySig(manifestText, manifest.operator).catch(() => false);
   try { statusText = await get("status.json"); } catch { statusText = null; }
@@ -82,8 +87,8 @@ async function main() {
   if (statusText) {
     st = plain(parseStrict(statusText));
     statusOK = st.statusKey === manifest.statusKey && st.auditorKey === manifest.operator && (await verifySig(statusText, manifest.statusKey).catch(() => false));
-    $("f-status").textContent = t("signed", { n: st.statusEpoch, ago: ago(st.issuedAt) });
-    $("f-next").textContent = st.nextUpdate.replace("T", " ").replace("Z", " UTC");
+    opt("f-status").textContent = t("signed", { n: st.statusEpoch, ago: ago(st.issuedAt) });
+    opt("f-next").textContent = st.nextUpdate.replace("T", " ").replace("Z", " UTC");
   }
   const fresh = st && Date.parse(st.nextUpdate) > Date.now();
   if (manifestOK && statusOK && fresh) {
