@@ -1,7 +1,7 @@
 {
  "_note": "Every string of the landing, in all three languages. Edit here, then run tools/build_landing.py. Normative documents stay English: their bytes are what the signatures pin.",
  "en": {
-  "title": "Onym Auditor · Dimitrii",
+  "title": "Onym Auditor · onym audit",
   "description": "An independent audit seat on the Onym network: signed, expiring, revocable opinions about exact bytes — each naming who examined what, how, and at whose expense.",
   "brand_seat": "Onym audit seat",
   "nav_label": "Sections",
@@ -720,12 +720,12 @@
   "j_n3": "Only one real Onym component is attested so far: its Discovery catalog.",
   "j_n4": "One host; no reproducible build of Onym's contracts yet, so no build-provenance attestation for them.",
   "j_ver_rel": "Relationship",
-  "j_rel": "Built by Dimitrii as a participant in Sobor 2026, a contest organized by the maintainer of the Onym reference components. Every attestation about an Onym-operated component states this relationship.",
+  "j_rel": "Built as a participant in Sobor 2026, a contest organized by the maintainer of the Onym reference components. Every attestation about an Onym-operated component states this relationship.",
   "j_footer": "MIT licensed.",
   "nav_judge": "For the judges"
  },
  "ru": {
-  "title": "Onym Auditor · Dimitrii",
+  "title": "Onym Auditor · onym audit",
   "description": "Независимый аудитор сети Onym: подписанные, истекающие и отзываемые заключения о конкретных байтах — с указанием, кто что проверил, как и за чей счёт.",
   "brand_seat": "аудитор сети Onym",
   "nav_label": "Разделы",
@@ -1444,12 +1444,12 @@
   "j_n3": "Пока аттестован только один реальный компонент Onym — его каталог Discovery.",
   "j_n4": "Один сервер; воспроизводимой сборки контрактов Onym пока нет, поэтому нет и аттестации их сборки.",
   "j_ver_rel": "Связи",
-  "j_rel": "Сделано Dimitrii как участником Sobor 2026 — конкурса, который организует мейнтейнер эталонных компонентов Onym. Каждая аттестация о компоненте под управлением Onym указывает эту связь.",
+  "j_rel": "Сделано участником Sobor 2026 — конкурса, который организует мейнтейнер эталонных компонентов Onym. Каждая аттестация о компоненте под управлением Onym указывает эту связь.",
   "j_footer": "Лицензия MIT.",
   "nav_judge": "Для судей"
  },
  "cnr": {
-  "title": "Onym Auditor · Dimitrii",
+  "title": "Onym Auditor · onym audit",
   "description": "Nezavisni revizor mreže Onym: potpisana, vremenski ograničena i opoziva mišljenja o tačno određenim bajtovima — uz navod ko je šta pregledao, kako i o čijem trošku.",
   "brand_seat": "revizor mreže Onym",
   "nav_label": "Odjeljci",
@@ -2168,7 +2168,7 @@
   "j_n3": "Za sada je atestovana samo jedna stvarna Onym komponenta — njen Discovery katalog.",
   "j_n4": "Jedan server; ponovljivog build-a Onym ugovora još nema, pa ni atestacije njihovog build-a.",
   "j_ver_rel": "Veze",
-  "j_rel": "Napravio Dimitrii kao učesnik Sobor 2026, takmičenja koje organizuje održavalac Onym referentnih komponenti. Svaka atestacija o komponenti kojom upravlja Onym navodi ovu vezu.",
+  "j_rel": "Napravljeno kao učesnik Sobor 2026, takmičenja koje organizuje održavalac Onym referentnih komponenti. Svaka atestacija o komponenti kojom upravlja Onym navodi ovu vezu.",
   "j_footer": "MIT licenca.",
   "nav_judge": "Za sudije"
  }

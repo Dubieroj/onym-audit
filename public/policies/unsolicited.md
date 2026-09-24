@@ -1,6 +1,6 @@
 # Unsolicited examination and disclosure policy
 
-Auditor: Dimitrii (`onym:component:dimitrii-audit`). Version 1, 24 September 2026.
+Auditor: onym audit (`onym:component:onym-audit`). Version 1, 24 September 2026.
 
 Pinned by digest in the auditor manifest and in every unsolicited
 attestation (Onym Audit.md §5.7).

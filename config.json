@@ -1,8 +1,8 @@
 {
   "baseUri": "https://foldy.io/audit/",
-  "componentId": "onym:component:dimitrii-audit",
-  "displayName": "Dimitrii",
-  "contact": "mailto:dubieroj@gmail.com",
+  "componentId": "onym:component:onym-audit",
+  "displayName": "onym audit",
+  "contact": "https://foldy.io/audit/",
   "validUntil": "2027-09-24T00:00:00Z",
   "offers": [
     "conformance-run-discovery",

@@ -18,7 +18,7 @@
   <div class="wrap masthead-row">
     <a class="brand" href="../">
       <span class="brand-mark" aria-hidden="true"></span>
-      <span class="brand-text"><b>Dimitrii</b> <span class="muted">· аудитор сети Onym</span></span>
+      <span class="brand-text"><b>onym audit</b> <span class="muted">· аудитор сети Onym</span></span>
     </a>
     <nav aria-label="Разделы">
       <a href="#start">С чего начать</a>
@@ -84,7 +84,7 @@ bin/onym-audit conformance-discovery -manifest https://foldy.io/audit/discovery/
       <article class="case"><p class="who-tag">03 · работает</p><h3>Набор проверок соответствия для Discovery-провайдеров</h3><p>42 проверки, каждая со ссылкой на пункт спецификации, по публичным байтам любого провайдера. Это основа аттестаций соответствия; хаб запускает его для любого аудитора, и применяется он только к Discovery-провайдерам.</p><p class="links"><a href="../../scopes/discovery-static-ed25519-provider.md">область</a> <a href="https://github.com/Dubieroj/onym-audit/tree/main/conformance/discovery">conformance/discovery/</a></p></article>
       <article class="case live"><p class="who-tag">04 · на сайте</p><h3>Приложение: вход личностью Onym</h3><p>Двенадцать слов дают ключ аудитора ровно так же, как в приложениях Onym — тестовая фраза самих приложений показывает тот же Stellar-адрес. Кабинет аудитора с конвейером, кабинет заказчика, заявки и библиотека, где каждый вердикт проверяется в браузере читателя. Хранятся только неизвлекаемые ключи.</p><p class="links"><a href="../../app/">открыть приложение</a> <a href="../../app/#library">библиотека</a></p></article>
       <article class="case live"><p class="who-tag">05 · на сайте</p><h3>Хаб аудиторов: пост может занять любой, заказать — любой</h3><p>Аудиторы публикуют подписанные предложения с ценой, не зависящей от результата; заказ подписывают проверяемый и плательщик, аудитор подписывает его при выдаче; хаб принимает заказ только по опубликованному предложению и придерживает провал до конца эмбарго. Заказы и заявки находятся с любого устройства через зашифрованное хранилище.</p><p class="links"><a href="../../order/">страница заказа</a> <a href="../../hub/terms.md">правила хаба</a></p></article>
-      <article class="case live"><p class="who-tag">06 · на сайте · Stellar testnet</p><h3>Реестры закреплены в Stellar</h3><p>Хеш реестра каждого аудитора — выданные и отозванные аттестации — после каждого изменения записывается в его собственный Stellar-аккаунт, подпись ставится в браузере. Реестр этого поста закреплён; библиотека сверяет каждый якорь с публичным узлом Stellar.</p><p class="links"><a href="https://stellar.expert/explorer/testnet/account/GBD7YCE26AVBINOTW74YWF6XYU5SNBJZQ22TLVTCJH3DSFWLRIECX2CF">stellar.expert ↗</a> <a href="https://github.com/Dubieroj/onym-audit/tree/main/stellar">stellar/</a></p></article>
+      <article class="case live"><p class="who-tag">06 · на сайте · Stellar testnet</p><h3>Реестры закреплены в Stellar</h3><p>Хеш реестра каждого аудитора — выданные и отозванные аттестации — после каждого изменения записывается в его собственный Stellar-аккаунт, подпись ставится в браузере. Реестр этого поста закреплён; библиотека сверяет каждый якорь с публичным узлом Stellar.</p><p class="links"><a href="https://stellar.expert/explorer/testnet/account/GAHIAOQI5NLMK5BMUBEUMKHTOT4G7SXFHPKEMZR6KEE6PBO5YDXAHSSX">stellar.expert ↗</a> <a href="https://github.com/Dubieroj/onym-audit/tree/main/stellar">stellar/</a></p></article>
       <article class="case live"><p class="who-tag">07 · на сайте</p><h3>Каталог Discovery для аудиторов</h3><p>Каталог Onym по умолчанию перечисляет четыре типа мест и не принимает аудиторов; контракт Discovery оставляет открытым импорт по ссылке. Провайдер этого сайта публикует каталог onym-auditors — и он проходит набор из 42 проверок: CLEAR.</p><p class="links"><a href="../../discovery/manifest.json">манифест провайдера</a> <a href="../../discovery/policies/onym-auditors.md">правила включения</a></p></article>
       <article class="case"><p class="who-tag">08 · работает локально</p><h3>LLM-движок проверки и офлайн-консоль</h3><p>Claude читает репозиторий на точном коммите через инструменты только для чтения; каждая находка обязана цитировать строки, на которых основана, и это сверяется с закреплёнными байтами автоматически. Аудитор оставляет или отклоняет каждую находку с опубликованной причиной и подписывает ключом, который не покидает компьютер.</p><p class="links"><a href="../../methodology/security-review-llm.md">методика</a> <a href="https://github.com/Dubieroj/onym-audit/tree/main/agent">agent/</a></p></article>
     </div>
@@ -106,7 +106,7 @@ bin/onym-audit conformance-discovery -manifest https://foldy.io/audit/discovery/
       </div>
       <div>
         <h3>Связи</h3>
-        <p>Сделано Dimitrii как участником Sobor 2026 — конкурса, который организует мейнтейнер эталонных компонентов Onym. Каждая аттестация о компоненте под управлением Onym указывает эту связь.</p>
+        <p>Сделано участником Sobor 2026 — конкурса, который организует мейнтейнер эталонных компонентов Onym. Каждая аттестация о компоненте под управлением Onym указывает эту связь.</p>
       </div>
     </div>
   </section>
@@ -114,7 +114,7 @@ bin/onym-audit conformance-discovery -manifest https://foldy.io/audit/discovery/
 
 <footer class="colophon">
   <div class="wrap">
-    <p class="small muted">Dimitrii · <a href="mailto:dubieroj@gmail.com">dubieroj@gmail.com</a> · <a href="https://github.com/Dubieroj/onym-audit">github.com/Dubieroj/onym-audit</a> · Лицензия MIT.</p>
+    <p class="small muted">onym audit · <a href="https://github.com/Dubieroj/onym-audit">github.com/Dubieroj/onym-audit</a> · Лицензия MIT.</p>
   </div>
 </footer>
 </body>

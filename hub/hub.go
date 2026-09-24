@@ -93,7 +93,7 @@ func New(root, publicRoot, publicBase string) (*Hub, error) {
 
 var (
 	slugRE    = regexp.MustCompile(`^[a-z][a-z0-9-]{2,31}$`)
-	reserved  = map[string]bool{"admin": true, "api": true, "hub": true, "audit": true, "onym": true, "dimitrii": true, "dimitrii-audit": true, "foundation": true, "sobor": true, "root": true, "status": true, "www": true}
+	reserved  = map[string]bool{"admin": true, "api": true, "hub": true, "audit": true, "onym": true, "onym-audit": true, "foundation": true, "sobor": true, "root": true, "status": true, "www": true}
 	docPathRE = regexp.MustCompile(`^(policies|methodology|scopes|reports|offers|notes|orders)/[A-Za-z0-9][A-Za-z0-9._-]{0,127}\.(md|json)$`)
 )
 

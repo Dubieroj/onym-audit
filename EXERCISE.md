@@ -16,7 +16,7 @@ go build -o bin/onym-audit ./cmd/onym-audit
 - **Auditor:** <https://foldy.io/audit/> — the page verifies the manifest,
   every attestation, and the status list in your browser.
 - Manifest: <https://foldy.io/audit/manifest.json> (operator key fingerprint
-  `ea:ef:cb:ce:6e:48:ed:c1`), profile: <https://foldy.io/audit/profile.json>,
+  `45:5f:f5:3b:d7:a4:28:74`), profile: <https://foldy.io/audit/profile.json>,
   status list: <https://foldy.io/audit/status.json> (re-signed every 6 hours
   by the delegated status key; check `issuedAt`).
 
@@ -156,7 +156,7 @@ This seat's register is anchored on the Stellar test network:
 bin/onym-audit anchor -check -key keys/auditor.key   # needs the key file; or look directly:
 ```
 
-<https://stellar.expert/explorer/testnet/account/GBD7YCE26AVBINOTW74YWF6XYU5SNBJZQ22TLVTCJH3DSFWLRIECX2CF>
+<https://stellar.expert/explorer/testnet/account/GAHIAOQI5NLMK5BMUBEUMKHTOT4G7SXFHPKEMZR6KEE6PBO5YDXAHSSX>
 — the account is this seat's auditor key; its data entry `onym-audit-status`
 is the SHA-256 of the register's canonical form (`stellar/stellar.go`,
 `Digest`). Hub auditors anchor from the app after every issue and

@@ -1,6 +1,6 @@
 # Privacy profile
 
-Auditor: Dimitrii (`onym:component:dimitrii-audit`). Version 1, 24 September 2026.
+Auditor: onym audit (`onym:component:onym-audit`). Version 1, 24 September 2026.
 
 - **Static files** (manifest, attestations, status list, reports) are served
   without cookies, accounts, or per-user URLs. The host keeps **no access

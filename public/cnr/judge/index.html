@@ -18,7 +18,7 @@
   <div class="wrap masthead-row">
     <a class="brand" href="../">
       <span class="brand-mark" aria-hidden="true"></span>
-      <span class="brand-text"><b>Dimitrii</b> <span class="muted">· revizor mreže Onym</span></span>
+      <span class="brand-text"><b>onym audit</b> <span class="muted">· revizor mreže Onym</span></span>
     </a>
     <nav aria-label="Odjeljci">
       <a href="#start">Počnite ovdje</a>
@@ -84,7 +84,7 @@ bin/onym-audit conformance-discovery -manifest https://foldy.io/audit/discovery/
       <article class="case"><p class="who-tag">03 · radi</p><h3>Skup provjera usklađenosti za Discovery provajdere</h3><p>42 provjere, svaka s pozivom na klauzulu, nad javnim bajtovima bilo kog provajdera. Osnova atestacija usklađenosti; hub ga pokreće za svakog revizora, i primjenjuje se samo na Discovery provajdere.</p><p class="links"><a href="../../scopes/discovery-static-ed25519-provider.md">obim</a> <a href="https://github.com/Dubieroj/onym-audit/tree/main/conformance/discovery">conformance/discovery/</a></p></article>
       <article class="case live"><p class="who-tag">04 · na sajtu</p><h3>Aplikacija: prijava Onym identitetom</h3><p>Dvanaest riječi daje ključ revizora tačno kao u Onym aplikacijama — test fraza samih aplikacija prikazuje istu Stellar adresu. Kabinet revizora s tokom rada, kabinet naručioca, zahtjevi za ponude i biblioteka u kojoj se svaka presuda provjerava u pregledaču čitaoca. Čuvaju se samo ključevi koji se ne mogu izvući.</p><p class="links"><a href="../../app/">otvori aplikaciju</a> <a href="../../app/#library">biblioteka</a></p></article>
       <article class="case live"><p class="who-tag">05 · na sajtu</p><h3>Hub revizora: mjesto može preuzeti svako, naručiti svako</h3><p>Revizori objavljuju potpisane ponude s cijenom nezavisnom od rezultata; narudžbu potpisuju subjekt i platilac, a revizor je potpisuje pri izdavanju; hub prihvata narudžbu samo po objavljenoj ponudi i zadržava neuspjeh do kraja embarga. Narudžbe i zahtjevi dostupni su sa svakog uređaja kroz šifrovani trezor.</p><p class="links"><a href="../../order/">stranica narudžbe</a> <a href="../../hub/terms.md">pravila huba</a></p></article>
-      <article class="case live"><p class="who-tag">06 · na sajtu · Stellar testnet</p><h3>Registri učvršćeni u Stellar</h3><p>Heš registra svakog revizora — izdate i opozvane atestacije — nakon svake promjene upisuje se u njegov Stellar nalog, potpisan u pregledaču. Registar ovog mjesta je učvršćen; biblioteka provjerava svako sidro kod javnog Stellar čvora.</p><p class="links"><a href="https://stellar.expert/explorer/testnet/account/GBD7YCE26AVBINOTW74YWF6XYU5SNBJZQ22TLVTCJH3DSFWLRIECX2CF">stellar.expert ↗</a> <a href="https://github.com/Dubieroj/onym-audit/tree/main/stellar">stellar/</a></p></article>
+      <article class="case live"><p class="who-tag">06 · na sajtu · Stellar testnet</p><h3>Registri učvršćeni u Stellar</h3><p>Heš registra svakog revizora — izdate i opozvane atestacije — nakon svake promjene upisuje se u njegov Stellar nalog, potpisan u pregledaču. Registar ovog mjesta je učvršćen; biblioteka provjerava svako sidro kod javnog Stellar čvora.</p><p class="links"><a href="https://stellar.expert/explorer/testnet/account/GAHIAOQI5NLMK5BMUBEUMKHTOT4G7SXFHPKEMZR6KEE6PBO5YDXAHSSX">stellar.expert ↗</a> <a href="https://github.com/Dubieroj/onym-audit/tree/main/stellar">stellar/</a></p></article>
       <article class="case live"><p class="who-tag">07 · na sajtu</p><h3>Discovery katalog revizora</h3><p>Onym podrazumijevani katalog navodi četiri vrste mjesta i ne prima revizore; Discovery ugovor ostavlja otvoren direktan uvoz. Provajder ovog sajta objavljuje katalog onym-auditors — i on prolazi skup od 42 provjere: CLEAR.</p><p class="links"><a href="../../discovery/manifest.json">manifest provajdera</a> <a href="../../discovery/policies/onym-auditors.md">pravila uključivanja</a></p></article>
       <article class="case"><p class="who-tag">08 · radi lokalno</p><h3>LLM mehanizam pregleda i offline konzola</h3><p>Claude čita repozitorijum na tačnom komitu kroz alate samo za čitanje; svaki nalaz mora citirati linije na kojima počiva, što se mehanički provjerava nad fiksiranim bajtovima. Revizor zadržava ili odbacuje svaki nalaz s objavljenim razlogom i potpisuje ključem koji ne napušta računar.</p><p class="links"><a href="../../methodology/security-review-llm.md">metodologija</a> <a href="https://github.com/Dubieroj/onym-audit/tree/main/agent">agent/</a></p></article>
     </div>
@@ -106,7 +106,7 @@ bin/onym-audit conformance-discovery -manifest https://foldy.io/audit/discovery/
       </div>
       <div>
         <h3>Veze</h3>
-        <p>Napravio Dimitrii kao učesnik Sobor 2026, takmičenja koje organizuje održavalac Onym referentnih komponenti. Svaka atestacija o komponenti kojom upravlja Onym navodi ovu vezu.</p>
+        <p>Napravljeno kao učesnik Sobor 2026, takmičenja koje organizuje održavalac Onym referentnih komponenti. Svaka atestacija o komponenti kojom upravlja Onym navodi ovu vezu.</p>
       </div>
     </div>
   </section>
@@ -114,7 +114,7 @@ bin/onym-audit conformance-discovery -manifest https://foldy.io/audit/discovery/
 
 <footer class="colophon">
   <div class="wrap">
-    <p class="small muted">Dimitrii · <a href="mailto:dubieroj@gmail.com">dubieroj@gmail.com</a> · <a href="https://github.com/Dubieroj/onym-audit">github.com/Dubieroj/onym-audit</a> · MIT licenca.</p>
+    <p class="small muted">onym audit · <a href="https://github.com/Dubieroj/onym-audit">github.com/Dubieroj/onym-audit</a> · MIT licenca.</p>
   </div>
 </footer>
 </body>

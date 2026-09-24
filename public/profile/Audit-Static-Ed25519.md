@@ -1,6 +1,6 @@
 ---
 status: draft
-proposed: Dimitrii, with Claude
+proposed: onym audit, with Claude
 date: 24.09.2026
 ---
 

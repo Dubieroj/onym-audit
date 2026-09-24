@@ -1,6 +1,6 @@
 # Methodology: security-review-manual v1
 
-Auditor: Dimitrii (`onym:component:dimitrii-audit`). Version 1, 24 September 2026.
+Auditor: onym audit (`onym:component:onym-audit`). Version 1, 24 September 2026.
 Methodology class `security-review` (Onym Audit.md §2): *manual examination
 of code for vulnerability classes in scope.*
 

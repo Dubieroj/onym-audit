@@ -1,6 +1,6 @@
 # Independence policy
 
-Auditor: Dimitrii (`onym:component:dimitrii-audit`). Version 1, 24 September 2026.
+Auditor: onym audit (`onym:component:onym-audit`). Version 1, 24 September 2026.
 
 This policy is pinned by digest in the auditor manifest. It binds every
 attestation issued under that manifest (Onym Audit.md §8.4).

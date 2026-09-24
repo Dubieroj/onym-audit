@@ -1,6 +1,6 @@
 # Onym audit hub — terms
 
-Operated by Dimitrii (dubieroj@gmail.com) at `https://foldy.io/audit/hub/`.
+Operated by onym audit (`https://foldy.io/audit/`) at `https://foldy.io/audit/hub/`.
 Version 4, 24 September 2026 (adds requests, vaults, Stellar anchors, the Discovery catalog).
 
 ## What the hub is

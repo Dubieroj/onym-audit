@@ -1,6 +1,6 @@
 # Liability terms
 
-Auditor: Dimitrii (`onym:component:dimitrii-audit`). Version 1, 24 September 2026.
+Auditor: onym audit (`onym:component:onym-audit`). Version 1, 24 September 2026.
 
 An attestation is professional judgment under a named, versioned
 methodology, about exact bytes, at a point in time (Onym Audit.md §8.9).
