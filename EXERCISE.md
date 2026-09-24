@@ -148,7 +148,21 @@ lists every attestation on the hub, verifies each in your browser, and finds
 one by its number (`#att=<id>` links to it). The hub's terms
 are at <https://foldy.io/audit/hub/terms.md>.
 
-## 10. Where each requirement is met
+## 10. The register's anchor in Stellar
+
+This seat's register is anchored on the Stellar test network:
+
+```
+bin/onym-audit anchor -check -key keys/auditor.key   # needs the key file; or look directly:
+```
+
+<https://stellar.expert/explorer/testnet/account/GBD7YCE26AVBINOTW74YWF6XYU5SNBJZQ22TLVTCJH3DSFWLRIECX2CF>
+— the account is this seat's auditor key; its data entry `onym-audit-status`
+is the SHA-256 of the register's canonical form (`stellar/stellar.go`,
+`Digest`). Hub auditors anchor from the app after every issue and
+revocation, and the Library tab shows each register's anchor state.
+
+## 11. Where each requirement is met
 
 The profile's §12 maps all nine acceptance criteria of Audit.md §16 to the
 sections and fixtures that meet them; §11 lists what is not done.

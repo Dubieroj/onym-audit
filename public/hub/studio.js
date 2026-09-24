@@ -7,6 +7,7 @@
 // document is built to the static-Ed25519 profile and signed here.
 import { parseStrict, canonical, plain, digest, fingerprint, verifySig, verifyAttestation } from "../verify.js";
 import { normalize, check, generate, derive, orderKey, accountOfKey, keyOfAccount, vaultKeys } from "../onym-id.js";
+import { NETWORK, anchorDigest, anchor, anchorState } from "../stellar.js";
 import { RE as ORE, auditors as orderAuditors, load as loadAuditor, kindsOf, feeText, pin, subjectOf, newOrderID, sign as signOrder, send as sendOrder } from "../order-core.js";
 
 const $ = (id) => document.getElementById(id);
@@ -415,6 +416,7 @@ async function dash() {
     const statusText = await getText(me.base + "status.json");
     const st = plain(parseStrict(statusText));
     if (!(await verifySig(statusText, plain(parseStrict(manifestText)).statusKey))) throw new Error(t("e_status"));
+    showAnchor(statusText);
     $("pipe-published").textContent = st.entries.filter((e) => e.state === "active").length;
     $("pipe-revoked").textContent = st.entries.filter((e) => e.state !== "active").length;
     if (!st.entries.length) return box.replaceChildren(el("p", { class: "empty", text: t("no_atts") }));
@@ -502,12 +504,44 @@ $("d-offers-off").addEventListener("click", guard(async () => {
   loadOrders();
 }));
 
+// ---------------------------------------------------------------- Stellar anchor
+
+// showAnchor compares this auditor's register with its anchor on Stellar.
+async function showAnchor(statusText) {
+  $("d-anchor-link").href = NETWORK.explorer + me.account;
+  try {
+    const a = await anchorState(me.account, statusText);
+    $("d-anchor").textContent = t("anchor_" + a.state, { at: (a.at || "").replace("T", " ").replace("Z", " UTC") });
+    $("d-anchor").className = a.state === "match" ? "ok-line" : "muted";
+  } catch (e) {
+    $("d-anchor").textContent = t("anchor_fail", { err: e.message });
+  }
+}
+
+// anchorNow writes the register's current digest to the auditor's Stellar
+// account. Called after every issue and revocation; a failure never undoes
+// the publication — the register can be anchored again at any time.
+async function anchorNow() {
+  $("d-anchor").textContent = t("anchor_working");
+  try {
+    const statusText = await getText(me.base + "status.json");
+    const tx = await anchor(me, await anchorDigest(statusText));
+    toast(t("anchor_done", { tx: tx.slice(0, 12) + "…" }));
+    await showAnchor(statusText);
+  } catch (e) {
+    toast(t("anchor_fail", { err: e.message }), true);
+    $("d-anchor").textContent = t("anchor_fail", { err: e.message });
+  }
+}
+$("d-anchor-go").addEventListener("click", guard(anchorNow));
+
 async function revoke(id, reason) {
   if (!confirm(t("confirm_revoke", { id }))) return;
   const now = nowISO();
   const rv = { revocationVersion: 1, attestationId: id, auditor: me.componentId, auditorKey: me.key, issuedAt: now, statusEpoch: Math.floor(Date.now() / 1000), effectiveFrom: now, reason, detail: null };
   await api(`a/${me.slug}/revoke`, { revocation: JSON.parse(await signDoc(rv, me.priv)) });
   toast(t("revoked"));
+  await anchorNow();
   dash();
 }
 
@@ -944,6 +978,7 @@ $("a-publish").addEventListener("click", guard(async () => {
     el("p", { class: "cta" }, el("a", { class: "btn btn-ink", href: me.base, target: "_blank", rel: "noopener", text: t("see_page") }), el("button", { class: "btn btn-line", "data-go": "dash", text: t("to_dash") })));
   done.hidden = false;
   done.scrollIntoView({ behavior: "smooth" });
+  if (!res.held) anchorNow();
 }));
 
 // ---------------------------------------------------------------- customer
@@ -1301,6 +1336,7 @@ function renderLibrary() {
 // verifyEntry checks an entry in this browser: the manifest, the status
 // list, and the attestation's signatures. Trust in the auditor stays the
 // reader's decision; the library only says whether the bytes verify.
+const anchors = new Map(); // auditor base -> promise of its anchor state
 async function verifyEntry(e, out) {
   try {
     const [manifestText, statusText, attText] = await Promise.all(["manifest.json", "status.json"].map((f) => getText(e.auditorBase + f)).concat(getText(e.uri)));
@@ -1308,6 +1344,10 @@ async function verifyEntry(e, out) {
     const good = d.display === "uncredited" || d.display === "attested";
     out.className = "small " + (good ? "ok-line" : "bad");
     out.textContent = good ? t("lib_ok") : t("lib_state", { state: d.display, err: d.error || "" });
+    // The register's anchor, asked of a public Stellar node, once per auditor.
+    if (!anchors.has(e.auditorBase)) anchors.set(e.auditorBase, anchorState(accountOfKey(plain(parseStrict(manifestText)).operator), statusText).catch(() => ({ state: "unknown" })));
+    const a = await anchors.get(e.auditorBase);
+    if (a.state === "match" || a.state === "stale") out.append(" · ", el("span", { text: t("lib_anchor_" + a.state, { at: (a.at || "").slice(0, 10) }) }));
   } catch (err) {
     out.className = "small bad";
     out.textContent = t("lib_state", { state: "unavailable", err: err.message });

@@ -439,3 +439,5 @@ button.who-chip::after { content: " ⏻"; }
 .response { border-left: 3px solid var(--rule); padding: 6px 0 6px 12px; margin: 10px 0; }
 .response .row-inline input[type=email] { font: 15px var(--mono); padding: 8px 10px; border: 1px solid var(--rule); background: var(--paper); color: var(--ink); min-width: 14em; }
 .respond-box { margin-top: 10px; padding: 12px 14px; background: var(--paper-2); border: 1px solid var(--rule); }
+.anchor-line { margin: -10px 0 20px; font-size: 15px; display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: baseline; }
+.anchor-line a { font: 13px var(--mono); }

@@ -545,7 +545,16 @@
    "embargo_days": "a fail is held up to {n} days",
    "vault_unreachable": "Your order list is saved here but not yet in your vault ({err}); it syncs next time.",
    "err_not_manifest": "{url} does not serve a component manifest (a JSON document naming its seat). Order a service by its manifest URL.",
-   "err_not_discovery": "This is not a Discovery provider (seat “{seat}”): the Discovery suite does not apply to it. Choose “a running service” to examine it."
+   "err_not_discovery": "This is not a Discovery provider (seat “{seat}”): the Discovery suite does not apply to it. Choose “a running service” to examine it.",
+   "anchor_match": "⚓ Register anchored in Stellar testnet ({at})",
+   "anchor_stale": "⚓ The register changed since its last anchor — anchor it again",
+   "anchor_none": "⚓ The register is not anchored in Stellar yet",
+   "anchor_unknown": "⚓ Stellar did not answer",
+   "anchor_working": "⚓ Anchoring in Stellar…",
+   "anchor_done": "Anchored in Stellar: transaction {tx}",
+   "anchor_fail": "Could not anchor in Stellar: {err}",
+   "lib_anchor_match": "⚓ register anchored in Stellar {at}",
+   "lib_anchor_stale": "⚓ register changed since its anchor"
   },
   "o_brand": "Onym auditors",
   "o_rule": "Orders under signed offers · Onym audit seat",
@@ -638,7 +647,9 @@
   "s_r_submit": "Sign and publish the request",
   "s_d_requests": "Requests",
   "s_d_requests_h": "Open requests from orderers — public ones and those addressed to your Stellar address. Answer with an offer; if the orderer chooses you, the order arrives in Orders.",
-  "s_pipe_requests": "open requests"
+  "s_pipe_requests": "open requests",
+  "s_anchor_go": "Anchor in Stellar",
+  "s_anchor_view": "view on the network"
  },
  "ru": {
   "title": "Onym Auditor · Dimitrii",
@@ -1185,7 +1196,16 @@
    "embargo_days": "провал придерживается до {n} дней",
    "vault_unreachable": "Список заказов сохранён здесь, но ещё не в вашем хранилище ({err}); синхронизируется в следующий раз.",
    "err_not_manifest": "По адресу {url} нет манифеста компонента (JSON-документа с полем seat). Сервис заказывается по URL его манифеста.",
-   "err_not_discovery": "Это не Discovery-провайдер (seat «{seat}»): набор проверок Discovery к нему не применим. Чтобы проверить его, выберите «работающий сервис»."
+   "err_not_discovery": "Это не Discovery-провайдер (seat «{seat}»): набор проверок Discovery к нему не применим. Чтобы проверить его, выберите «работающий сервис».",
+   "anchor_match": "⚓ Реестр закреплён в Stellar testnet ({at})",
+   "anchor_stale": "⚓ Реестр изменился после закрепления — закрепите заново",
+   "anchor_none": "⚓ Реестр ещё не закреплён в Stellar",
+   "anchor_unknown": "⚓ Stellar не ответил",
+   "anchor_working": "⚓ Закрепляю в Stellar…",
+   "anchor_done": "Закреплено в Stellar: транзакция {tx}",
+   "anchor_fail": "Не удалось закрепить в Stellar: {err}",
+   "lib_anchor_match": "⚓ реестр закреплён в Stellar {at}",
+   "lib_anchor_stale": "⚓ реестр изменился после закрепления"
   },
   "o_brand": "Аудиторы Onym",
   "o_rule": "Заказы по подписанным предложениям · место аудитора Onym",
@@ -1278,7 +1298,9 @@
   "s_r_submit": "Подписать и опубликовать заявку",
   "s_d_requests": "Заявки",
   "s_d_requests_h": "Открытые заявки заказчиков — публичные и адресованные вашему Stellar-адресу. Ответьте предложением; если заказчик выберет вас, заказ придёт в «Заказы».",
-  "s_pipe_requests": "открытых заявок"
+  "s_pipe_requests": "открытых заявок",
+  "s_anchor_go": "Закрепить в Stellar",
+  "s_anchor_view": "посмотреть в сети"
  },
  "cnr": {
   "title": "Onym Auditor · Dimitrii",
@@ -1825,7 +1847,16 @@
    "embargo_days": "neuspjeh se zadržava do {n} dana",
    "vault_unreachable": "Lista narudžbi je sačuvana ovdje, ali još nije u vašem trezoru ({err}); sinhronizuje se sljedeći put.",
    "err_not_manifest": "Na adresi {url} nema manifesta komponente (JSON dokumenta s poljem seat). Servis se naručuje po URL-u manifesta.",
-   "err_not_discovery": "Ovo nije Discovery provajder (seat „{seat}“): Discovery skup provjera se na njega ne primjenjuje. Da biste ga pregledali, izaberite „servis u radu“."
+   "err_not_discovery": "Ovo nije Discovery provajder (seat „{seat}“): Discovery skup provjera se na njega ne primjenjuje. Da biste ga pregledali, izaberite „servis u radu“.",
+   "anchor_match": "⚓ Registar učvršćen u Stellar testnet ({at})",
+   "anchor_stale": "⚓ Registar se promijenio nakon učvršćivanja — učvrstite ga ponovo",
+   "anchor_none": "⚓ Registar još nije učvršćen u Stellar",
+   "anchor_unknown": "⚓ Stellar nije odgovorio",
+   "anchor_working": "⚓ Učvršćujem u Stellar…",
+   "anchor_done": "Učvršćeno u Stellar: transakcija {tx}",
+   "anchor_fail": "Nije uspjelo učvršćivanje u Stellar: {err}",
+   "lib_anchor_match": "⚓ registar učvršćen u Stellar {at}",
+   "lib_anchor_stale": "⚓ registar se promijenio nakon učvršćivanja"
   },
   "o_brand": "Onym revizori",
   "o_rule": "Narudžbe po potpisanim ponudama · Onym mjesto revizora",
@@ -1918,6 +1949,8 @@
   "s_r_submit": "Potpiši i objavi zahtjev",
   "s_d_requests": "Zahtjevi",
   "s_d_requests_h": "Otvoreni zahtjevi naručilaca — javni i oni upućeni vašoj Stellar adresi. Odgovorite ponudom; ako vas naručilac izabere, narudžba stiže u „Narudžbe“.",
-  "s_pipe_requests": "otvorenih zahtjeva"
+  "s_pipe_requests": "otvorenih zahtjeva",
+  "s_anchor_go": "Učvrsti u Stellar",
+  "s_anchor_view": "pogledaj u mreži"
  }
 }

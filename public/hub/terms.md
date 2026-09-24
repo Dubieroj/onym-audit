@@ -77,6 +77,16 @@ read, under a signing key that appears in no order, request, or manifest,
 and opens it only to that key's fresh signature. A vault holds at most
 256 KiB.
 
+## Anchors in Stellar
+
+After an auditor issues or revokes an attestation, the app writes the hash of
+its register to the auditor's own account on the Stellar test network,
+signed by the auditor key in the browser; test-network accounts are funded
+by the network's free Friendbot. The hub takes no part: anchors are
+written to and read from public Stellar nodes. The library asks a public
+Stellar node for each auditor's anchor, which tells that node which
+auditors are being looked at — never which attestation.
+
 ## Shared documents
 
 The audit profile, severity scale, and hub methodologies under

@@ -32,9 +32,11 @@ import (
 	"onym-audit/conformance/discovery"
 	"onym-audit/console"
 	"onym-audit/hub"
+	"onym-audit/onymid"
 	"onym-audit/server"
 	"onym-audit/sig"
 	"onym-audit/site"
+	"onym-audit/stellar"
 	"onym-audit/urirule"
 )
 
@@ -54,6 +56,7 @@ Online (holds only the delegated status key):
   status      -root DIR -config FILE -status-key FILE    re-sign status.json now
   serve       -root DIR -config FILE -status-key FILE -inbox DIR [-hub-root DIR] [-listen ADDR]
   hub-disable -hub-root DIR -slug NAME -reason TEXT      take a hosted auditor off the hub
+  anchor      [-key FILE] [-status URI|FILE] [-check]   anchor the register's digest in the auditor's Stellar testnet account
 
 Anyone:
   verify      -manifest URI|FILE -attestation URI|FILE -target URI [-status URI|FILE] [-credit onym:key:..]
@@ -86,7 +89,7 @@ func main() {
 		"countersign": countersign, "offer": offer, "status": status, "serve": serve, "verify": verify,
 		"respond": respond, "sign-order": signOrder, "fixtures": fixtures,
 		"conformance-discovery": conformanceDiscovery, "draft-conformance": draftConformance,
-		"agent-review": agentReview, "draft-review": draftReview, "console": runConsole, "hub-disable": hubDisable,
+		"agent-review": agentReview, "draft-review": draftReview, "console": runConsole, "hub-disable": hubDisable, "anchor": anchorCmd,
 	}
 	run, ok := cmds[os.Args[1]]
 	if !ok {
@@ -1245,4 +1248,55 @@ func hubDisable(args []string) error {
 		return err
 	}
 	return h.Disable(*slug, *reason)
+}
+
+// anchorCmd writes the digest of the auditor's register (its own acts in the
+// status list) to the data entry "onym-audit-status" of its Stellar testnet
+// account — the auditor key — or, with -check, compares the two.
+func anchorCmd(args []string) error {
+	fs := flag.NewFlagSet("anchor", flag.ExitOnError)
+	keyPath := fs.String("key", "keys/auditor.key", "auditor key")
+	status := fs.String("status", "https://foldy.io/audit/status.json", "status list URI or file (the served one is the register readers see)")
+	check := fs.Bool("check", false, "only compare the register with its anchor")
+	fs.Parse(args)
+	var raw []byte
+	var err error
+	if strings.HasPrefix(*status, "https://") {
+		r, gerr := http.Get(*status)
+		if gerr != nil {
+			return gerr
+		}
+		defer r.Body.Close()
+		if r.StatusCode != 200 {
+			return fmt.Errorf("%s: HTTP %d", *status, r.StatusCode)
+		}
+		raw, err = io.ReadAll(io.LimitReader(r.Body, 1<<20))
+	} else {
+		raw, err = os.ReadFile(*status)
+	}
+	if err != nil {
+		return err
+	}
+	k, err := site.LoadKey(*keyPath)
+	if err != nil {
+		return err
+	}
+	account := onymid.AccountID(k.Public().(ed25519.PublicKey))
+	if !*check {
+		d, err := stellar.Digest(raw)
+		if err != nil {
+			return err
+		}
+		tx, err := stellar.Anchor(k, account, d)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("anchored %x\ntransaction %s\n", d, tx)
+	}
+	state, at, err := stellar.State(account, raw)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("account %s\nanchor %s %s\nhttps://stellar.expert/explorer/testnet/account/%s\n", account, state, at, account)
+	return nil
 }
