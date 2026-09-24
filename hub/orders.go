@@ -21,6 +21,7 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"unicode"
 
 	"onym-audit/audit"
 	"onym-audit/sig"
@@ -32,10 +33,24 @@ const (
 	RequestSkew  = 10 * time.Minute
 )
 
-var (
-	contactRE = regexp.MustCompile(`^mailto:[^\s@<>()",;:]{1,64}@[A-Za-z0-9.-]{1,190}\.[A-Za-z]{2,24}$`)
-	orderIDRE = regexp.MustCompile(`^[A-Za-z0-9_-]{16,128}$`)
-)
+var orderIDRE = regexp.MustCompile(`^[A-Za-z0-9_-]{16,128}$`)
+
+// MaxContact bounds a contact: free text (an email, a link, a handle —
+// anything), which pages show as text and link only when it is mailto: or
+// https:.
+const MaxContact = 256
+
+func contactOK(s string) bool {
+	if len(s) > MaxContact {
+		return false
+	}
+	for _, r := range s {
+		if unicode.IsControl(r) {
+			return false
+		}
+	}
+	return true
+}
 
 func (h *Hub) inboxDir(slug string) string { return filepath.Join(h.Root, "inbox", slug) }
 func (h *Hub) heldDir(slug string) string  { return filepath.Join(h.Root, "held", slug) }
@@ -108,8 +123,8 @@ func (h *Hub) postOrder(w http.ResponseWriter, r *http.Request) {
 			err = fmt.Errorf("scopeText must be 1–%d bytes", MaxScopeText)
 		case sig.Digest([]byte(in.ScopeText)) != o.Scope.Digest:
 			err = errors.New("scopeText does not hash to the order's scope digest")
-		case !contactRE.MatchString(in.Contact):
-			err = errors.New("contact must be a mailto: address")
+		case !contactOK(in.Contact):
+			err = fmt.Errorf("contact is optional text of at most %d bytes, without control characters", MaxContact)
 		}
 	}
 	// An offer made for a request is taken only by that request's author,

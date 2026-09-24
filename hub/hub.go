@@ -410,9 +410,8 @@ func (h *Hub) register(w http.ResponseWriter, r *http.Request) {
 		err = fmt.Errorf("statusEndpoint must be %sstatus.json", h.base(in.Slug))
 	case m.StatusKey != site.KeyOf(k):
 		err = errors.New("statusKey must be the key the hub issued for this name")
-	case !contactRE.MatchString(m.Contact) && urirule.Check(m.Contact) != nil:
-		// Pages render the contact as a link: only mailto: or https:.
-		err = errors.New("contact must be a mailto: address or an https:// URL")
+	case !contactOK(m.Contact):
+		err = fmt.Errorf("contact is text of at most %d bytes, without control characters", MaxContact)
 	}
 	if err != nil {
 		fail(w, 422, err)

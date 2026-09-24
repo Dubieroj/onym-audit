@@ -72,7 +72,7 @@
         <label>{{s_ob_name}}<input id="ob-name" required maxlength="80" autocomplete="name"></label>
         <label>{{s_ob_slug}}<input id="ob-slug" required pattern="[a-z][a-z0-9-]{2,31}" class="mono" autocomplete="off" spellcheck="false"></label>
         <p class="hint">{{s_ob_slug_h}} <code id="ob-url">foldy.io/audit/a/…/</code></p>
-        <label>{{s_ob_email}}<input id="ob-email" type="email" required autocomplete="email"></label>
+        <label>{{s_ob_email}}<input id="ob-email" maxlength="256" autocomplete="email"></label>
         <p class="hint">{{s_ob_email_h}}</p>
       </fieldset>
       <fieldset>
@@ -183,7 +183,7 @@
         <p class="hint">{{s_a_subject_key_h}}</p>
         <label>{{s_a_rel}}<input id="a-rel" value="none"></label>
         <div id="a-unsol">
-          <label>{{s_a_contact}}<input id="a-contact" placeholder="mailto:security@…"></label>
+          <label>{{s_a_contact}}<input id="a-contact" maxlength="256" placeholder="security@… · https://… · @handle"></label>
           <label>{{s_a_notified}}<input id="a-notified" class="mono"></label>
           <p class="hint">{{s_a_notice_h}}</p>
         </div>
@@ -247,7 +247,7 @@
       <div data-ckind="deployment discovery"><label>{{s_c_manifest}}<input id="c-manifest" type="url" placeholder="https://…/manifest.json" autocomplete="off" spellcheck="false" class="mono"></label></div>
       <label>{{s_c_component}}<input id="c-component" placeholder="onym:component:…" autocomplete="off" spellcheck="false" class="mono"></label>
       <label>{{s_c_scope}}<textarea id="c-scope" rows="4" maxlength="8000"></textarea></label>
-      <label>{{s_c_email}}<input id="c-email" type="email" autocomplete="email"></label>
+      <label>{{s_c_email}}<input id="c-email" maxlength="256" autocomplete="email"></label>
       <p class="hint">{{s_c_note}}</p>
       <label class="check"><input id="c-authority" type="checkbox"> <span>{{s_c_authority}}</span></label>
       <label class="check"><input id="c-terms" type="checkbox"> <span>{{s_c_terms}}</span></label>

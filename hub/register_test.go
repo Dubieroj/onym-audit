@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"onym-audit/audit"
@@ -27,8 +28,8 @@ func resign(t *testing.T, m json.RawMessage, mut func(*audit.AuditorManifest)) j
 }
 
 // Manifests are public: resending one must not carry other files into the
-// auditor's tree, nor roll the auditor back to an older manifest, and the
-// contact a page links to is mailto: or https: only.
+// auditor's tree, nor roll the auditor back to an older manifest. The
+// contact is free text: pages show it as text and link only mailto:/https:.
 func TestRegisterWritesOnlyWhatTheManifestReferences(t *testing.T) {
 	h, srv := testHub(t)
 	alice := key("alice")
@@ -79,13 +80,15 @@ func TestRegisterWritesOnlyWhatTheManifestReferences(t *testing.T) {
 	if code, _ := call(srv, "POST", "/hub/api/register", map[string]any{"slug": "alice", "manifest": m, "docs": map[string]string{}}); code != 409 {
 		t.Errorf("older manifest replayed: %d", code)
 	}
-	// Contacts: script and other schemes refused; mailto: and https: pass.
+	// Contacts: any text up to MaxContact bytes; no control characters.
 	for i, c := range []struct {
 		contact string
 		want    int
 	}{
-		{"javascript:alert(document.domain)//a@example.org", 422},
-		{"data:text/html,<script>alert(1)</script>", 422},
+		{"line\nbreak", 422},
+		{strings.Repeat("a", MaxContact+1), 422},
+		{"@alice in Telegram", 201},
+		{"javascript:alert(document.domain)//a@example.org", 201},
 		{"https://example.org/security", 201},
 		{"mailto:security@example.org", 201},
 	} {

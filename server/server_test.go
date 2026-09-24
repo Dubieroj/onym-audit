@@ -109,7 +109,7 @@ func TestOrderIntake(t *testing.T) {
 		want int
 	}{
 		"scope text swapped":      {envelope(order(t, "order-swapped-00001", scope), "something else entirely", "mailto:a@example.org"), 422},
-		"contact not mailto":      {envelope(order(t, "order-contact-00001", scope), scope, "javascript:alert(1)"), 422},
+		"contact with a newline":  {envelope(order(t, "order-contact-00001", scope), scope, "a\nb"), 422},
 		"extra envelope field":    {[]byte(strings.Replace(string(envelope(order(t, "order-extra-000001", scope), scope, "mailto:a@example.org")), `"contact"`, `"x":1,"contact"`, 1)), 422},
 		"signed by subject only":  {mustDropSponsor(t, order(t, "order-onesig-000001", scope)), 422},
 		"different order same id": {envelope(order(t, "order-envelope-0001", scope+" more"), scope+" more", "mailto:a@example.org"), 409},
@@ -173,5 +173,24 @@ func TestHubMount(t *testing.T) {
 		if rec.Code != c.want {
 			t.Errorf("%s %s: %d, want %d", c.method, c.path, rec.Code, c.want)
 		}
+	}
+}
+
+// The orderer's contact is optional free text.
+func TestOrderContactIsOptional(t *testing.T) {
+	_, h := testServer(t)
+	scope := "Examine src/ for signature verification defects."
+	if code, body := post(h, "/orders", envelope(order(t, "order-nocontact-001", scope), scope, "")); code != http.StatusAccepted {
+		t.Errorf("empty contact: %d %s", code, body)
+	}
+	var env map[string]any
+	json.Unmarshal(envelope(order(t, "order-nocontact-002", scope), scope, ""), &env)
+	delete(env, "contact")
+	b, _ := json.Marshal(env)
+	if code, body := post(h, "/orders", b); code != http.StatusAccepted {
+		t.Errorf("no contact field: %d %s", code, body)
+	}
+	if code, body := post(h, "/orders", envelope(order(t, "order-nocontact-003", scope), scope, "t.me/someone")); code != http.StatusAccepted {
+		t.Errorf("free-text contact: %d %s", code, body)
 	}
 }

@@ -109,7 +109,7 @@ func TestOrdersFromAnyone(t *testing.T) {
 	// Intake refuses anything the offer does not cover.
 	for name, c := range map[string]map[string]any{
 		"scope text differs":  env(order(t, id, scope, nil), "other\n", "mailto:bob@example.org"),
-		"no contact":          env(order(t, id, scope, nil), scope, "bob"),
+		"control characters":  env(order(t, id, scope, nil), scope, "bob\r\nBcc: x"),
 		"unknown offer":       env(order(t, id, scope, func(o *audit.AuditOrder) { o.Fee.OfferID = "other" }), scope, "mailto:bob@example.org"),
 		"weaker disclosure":   env(order(t, id, scope, func(o *audit.AuditOrder) { o.Disclosure.EmbargoDays = 0 }), scope, "mailto:bob@example.org"),
 		"other auditor":       env(order(t, id, scope, func(o *audit.AuditOrder) { o.Auditor = "onym:component:carol" }), scope, "mailto:bob@example.org"),
@@ -353,5 +353,25 @@ func TestOrderStatusOnlyForTheOrderer(t *testing.T) {
 	}
 	if _, out := call(srv, "POST", "/hub/api/a/alice/order-status", req(mallory, pub(mallory))); out["queued"] != false {
 		t.Errorf("another key learned the order is queued: %v", out)
+	}
+}
+
+// The orderer's contact is optional: an order without one is queued, and the
+// auditor sees it with an empty contact.
+func TestOrderContactIsOptional(t *testing.T) {
+	h, srv, alice := orderingHub(t)
+	scope := "Signature verification in src/verify.rs.\n"
+	for _, c := range []struct{ id, contact string }{{"ord-0000000000000077", ""}, {"ord-0000000000000078", "@bob in Telegram"}} {
+		if code, out := call(srv, "POST", "/a/alice/orders", map[string]any{"order": order(t, c.id, scope, nil), "scopeText": scope, "contact": c.contact}); code != 202 {
+			t.Fatalf("contact %q: %d %v", c.contact, code, out)
+		}
+	}
+	_, out := call(srv, "POST", "/hub/api/a/alice/inbox", inboxReq(t, alice, "list", nil, h.Now()))
+	got := map[string]bool{}
+	for _, o := range out["orders"].([]any) {
+		got[o.(map[string]any)["contact"].(string)] = true
+	}
+	if !got[""] || !got["@bob in Telegram"] {
+		t.Errorf("inbox contacts %v", got)
 	}
 }

@@ -155,11 +155,15 @@ export async function sign({ auditor, offer, artifact, scopeText, component, ord
   return canonical(parseStrict(JSON.stringify(order)));
 }
 
+// A contact is free text and may be empty; a bare email address becomes a
+// mailto: link.
+export const contactOf = (text) => (RE.email.test(text) ? "mailto:" + text : text);
+
 // send queues a signed order with its scope text and the orderer's contact.
-export async function send(endpoint, signed, scopeText, email) {
+export async function send(endpoint, signed, scopeText, contact) {
   const r = await fetch(endpoint, {
     method: "POST", credentials: "omit", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ order: JSON.parse(signed), scopeText, contact: "mailto:" + email }),
+    body: JSON.stringify({ order: JSON.parse(signed), scopeText, contact: contactOf(contact) }),
   });
   const reply = await r.json().catch(() => ({}));
   if (r.status !== 202) throw new Error(reply.detail || reply.error || "HTTP " + r.status);

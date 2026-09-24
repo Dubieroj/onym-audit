@@ -10,8 +10,8 @@
 <link rel="alternate" hreflang="ru" href="https://foldy.io/audit/ru/order/">
 <link rel="alternate" hreflang="sr-Latn-ME" href="https://foldy.io/audit/cnr/order/">
 <link rel="alternate" hreflang="x-default" href="https://foldy.io/audit/order/">
-<link rel="stylesheet" href="../../style.css?v=fa1403ee4e">
-<script type="module" src="../../order.js?v=fa1403ee4e"></script>
+<link rel="stylesheet" href="../../style.css?v=cee39269ad">
+<script type="module" src="../../order.js?v=cee39269ad"></script>
 </head>
 <body class="order-page">
 <div class="grain" aria-hidden="true"></div>
@@ -84,8 +84,8 @@
     </fieldset>
     <fieldset>
       <legend>Вы</legend>
-      <label>Email для связи<input id="email" name="email" type="email" required autocomplete="email"></label>
-      <p class="hint">Только для обсуждения этого заказа. Хранится вместе с заказом, не публикуется, удаляется через 90 дней после решения.</p>
+      <label>Контакт (необязательно)<input id="email" name="contact" maxlength="256" autocomplete="email"></label>
+      <p class="hint">Как аудитору связаться с вами по этому заказу: email, Telegram, что угодно. Хранится вместе с заказом, не публикуется, удаляется через 90 дней после решения.</p>
       <div class="keybox">
         <p><b>Ваш ключ подписи.</b> Он доказывает, что заказ ваш, а потом позволит подписать ответ на аттестацию.</p>
         <label class="radio"><input type="radio" name="keymode" value="new" checked> Создать новый ключ в этом браузере</label>
@@ -97,7 +97,7 @@
     <label class="check"><input id="terms" type="checkbox" required> <span>Я принимаю условия раскрытия выше, в том числе то, что неприятный мне результат всё равно будет опубликован.</span></label>
     <p id="form-error" class="form-error" role="alert" hidden></p>
     <button class="btn btn-ink" type="submit" id="submit">Подписать и отправить заказ</button>
-    <p class="small muted">Отправляются только подписанный заказ, текст области и ваш email. Ключ остаётся в браузере.</p>
+    <p class="small muted">Отправляются только подписанный заказ, текст области и ваш контакт, если вы его указали. Ключ остаётся в браузере.</p>
   </form>
 
   <section id="done" class="order-done" hidden aria-live="polite">
@@ -113,7 +113,7 @@
       <a class="btn btn-ink" id="dl-key" download>Скачать ключ</a>
       <a class="btn btn-line" id="dl-order" download>Скачать подписанный заказ</a>
     </p>
-    <p class="small muted">Аудитор сверит заказ с политикой независимости и напишет вам до начала работы. Ничего не публикуется, пока вы не увидите находки.</p>
+    <p class="small muted">Аудитор сверит заказ с политикой независимости и, если вы оставили контакт, напишет вам до начала работы. Ничего не публикуется, пока вы не увидите находки.</p>
   </section>
 </main>
 
@@ -122,6 +122,6 @@
     <p class="small muted">onym audit · <a href="https://github.com/Dubieroj/onym-audit">github.com/Dubieroj/onym-audit</a> · заказы хранятся без cookies и отслеживания; см. профиль приватности.</p>
   </div>
 </footer>
-<script type="application/json" id="strings">{"err_repo":"Укажите адрес репозитория с https:// — без порта, параметров и #фрагмента.","err_commit":"Коммит — полный идентификатор из 40 шестнадцатеричных символов в нижнем регистре.","err_component":"Идентификатор выглядит так: onym:component:my-relay (строчные латинские буквы, цифры, дефисы).","err_scope":"Опишите область проверки (до 8000 символов).","err_email":"Укажите корректный email.","err_seed":"Ключ — 64 шестнадцатеричных символа (seed Ed25519).","err_checks":"Отметьте оба подтверждения.","err_crypto":"Этот браузер не умеет создавать ключи Ed25519. Используйте свежий Chrome, Safari или Firefox.","err_server":"Аудитор не принял заказ: {err}","signing":"Подписываю…","sending":"Отправляю…","submit":"Подписать и отправить заказ","loading":"загружаю…","auditor_line":"{fp} · предложений: {n}","err_auditor":"манифест не проходит проверку — не показан","m_security-review":"Проверка безопасности","m_conformance-run":"Проверка соответствия","due_days":"отчёт за {n} дн.","fee_probono":"бесплатно","fee_same":"одинаково при любом результате","first_yes":"присылаются вам до любой публикации","first_no":"публикуются без предварительной копии","embargo_days":"провал придерживается до {n} дней","embargo_none":"нет","publish_embargo":"аттестация публикуется сразу; провал — после эмбарго","publish_now":"аттестация публикуется сразу","links":"Обязывающие условия:","l_method":"методика","l_indep":"независимость","l_liab":"ответственность","l_priv":"приватность","k_source":"репозиторий","k_deployment":"работающий сервис","k_discovery":"каталог Discovery","k_build":"сборка приложения","err_url":"Укажите https:// адрес манифеста без порта, параметров и #фрагмента.","err_pin":"Не удалось прочитать {url}: {err}","err_offer":"Выберите аудитора и предложение.","hashing":"Считаю хеш сборки…","pinning":"Читаю манифест…","err_github":"Этот аудитор читает репозитории в студии хаба, которая открывает репозитории GitHub: укажите https://github.com/org/repo.","err_not_manifest":"По адресу {url} нет манифеста компонента (JSON-документа с полем seat). Сервис заказывается по URL его манифеста.","err_not_discovery":"Это не Discovery-провайдер (seat «{seat}»): набор проверок Discovery к нему не применим. Чтобы проверить его, выберите «работающий сервис»."}</script>
+<script type="application/json" id="strings">{"err_repo":"Укажите адрес репозитория с https:// — без порта, параметров и #фрагмента.","err_commit":"Коммит — полный идентификатор из 40 шестнадцатеричных символов в нижнем регистре.","err_component":"Идентификатор выглядит так: onym:component:my-relay (строчные латинские буквы, цифры, дефисы).","err_scope":"Опишите область проверки (до 8000 символов).","err_seed":"Ключ — 64 шестнадцатеричных символа (seed Ed25519).","err_checks":"Отметьте оба подтверждения.","err_crypto":"Этот браузер не умеет создавать ключи Ed25519. Используйте свежий Chrome, Safari или Firefox.","err_server":"Аудитор не принял заказ: {err}","signing":"Подписываю…","sending":"Отправляю…","submit":"Подписать и отправить заказ","loading":"загружаю…","auditor_line":"{fp} · предложений: {n}","err_auditor":"манифест не проходит проверку — не показан","m_security-review":"Проверка безопасности","m_conformance-run":"Проверка соответствия","due_days":"отчёт за {n} дн.","fee_probono":"бесплатно","fee_same":"одинаково при любом результате","first_yes":"присылаются вам до любой публикации","first_no":"публикуются без предварительной копии","embargo_days":"провал придерживается до {n} дней","embargo_none":"нет","publish_embargo":"аттестация публикуется сразу; провал — после эмбарго","publish_now":"аттестация публикуется сразу","links":"Обязывающие условия:","l_method":"методика","l_indep":"независимость","l_liab":"ответственность","l_priv":"приватность","k_source":"репозиторий","k_deployment":"работающий сервис","k_discovery":"каталог Discovery","k_build":"сборка приложения","err_url":"Укажите https:// адрес манифеста без порта, параметров и #фрагмента.","err_pin":"Не удалось прочитать {url}: {err}","err_offer":"Выберите аудитора и предложение.","hashing":"Считаю хеш сборки…","pinning":"Читаю манифест…","err_github":"Этот аудитор читает репозитории в студии хаба, которая открывает репозитории GitHub: укажите https://github.com/org/repo.","err_not_manifest":"По адресу {url} нет манифеста компонента (JSON-документа с полем seat). Сервис заказывается по URL его манифеста.","err_not_discovery":"Это не Discovery-провайдер (seat «{seat}»): набор проверок Discovery к нему не применим. Чтобы проверить его, выберите «работающий сервис»."}</script>
 </body>
 </html>

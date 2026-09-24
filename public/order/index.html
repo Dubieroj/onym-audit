@@ -10,8 +10,8 @@
 <link rel="alternate" hreflang="ru" href="https://foldy.io/audit/ru/order/">
 <link rel="alternate" hreflang="sr-Latn-ME" href="https://foldy.io/audit/cnr/order/">
 <link rel="alternate" hreflang="x-default" href="https://foldy.io/audit/order/">
-<link rel="stylesheet" href="../style.css?v=fa1403ee4e">
-<script type="module" src="../order.js?v=fa1403ee4e"></script>
+<link rel="stylesheet" href="../style.css?v=cee39269ad">
+<script type="module" src="../order.js?v=cee39269ad"></script>
 </head>
 <body class="order-page">
 <div class="grain" aria-hidden="true"></div>
@@ -84,8 +84,8 @@
     </fieldset>
     <fieldset>
       <legend>You</legend>
-      <label>Contact email<input id="email" name="email" type="email" required autocomplete="email"></label>
-      <p class="hint">Used only to discuss this order. Stored with the queued order, never published, deleted 90 days after a decision.</p>
+      <label>Contact (optional)<input id="email" name="contact" maxlength="256" autocomplete="email"></label>
+      <p class="hint">How the auditor can reach you about this order: an email, Telegram, anything. Stored with the queued order, never published, deleted 90 days after a decision.</p>
       <div class="keybox">
         <p><b>Your signing key.</b> It proves the order is yours, and later lets you sign a reply to the attestation.</p>
         <label class="radio"><input type="radio" name="keymode" value="new" checked> Create a new key in this browser</label>
@@ -97,7 +97,7 @@
     <label class="check"><input id="terms" type="checkbox" required> <span>I accept the disclosure terms above, including that a result I dislike will still be published.</span></label>
     <p id="form-error" class="form-error" role="alert" hidden></p>
     <button class="btn btn-ink" type="submit" id="submit">Sign and send the order</button>
-    <p class="small muted">Only the signed order, the scope text and your email are sent. The key stays in your browser.</p>
+    <p class="small muted">Only the signed order, the scope text and your contact, if you gave one, are sent. The key stays in your browser.</p>
   </form>
 
   <section id="done" class="order-done" hidden aria-live="polite">
@@ -113,7 +113,7 @@
       <a class="btn btn-ink" id="dl-key" download>Download key</a>
       <a class="btn btn-line" id="dl-order" download>Download signed order</a>
     </p>
-    <p class="small muted">The auditor reviews the order against the independence policy and writes to you before starting. Nothing is published until you have seen the findings.</p>
+    <p class="small muted">The auditor reviews the order against the independence policy and, if you left a contact, writes to you before starting. Nothing is published until you have seen the findings.</p>
   </section>
 </main>
 
@@ -122,6 +122,6 @@
     <p class="small muted">onym audit · <a href="https://github.com/Dubieroj/onym-audit">github.com/Dubieroj/onym-audit</a> · orders are stored without cookies or tracking; see the privacy profile.</p>
   </div>
 </footer>
-<script type="application/json" id="strings">{"err_repo":"Enter an https:// repository URL without a port, query or #fragment.","err_commit":"The commit must be the full 40-character lowercase hex id.","err_component":"The component id looks like onym:component:my-relay (lowercase letters, digits, dashes).","err_scope":"Describe the scope (up to 8000 characters).","err_email":"Enter a valid email address.","err_seed":"The key must be 64 hex characters (an Ed25519 seed).","err_checks":"Tick both confirmations to continue.","err_crypto":"This browser cannot create Ed25519 keys. Use a current Chrome, Safari or Firefox.","err_server":"The auditor did not accept the order: {err}","signing":"Signing…","sending":"Sending…","submit":"Sign and send the order","loading":"loading…","auditor_line":"{fp} · offers: {n}","err_auditor":"manifest does not verify — not shown","m_security-review":"Security review","m_conformance-run":"Conformance run","due_days":"report within {n} days","fee_probono":"pro bono","fee_same":"the same whatever the result","first_yes":"sent to you before anything is published","first_no":"published without an advance copy","embargo_days":"a fail is held up to {n} days","embargo_none":"none","publish_embargo":"attestation public on issuance; a fail after the embargo","publish_now":"attestation public on issuance","links":"Binding terms:","l_method":"methodology","l_indep":"independence","l_liab":"liability","l_priv":"privacy","k_source":"a repository","k_deployment":"a running service","k_discovery":"a Discovery catalog","k_build":"an app build","err_url":"Enter an https:// manifest URL without a port, query or #fragment.","err_pin":"Could not read {url}: {err}","err_offer":"Choose an auditor and an offer.","hashing":"Hashing the build…","pinning":"Reading the manifest…","err_github":"This auditor reads repositories in the hub studio, which opens GitHub repositories: enter https://github.com/org/repo.","err_not_manifest":"{url} does not serve a component manifest (a JSON document naming its seat). Order a service by its manifest URL.","err_not_discovery":"This is not a Discovery provider (seat “{seat}”): the Discovery suite does not apply to it. Choose “a running service” to examine it."}</script>
+<script type="application/json" id="strings">{"err_repo":"Enter an https:// repository URL without a port, query or #fragment.","err_commit":"The commit must be the full 40-character lowercase hex id.","err_component":"The component id looks like onym:component:my-relay (lowercase letters, digits, dashes).","err_scope":"Describe the scope (up to 8000 characters).","err_seed":"The key must be 64 hex characters (an Ed25519 seed).","err_checks":"Tick both confirmations to continue.","err_crypto":"This browser cannot create Ed25519 keys. Use a current Chrome, Safari or Firefox.","err_server":"The auditor did not accept the order: {err}","signing":"Signing…","sending":"Sending…","submit":"Sign and send the order","loading":"loading…","auditor_line":"{fp} · offers: {n}","err_auditor":"manifest does not verify — not shown","m_security-review":"Security review","m_conformance-run":"Conformance run","due_days":"report within {n} days","fee_probono":"pro bono","fee_same":"the same whatever the result","first_yes":"sent to you before anything is published","first_no":"published without an advance copy","embargo_days":"a fail is held up to {n} days","embargo_none":"none","publish_embargo":"attestation public on issuance; a fail after the embargo","publish_now":"attestation public on issuance","links":"Binding terms:","l_method":"methodology","l_indep":"independence","l_liab":"liability","l_priv":"privacy","k_source":"a repository","k_deployment":"a running service","k_discovery":"a Discovery catalog","k_build":"an app build","err_url":"Enter an https:// manifest URL without a port, query or #fragment.","err_pin":"Could not read {url}: {err}","err_offer":"Choose an auditor and an offer.","hashing":"Hashing the build…","pinning":"Reading the manifest…","err_github":"This auditor reads repositories in the hub studio, which opens GitHub repositories: enter https://github.com/org/repo.","err_not_manifest":"{url} does not serve a component manifest (a JSON document naming its seat). Order a service by its manifest URL.","err_not_discovery":"This is not a Discovery provider (seat “{seat}”): the Discovery suite does not apply to it. Choose “a running service” to examine it."}</script>
 </body>
 </html>

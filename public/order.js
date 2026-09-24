@@ -134,10 +134,9 @@ async function submit(ev) {
   $("form-error").hidden = true;
   if (!auditor || !offer) return fail(t("err_offer"));
   const component = $("component").value.trim();
-  const email = $("email").value.trim();
+  const contact = $("email").value.trim();
   if (!RE.component.test(component)) return fail(t("err_component"));
   if (!$("scope").value.trim()) return fail(t("err_scope"));
-  if (!RE.email.test(email)) return fail(t("err_email"));
   if (!$("authority").checked || !$("terms").checked) return fail(t("err_checks"));
 
   const btn = $("submit");
@@ -153,7 +152,7 @@ async function submit(ev) {
     const id = newOrderID();
     const signed = await sign({ auditor, offer, artifact, scopeText, component, orderId: id, key, priv });
     btn.textContent = t("sending");
-    const reply = await send(auditor.endpoint, signed, scopeText, email).catch((e) => { throw new Error(t("err_server", { err: e.message })); });
+    const reply = await send(auditor.endpoint, signed, scopeText, contact).catch((e) => { throw new Error(t("err_server", { err: e.message })); });
 
     keyFileURL = URL.createObjectURL(new Blob([seedHex + "\n"], { type: "text/plain" }));
     $("dl-key").href = keyFileURL;

@@ -15,10 +15,10 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"sync"
 	"time"
+	"unicode"
 
 	"crypto/ed25519"
 
@@ -228,7 +228,21 @@ func (s *Server) postOrder(w http.ResponseWriter, r *http.Request) {
 	jsonReply(w, http.StatusAccepted, map[string]string{"orderId": o.OrderID, "state": "queued-for-review", "digest": sig.Digest(orderBytes)})
 }
 
-var contactRE = regexp.MustCompile(`^mailto:[^\s@<>()",;:]{1,64}@[A-Za-z0-9.-]{1,190}\.[A-Za-z]{2,24}$`)
+// MaxContact bounds the orderer's contact: optional free text (an email, a
+// link, a handle — anything), seen only by the auditor.
+const MaxContact = 256
+
+func contactOK(s string) bool {
+	if len(s) > MaxContact {
+		return false
+	}
+	for _, r := range s {
+		if unicode.IsControl(r) {
+			return false
+		}
+	}
+	return true
+}
 
 // unwrapOrder returns the canonical order bytes and, for an envelope, the
 // scope text and contact.
@@ -248,12 +262,12 @@ func unwrapOrder(body []byte) ([]byte, string, string, error) {
 		}
 	}
 	scope, _ := obj["scopeText"].(string)
-	contact, _ := obj["contact"].(string)
+	contact, isText := obj["contact"].(string)
 	if strings.TrimSpace(scope) == "" || len(scope) > MaxScopeText {
 		return nil, "", "", fmt.Errorf("scopeText must be 1–%d bytes", MaxScopeText)
 	}
-	if !contactRE.MatchString(contact) {
-		return nil, "", "", errors.New("contact must be a mailto: address")
+	if _, given := obj["contact"]; (given && !isText) || !contactOK(contact) {
+		return nil, "", "", fmt.Errorf("contact is optional text of at most %d bytes, without control characters", MaxContact)
 	}
 	b, err := canon.Encode(inner)
 	return b, scope, contact, err

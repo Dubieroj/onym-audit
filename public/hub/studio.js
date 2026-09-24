@@ -8,7 +8,7 @@
 import { parseStrict, canonical, plain, digest, fingerprint, verifySig, verifyAttestation } from "../verify.js";
 import { normalize, check, generate, derive, orderKey, accountOfKey, keyOfAccount, vaultKeys } from "../onym-id.js";
 import { NETWORK, anchorDigest, anchor, anchorState } from "../stellar.js";
-import { RE as ORE, auditors as orderAuditors, load as loadAuditor, kindsOf, feeText, pin, subjectOf, newOrderID, sign as signOrder, send as sendOrder } from "../order-core.js";
+import { RE as ORE, auditors as orderAuditors, load as loadAuditor, kindsOf, feeText, pin, subjectOf, newOrderID, sign as signOrder, send as sendOrder, contactOf } from "../order-core.js";
 
 const $ = (id) => document.getElementById(id);
 const ROOT = new URL("../", import.meta.url); // …/audit/
@@ -348,11 +348,10 @@ $("ob-form").addEventListener("submit", guard(async (ev) => {
   ev.preventDefault();
   const err = $("ob-error");
   err.hidden = true;
-  const name = $("ob-name").value.trim(), slug = $("ob-slug").value.trim(), email = $("ob-email").value.trim();
+  const name = $("ob-name").value.trim(), slug = $("ob-slug").value.trim(), contact = $("ob-email").value.trim();
   const bad = (m) => { err.textContent = m; err.hidden = false; err.scrollIntoView({ block: "center" }); };
   if (!name) return bad(t("e_name"));
   if (!/^[a-z][a-z0-9-]{2,31}$/.test(slug)) return bad(t("e_slug"));
-  if (!/^[^\s@<>()",;:]{1,64}@[A-Za-z0-9.-]{1,190}\.[A-Za-z]{2,24}$/.test(email)) return bad(t("e_email"));
   if (!$("ob-m-manual").checked && !$("ob-m-conf").checked) return bad(t("e_methods"));
   if (!$("ob-terms").checked) return bad(t("e_terms"));
   let fee = null;
@@ -377,7 +376,7 @@ $("ob-form").addEventListener("submit", guard(async (ev) => {
     if ($("ob-m-manual").checked) methodologies.push({ class: "security-review", specification: await sharedRef("hub/methodology/manual-review-v1.md"), scopesOffered: ["source", "deployment", "build"] });
     if ($("ob-m-conf").checked) methodologies.push({ class: "conformance-run", specification: await sharedRef("hub/methodology/conformance-run-v1.md"), scopesOffered: ["discovery.static-ed25519.provider"] });
     const manifest = {
-      version: 1, componentId: claim.componentId, seat: "audit", operator: key, displayName: name, contact: "mailto:" + email,
+      version: 1, componentId: claim.componentId, seat: "audit", operator: key, displayName: name, contact: contact ? contactOf(contact) : base,
       auditProfileId: "onym:audit-profile:static-ed25519-v1", auditProfile: await sharedRef("profile.json"), methodologies,
       independencePolicy: await own("policies/independence.md"), unsolicitedPolicy: await own("policies/unsolicited.md"),
       liability: await own("policies/liability.md"), severityScale: await sharedRef("severity-v1.json"), privacyProfile: await own("policies/privacy.md"),
@@ -478,7 +477,7 @@ async function loadOrders() {
         el("p", { class: "small mono", text: `${o.artifact.source} @ ${o.artifact.revision}` }),
         el("pre", { class: "quote", text: q.scopeText }),
         termsBox(o),
-        el("p", { class: "small" }, el("a", { href: /^mailto:/.test(q.contact) ? q.contact : null, text: q.contact.replace(/^mailto:/, "") }), ` · ${t("sponsor_fp", { fp: await fingerprint(o.sponsor) })} · ${o.orderId} · ${t("received", { date: q.receivedAt.slice(0, 10) })}`),
+        el("p", { class: "small" }, q.contact ? el("a", { href: /^mailto:/.test(q.contact) ? q.contact : null, text: q.contact.replace(/^mailto:/, "") }) : t("no_contact"), ` · ${t("sponsor_fp", { fp: await fingerprint(o.sponsor) })} · ${o.orderId} · ${t("received", { date: q.receivedAt.slice(0, 10) })}`),
         el("p", { class: "row-inline" }, el("button", { class: "btn btn-ink small-btn", text: t("take"), onclick: () => takeOrder(q) }), el("button", { class: "btn btn-line small-btn", text: t("decline"), onclick: decline })))));
   }
   box.replaceChildren(...(rows.length ? rows : [el("p", { class: "empty", text: t("no_orders") })]));
@@ -924,7 +923,7 @@ $("a-publish").addEventListener("click", guard(async () => {
   if (q) {
     if (q.order.disclosure.findingsToSubjectFirst && !$("a-sent").checked) return bad(t("e_sent"));
   } else {
-    if (!/^(mailto:|https:\/\/)\S+$/.test(contact)) return bad(t("e_contact"));
+    if (!contact) return bad(t("e_contact"));
     if (!/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$/.test(notified) || Date.parse(notified) > Date.now()) return bad(t("e_notified"));
   }
   if (!rel) return bad(t("e_rel"));
@@ -1077,10 +1076,9 @@ $("c-form").addEventListener("submit", guard(async (ev) => {
   const err = $("c-error");
   err.hidden = true;
   const bad = (m) => { err.textContent = m; err.hidden = false; };
-  const component = $("c-component").value.trim(), email = $("c-email").value.trim();
+  const component = $("c-component").value.trim(), contact = $("c-email").value.trim();
   if (!ORE.component.test(component)) return bad(t("err_component"));
   if (!$("c-scope").value.trim()) return bad(t("err_scope"));
-  if (!ORE.email.test(email)) return bad(t("err_email"));
   if (!$("c-authority").checked || !$("c-terms").checked) return bad(t("err_checks"));
   const btn = $("c-submit");
   btn.disabled = true;
@@ -1094,7 +1092,7 @@ $("c-form").addEventListener("submit", guard(async (ev) => {
     const { priv, key } = await orderKey(me.seedKey, orderId);
     const signed = await signOrder({ auditor: cAud, offer: cOffer, artifact, scopeText, component, orderId, key, priv });
     btn.textContent = t("sending");
-    const reply = await sendOrder(cAud.endpoint, signed, scopeText, email).catch((e) => { throw new Error(t("err_server", { err: e.message })); });
+    const reply = await sendOrder(cAud.endpoint, signed, scopeText, contact).catch((e) => { throw new Error(t("err_server", { err: e.message })); });
     await saveOrder({ orderId, account: me.account, auditor: cAud.manifest.displayName, slug: cAud.slug, base: cAud.base, subject: component, kind: artifact.kind, source: artifact.source, createdAt: nowISO(), digest: reply.digest });
     $("c-form").hidden = true;
     toast(t("c_sent", { id: orderId }));
@@ -1244,18 +1242,17 @@ async function loadResponses(q, box) {
   if (!res.responses.length) return box.replaceChildren(el("p", { class: "small muted", text: res.open ? t("r_waiting") : t("r_closed") }));
   box.replaceChildren(...res.responses.map((r) => {
     const o = r.offer;
-    const email = el("input", { type: "email", placeholder: "you@example.org", autocomplete: "email" });
+    const contact = el("input", { placeholder: t("contact_ph"), maxlength: "256", autocomplete: "email" });
     const terms = el("input", { type: "checkbox" });
-    const go = el("button", { class: "btn btn-ink small-btn", type: "button", text: t("r_choose"), disabled: !res.open, onclick: guard(() => chooseResponse(q, r, email.value.trim(), terms.checked, go)) });
+    const go = el("button", { class: "btn btn-ink small-btn", type: "button", text: t("r_choose"), disabled: !res.open, onclick: guard(() => chooseResponse(q, r, contact.value.trim(), terms.checked, go)) });
     return el("div", { class: "response" },
       el("p", {}, el("b", {}, el("a", { href: r.page, target: "_blank", rel: "noopener", text: r.name })), ` · ${r.fingerprint} · ${t("c_facts", { orders: r.completedOrders, customers: r.customers, atts: "–" })}`),
       el("p", { class: "small", text: `${feeText(o, t)} · ${t("due_days", { n: o.timelineDays })} · ${t("fee_same")} · ${t("embargo_days", { n: o.disclosure.embargoDays })}` }),
-      res.open ? el("p", { class: "row-inline" }, email, el("label", { class: "check small" }, terms, " ", t("r_accept")), go) : null);
+      res.open ? el("p", { class: "row-inline" }, contact, el("label", { class: "check small" }, terms, " ", t("r_accept")), go) : null);
   }));
 }
 
-async function chooseResponse(q, r, email, accepted, btn) {
-  if (!ORE.email.test(email)) throw new Error(t("err_email"));
+async function chooseResponse(q, r, contact, accepted, btn) {
   if (!accepted) throw new Error(t("err_checks"));
   btn.disabled = true;
   try {
@@ -1267,7 +1264,7 @@ async function chooseResponse(q, r, email, accepted, btn) {
     const orderId = newOrderID();
     const { priv, key } = await orderKey(me.seedKey, orderId);
     const signed = await signOrder({ auditor: a, offer: o, artifact: q.artifact, scopeText: q.scopeText, component: q.subject, orderId, key, priv });
-    const reply = await sendOrder(a.endpoint, signed, q.scopeText, email).catch((e) => { throw new Error(t("err_server", { err: e.message })); });
+    const reply = await sendOrder(a.endpoint, signed, q.scopeText, contact).catch((e) => { throw new Error(t("err_server", { err: e.message })); });
     await saveOrder({ orderId, account: me.account, auditor: a.manifest.displayName, slug: r.slug, base: a.base, subject: q.subject, kind: q.artifact.kind, source: q.artifact.source, createdAt: nowISO(), digest: reply.digest });
     toast(t("c_sent", { id: orderId }));
     customer();
