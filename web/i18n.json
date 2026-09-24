@@ -714,7 +714,7 @@
   "j_v1": "97 Go tests and subtests; the browser verifier, identity derivation and Stellar encoding on the same vectors as Go.",
   "j_v2": "Identity keys match the Onym apps' cross-platform fixture; the Stellar test network accepted the anchor transactions.",
   "j_v3": "Every flow on the live site — register, examine, order, request, respond, publish, revoke, restore on another device — with test data removed afterwards.",
-  "j_v4": "This site's Discovery catalog passes the suite: CLEAR. Onym's own fails it on an expired snapshot — the published, Stellar-anchored attestation shows exactly why.",
+  "j_v4": "This site's Discovery catalog passes the suite: CLEAR. Onym's own fails it on an expired snapshot — <a href=\"{{root}}verdict/?id=onym-discovery-2026-09-24\">the published, Stellar-anchored attestation</a> shows exactly why.",
   "j_ver_not": "Not yet",
   "j_n1": "Onym's apps do not read attestations yet: their contract screen still says “Pending — no audits yet”; a pull request needs the maintainer's consent.",
   "j_n2": "Anchors are on the Stellar test network, like Onym's own contracts today.",
@@ -810,7 +810,7 @@
    "l_manifest": "auditor manifest",
    "l_status": "status list",
    "l_report": "findings report",
-   "cli_h": "The same checks from the command line, with the repository's verifier:",
+   "cli_h": "The same checks from the command line, with the repository's verifier. -credit says you trust this auditor's key; without it the verifier checks everything and reports the issuer as uncredited.",
    "to_library": "Back to the library"
   }
  },
@@ -1528,7 +1528,7 @@
   "j_v1": "97 тестов и подтестов на Go; браузерный клиент, вывод ключей и кодирование Stellar — на тех же векторах, что и Go.",
   "j_v2": "Ключи личности совпадают с межплатформенной фикстурой приложений Onym; тестовая сеть Stellar приняла транзакции якоря.",
   "j_v3": "Каждый сценарий на живом сайте — регистрация, проверка, заказ, заявка, отклик, публикация, отзыв, вход с другого устройства — с удалением тестовых данных после.",
-  "j_v4": "Каталог Discovery этого сайта проходит набор: CLEAR. Каталог самого Onym не проходит из-за истёкшего снимка — опубликованная и закреплённая в Stellar аттестация показывает, почему именно.",
+  "j_v4": "Каталог Discovery этого сайта проходит набор: CLEAR. Каталог самого Onym не проходит из-за истёкшего снимка — <a href=\"{{root}}ru/verdict/?id=onym-discovery-2026-09-24\">опубликованная и закреплённая в Stellar аттестация</a> показывает, почему именно.",
   "j_ver_not": "Пока нет",
   "j_n1": "Приложения Onym ещё не читают аттестации: экран контракта по-прежнему пишет «Pending — no audits yet»; pull request требует согласия мейнтейнера.",
   "j_n2": "Якоря — в тестовой сети Stellar, как и контракты самого Onym сейчас.",
@@ -1624,7 +1624,7 @@
    "l_manifest": "манифест аудитора",
    "l_status": "список статусов",
    "l_report": "отчёт о находках",
-   "cli_h": "Те же проверки из командной строки, проверяющей программой из репозитория:",
+   "cli_h": "Те же проверки из командной строки, проверяющей программой из репозитория. -credit означает, что вы доверяете ключу этого аудитора; без него программа проверит всё и сообщит, что аудитор вне вашего доверия.",
    "to_library": "Вернуться в библиотеку"
   }
  },
@@ -2342,7 +2342,7 @@
   "j_v1": "97 Go testova i podtestova; klijent u pregledaču, izvođenje ključeva i Stellar kodiranje na istim vektorima kao Go.",
   "j_v2": "Ključevi identiteta se poklapaju s međuplatformskim testnim primjerom Onym aplikacija; Stellar test mreža je prihvatila transakcije sidra.",
   "j_v3": "Svaki tok na živom sajtu — registracija, pregled, narudžba, zahtjev, odgovor, objava, opoziv, prijava s drugog uređaja — uz brisanje test podataka nakon toga.",
-  "j_v4": "Discovery katalog ovog sajta prolazi skup: CLEAR. Onym sopstveni pada zbog isteklog snimka — objavljena atestacija, učvršćena u Stellar, pokazuje tačno zašto.",
+  "j_v4": "Discovery katalog ovog sajta prolazi skup: CLEAR. Onym sopstveni pada zbog isteklog snimka — <a href=\"{{root}}cnr/verdict/?id=onym-discovery-2026-09-24\">objavljena atestacija, učvršćena u Stellar</a>, pokazuje tačno zašto.",
   "j_ver_not": "Još ne",
   "j_n1": "Onym aplikacije još ne čitaju atestacije: ekran ugovora i dalje piše „Pending — no audits yet“; pull request traži saglasnost održavaoca.",
   "j_n2": "Sidra su na Stellar test mreži, kao i Onym ugovori danas.",
@@ -2438,7 +2438,7 @@
    "l_manifest": "manifest revizora",
    "l_status": "lista statusa",
    "l_report": "izvještaj o nalazima",
-   "cli_h": "Iste provjere iz komandne linije, programom za provjeru iz repozitorijuma:",
+   "cli_h": "Iste provjere iz komandne linije, programom za provjeru iz repozitorijuma. -credit znači da vjerujete ključu ovog revizora; bez njega program provjerava sve i javlja da je revizor van vašeg povjerenja.",
    "to_library": "Nazad u biblioteku"
   }
  }

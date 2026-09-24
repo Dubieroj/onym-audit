@@ -130,11 +130,13 @@ async function main() {
   const counts = Object.entries(a.findingsSummary).map(([k, v]) => `${v} ${k}`).join(", ") || t("none");
   const findings = el("div", {}, el("p", {}, el("b", { text: t("summary") }), " ", counts, " ", el("span", { class: "muted", text: t("floor", { floor: a.severityFloor || "—" }) })));
   out.append(section(t("h_findings"), findings));
+  let report = Promise.resolve(null);
   if (!a.findingsReport) findings.append(el("p", { class: "note", text: t("report_withheld") }));
   else {
     const box = el("div", {}, el("p", { class: "small muted", text: t("loading") }));
     findings.append(box);
-    pinned(a.findingsReport).then((p) => renderReport(box, plain(parseStrict(p.text)), p.good, a.findingsReport.uri), (e) => box.replaceChildren(el("p", { class: "bad", text: e.message })));
+    report = pinned(a.findingsReport).then((p) => ({ good: p.good, r: plain(parseStrict(p.text)) }));
+    report.then(({ good, r }) => renderReport(box, r, good, a.findingsReport.uri), (e) => box.replaceChildren(el("p", { class: "bad", text: e.message })));
   }
 
   // Who paid, who is related, who was told.
@@ -177,10 +179,20 @@ async function main() {
 
   // Documents, and how to check it without this page.
   const target = x.kind === "source" || x.kind === "build" ? ` \\\n  -target ${x.source} -target-commit ${x.revision}` : ` \\\n  -target ${x.source}`;
+  const pinsDoc = x.kind === "deployment" && !!x.artifactHash;
+  const cmd = (doc) => `bin/onym-audit verify \\\n  -manifest ${publicBase}manifest.json \\\n  -attestation ${attURI}${target}`
+    + (pinsDoc ? ` \\\n  -target-document ${doc}` : "") + ` \\\n  -credit ${m.operator}`;
+  const code = el("code", { text: cmd("<document>") });
   out.append(section(t("h_documents"),
     el("p", { class: "links" }, link(attURI, t("l_attestation")), link(publicBase + "manifest.json", t("l_manifest")), link(m.statusEndpoint, t("l_status")), a.findingsReport ? link(a.findingsReport.uri, t("l_report")) : null),
     el("p", { class: "small muted", text: t("cli_h") }),
-    el("div", { class: "terminal" }, el("pre", {}, el("code", { text: `bin/onym-audit verify \\\n  -manifest ${publicBase}manifest.json \\\n  -attestation ${attURI}${target}` })))));
+    el("div", { class: "terminal" }, el("pre", {}, code))));
+  // A deployment attestation may also pin a further served document (a
+  // catalog snapshot); the findings report names where it was fetched.
+  if (pinsDoc) report.then((rp) => {
+    const doc = rp?.r.suiteReport?.documents?.find((x2) => x2.digest === x.artifactHash);
+    if (doc) code.textContent = cmd(doc.uri);
+  }, () => {});
 }
 
 // renderReport shows a findings report: a conformance run's failing checks

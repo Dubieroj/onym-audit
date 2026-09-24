@@ -24,6 +24,7 @@ go build -o bin/onym-audit ./cmd/onym-audit
 
 ```sh
 go test ./...                          # 97 tests and subtests, incl. the byte-pinned fixtures
+                                       # (the live LLM run skips without ANTHROPIC_API_KEY)
 node tools/verify-js-test.mjs          # the independent JS client, same vectors
 bin/onym-audit fixtures -dir fixtures  # the published fixture cases, from files alone
 ```
@@ -59,10 +60,10 @@ every document by digest, so a disagreement can be settled on bytes.
 ```sh
 bin/onym-audit verify \
   -manifest    https://foldy.io/audit/manifest.json \
-  -attestation https://foldy.io/audit/attestations/<id>.json \
+  -attestation https://foldy.io/audit/attestations/onym-discovery-2026-09-24.json \
   -target      https://discovery.onym.app/manifest.json \
   -target-document https://discovery.onym.app/catalogs/onym-services.json \
-  -credit      onym:key:47fc089af02a1435d3b7f98b17d7c53b26853986b535d66249f63916cb8a082b
+  -credit      onym:key:0e803a08eb56c5742ca0494628f374f86fcae53bd446663e5109e785ddc0ee03
 ```
 
 It applies while those exact bytes are served. The moment Onym republishes
