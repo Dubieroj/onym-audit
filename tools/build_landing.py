@@ -8,7 +8,7 @@
 One template per page and one string file, so hand-kept copies cannot drift.
 Standard library only.
 """
-import json, re, sys
+import hashlib, json, re, sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -34,6 +34,10 @@ SINGLE = [  # template, output path under public/, the JS strings key, root
     ("auditor.html", "hub/auditor.html", "js", "../../"),
 ]
 JS_KEYS = {js for _, _, js in PAGES}
+# Pages load style.css and their script as ?v=<digest of every stylesheet and
+# script>, so a browser holding an old copy fetches the new one with the page.
+ASSETS = sorted((ROOT / "public").glob("*.css")) + sorted((ROOT / "public").glob("*.js")) + sorted((ROOT / "public/hub").glob("*.js"))
+VERSION = hashlib.sha256(b"".join(f.read_bytes() for f in ASSETS)).hexdigest()[:10]
 
 def render(template, strings, code, lpath, tag, ppath, jskey, root=None):
     here = lpath + ppath
@@ -43,6 +47,7 @@ def render(template, strings, code, lpath, tag, ppath, jskey, root=None):
          for k, v in strings[code].items() if k not in JS_KEYS}
     s["lang_tag"] = tag
     s["root"] = root
+    s["v"] = VERSION
     s["home"] = "../" * ppath.count("/") or "./"
     s["js"] = json.dumps(strings[code][jskey], ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
     s["alternates"] = "\n".join(
