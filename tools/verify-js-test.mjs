@@ -30,5 +30,14 @@ for (const c of set.cases) {
   });
   check(`fixture ${c.name}: ${d.display}/${d.error ?? ""}`, d.display === c.expectDisplay && (d.error ?? "") === c.expectError);
 }
+// A revoked or superseded attestation served re-serialized (same signature,
+// other bytes) keeps its state.
+for (const c of set.cases.filter((x) => x.name === "revoked" || x.name === "superseded")) {
+  const d = await verifyAttestation({
+    manifestText: fx(c.manifest), attText: " " + fx(c.attestation), statusText: fx(c.status[0]),
+    target: c.target, credited: c.creditAuditor, now: Date.parse(c.now),
+  });
+  check(`re-serialized ${c.name} stays ${c.expectDisplay}: ${d.display}`, d.display === c.expectDisplay);
+}
 if (failed) { console.log(`\n${failed} failed`); process.exit(1); }
 console.log("\nall pass");

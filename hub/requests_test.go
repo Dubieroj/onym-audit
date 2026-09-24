@@ -94,9 +94,18 @@ func TestRequestsForProposals(t *testing.T) {
 		t.Fatalf("responses %d %v", code, out)
 	}
 
-	// Dave orders under Alice's response; the order closes the request.
+	// A stranger cannot take the response (and close the request); Dave, the
+	// requester, orders under it with the request's key, which closes it.
 	scope := "src/\n"
-	o := order(t, "ord-0000000000000041", scope, func(o *audit.AuditOrder) { o.Fee.OfferID = ResponseOfferID(pubID) })
+	rsp := func(o *audit.AuditOrder) { o.Fee.OfferID = ResponseOfferID(pubID) }
+	if code, _ := call(srv, "POST", "/a/alice/orders", map[string]any{"order": order(t, "ord-0000000000000040", scope, rsp), "scopeText": scope, "contact": "mailto:bob@example.org"}); code != 422 {
+		t.Errorf("a stranger ordered under someone else's response: %d", code)
+	}
+	other := func(o *audit.AuditOrder) { rsp(o); o.Subject = "onym:component:other" }
+	if code, _ := call(srv, "POST", "/a/alice/orders", map[string]any{"order": orderBy(t, dave, "ord-0000000000000039", scope, other), "scopeText": scope, "contact": "mailto:dave@example.org"}); code != 422 {
+		t.Errorf("an order under a response for another subject: %d", code)
+	}
+	o := orderBy(t, dave, "ord-0000000000000041", scope, rsp)
 	if code, out := call(srv, "POST", "/a/alice/orders", map[string]any{"order": o, "scopeText": scope, "contact": "mailto:dave@example.org"}); code != 202 {
 		t.Fatalf("order under a response %d %v", code, out)
 	}
@@ -105,7 +114,7 @@ func TestRequestsForProposals(t *testing.T) {
 	if len(list) != 0 {
 		t.Errorf("answered request still open: %s", rec)
 	}
-	o2 := order(t, "ord-0000000000000042", scope, func(o *audit.AuditOrder) { o.Fee.OfferID = ResponseOfferID(pubID) })
+	o2 := orderBy(t, dave, "ord-0000000000000042", scope, rsp)
 	if code, _ := call(srv, "POST", "/a/alice/orders", map[string]any{"order": o2, "scopeText": scope, "contact": "mailto:dave@example.org"}); code != 422 {
 		t.Errorf("a second order under a closed request: %d", code)
 	}

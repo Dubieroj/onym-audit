@@ -138,6 +138,15 @@ func Verify(in Input) Decision {
 	r := render(a, m)
 	d := Decision{Display: ShowAttested, Render: r}
 
+	// A revocation signed by the auditor's operator key is final, whatever
+	// status list is presented: a list stapled from before the revocation
+	// must not bring the attestation back (profile §4.2).
+	if in.Revocation != nil {
+		if rv, err := ParseRevocation(in.Revocation); err == nil && rv.AttestationID == a.AttestationID && rv.AuditorKey == m.Operator {
+			return Decision{Display: ShowRevoked, Error: ErrRevoked.Error(), Render: &Render{Issuer: r.Issuer, IssuerKey: r.IssuerKey, IssuerPrint: r.IssuerPrint, RevokedReason: rv.Reason}}
+		}
+	}
+
 	fresh := false
 	if in.Status == nil {
 		d.Error = ErrStatusUnavailable.Error()
@@ -156,26 +165,21 @@ func Verify(in Input) Decision {
 		case e == nil:
 			d.Notes = append(d.Notes, "status list does not cover this attestation")
 			fresh = false
+		// The list's state for this attestation id stands whatever bytes are
+		// presented: re-serializing a revoked attestation (whitespace,
+		// escapes) changes its digest, and must not hide the revocation.
+		case e.State == Revoked:
+			return Decision{Display: ShowRevoked, Error: ErrRevoked.Error(), Render: &Render{Issuer: r.Issuer, IssuerKey: r.IssuerKey, IssuerPrint: r.IssuerPrint, RevokedReason: "revoked"}}
+		case e.State == Superseded:
+			r.SupersededBy = *e.SupersededBy
+			return Decision{Display: ShowSuperseded, Error: ErrSuperseded.Error(), Render: r, Notes: []string{"re-resolve and display the successor " + *e.SupersededBy}}
+		case e.State == Expired:
+			return Decision{Display: ShowExpired, Error: ErrExpired.Error(), Render: r}
 		case e.Attestation.Digest != sig.Digest(in.Attestation):
 			d.Error = ErrStatusInvalid.Error()
 			d.Notes = append(d.Notes, "status entry pins different attestation bytes")
 			fresh = false
 		default:
-			switch e.State {
-			case Revoked:
-				reason := "revoked"
-				if in.Revocation != nil && sig.Digest(in.Revocation) == e.Revocation.Digest {
-					if rv, err := ParseRevocation(in.Revocation); err == nil && rv.AttestationID == a.AttestationID && rv.AuditorKey == m.Operator {
-						reason = rv.Reason
-					}
-				}
-				return Decision{Display: ShowRevoked, Error: ErrRevoked.Error(), Render: &Render{Issuer: r.Issuer, IssuerKey: r.IssuerKey, IssuerPrint: r.IssuerPrint, RevokedReason: reason}}
-			case Superseded:
-				r.SupersededBy = *e.SupersededBy
-				return Decision{Display: ShowSuperseded, Error: ErrSuperseded.Error(), Render: r, Notes: []string{"re-resolve and display the successor " + *e.SupersededBy}}
-			case Expired:
-				return Decision{Display: ShowExpired, Error: ErrExpired.Error(), Render: r}
-			}
 			for _, ref := range e.Responses {
 				raw, ok := in.Responses[ref.Digest]
 				if !ok || sig.Digest(raw) != ref.Digest {

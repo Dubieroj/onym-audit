@@ -72,7 +72,8 @@ async function main() {
   $("f-key").title = manifest.operator;
   const mail = manifest.contact.replace(/^mailto:/, "");
   const a = el("a", "", mail);
-  a.href = manifest.contact;
+  // The contact is the auditor's own text: only mailto: and https: become links.
+  if (/^(mailto:|https:\/\/)/i.test(manifest.contact)) a.href = manifest.contact;
   $("f-contact").replaceChildren(a);
 
   const manifestOK = await verifySig(manifestText, manifest.operator).catch(() => false);

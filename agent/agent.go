@@ -160,7 +160,8 @@ func (w workspace) resolve(rel string) (string, error) {
 	if r, err := filepath.Rel(rootReal, real); err != nil || r == ".." || strings.HasPrefix(r, ".."+string(filepath.Separator)) {
 		return "", errors.New("path leaves the repository")
 	}
-	if strings.Contains(filepath.ToSlash(real), "/.git/") || strings.HasSuffix(real, "/.git") {
+	// Case-insensitively: macOS resolves .GIT to .git.
+	if lower := strings.ToLower(filepath.ToSlash(real)); strings.Contains(lower, "/.git/") || strings.HasSuffix(lower, "/.git") {
 		return "", errors.New("the .git directory is not part of the artifact")
 	}
 	return real, nil
@@ -299,7 +300,7 @@ func (s *state) tools() ([]anthropic.BetaTool, error) {
 				if err != nil {
 					return nil
 				}
-				if d.IsDir() && d.Name() == ".git" {
+				if d.IsDir() && strings.EqualFold(d.Name(), ".git") {
 					return filepath.SkipDir
 				}
 				if len(out) >= maxListEntries {
@@ -367,9 +368,14 @@ func (s *state) tools() ([]anthropic.BetaTool, error) {
 					return nil
 				}
 				if d.IsDir() {
-					if d.Name() == ".git" {
+					if strings.EqualFold(d.Name(), ".git") {
 						return filepath.SkipDir
 					}
+					return nil
+				}
+				// Regular files only: a symlink in the repository could point
+				// anywhere on this machine (the auditor's key included).
+				if !d.Type().IsRegular() {
 					return nil
 				}
 				rel, _ := filepath.Rel(rootReal, p)

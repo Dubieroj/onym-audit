@@ -57,7 +57,11 @@ func orderingHub(t *testing.T) (*Hub, http.Handler, ed25519.PrivateKey) {
 // order builds what the order page builds: signed by the subject and the
 // sponsor (one key), addressed to Alice under her offer.
 func order(t *testing.T, id, scope string, mut func(o *audit.AuditOrder)) json.RawMessage {
-	bob := key("bob")
+	return orderBy(t, key("bob"), id, scope, mut)
+}
+
+// orderBy is an order signed as subject and sponsor by k.
+func orderBy(t *testing.T, bob ed25519.PrivateKey, id, scope string, mut func(o *audit.AuditOrder)) json.RawMessage {
 	o := audit.AuditOrder{
 		OrderVersion: 1, OrderID: id, Auditor: "onym:component:alice", Subject: "onym:component:example", Sponsor: pub(bob),
 		Artifact:       audit.Artifact{Kind: audit.KindSource, Source: "https://github.com/example/repo", Revision: strings.Repeat("e", 40)},
@@ -208,8 +212,10 @@ func TestOrdersFromAnyone(t *testing.T) {
 		srv.ServeHTTP(rec, httptest.NewRequest("GET", "/a/alice/"+p, nil))
 		return rec.Code == 200
 	}
-	if served("attestations/alice-att-0000000011.json") || !served("orders/"+id2+".json") {
-		t.Error("held attestation served, or its order not published")
+	// Nothing of a held fail is served: an order without its attestation
+	// would tell everyone the result was a fail.
+	if served("attestations/alice-att-0000000011.json") || served("orders/"+id2+".json") || served("scopes/order-"+id2+".md") {
+		t.Error("a held fail, its order or its scope is served before release")
 	}
 	_, out = call(srv, "POST", "/hub/api/a/alice/inbox", inboxReq(t, alice, "list", nil, h.Now()))
 	if held, _ := out["held"].([]any); len(held) != 1 {
@@ -221,8 +227,8 @@ func TestOrdersFromAnyone(t *testing.T) {
 	}
 	h.Now = func() time.Time { return time.Date(2026, 12, 24, 12, 0, 0, 0, time.UTC) }
 	h.ResignAll()
-	if !served("attestations/alice-att-0000000011.json") {
-		t.Fatal("not released after the embargo")
+	if !served("attestations/alice-att-0000000011.json") || !served("orders/"+id2+".json") {
+		t.Fatal("attestation or order not released after the embargo")
 	}
 	raw, _ := os.ReadFile(filepath.Join(h.tenantDir("alice"), "manifest.json"))
 	mm, _ := audit.ParseManifest(raw, h.Now())

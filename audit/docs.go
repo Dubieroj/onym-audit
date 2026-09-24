@@ -309,6 +309,24 @@ type Fee struct {
 
 var FeeModels = []string{"fixed-verdict-independent", "pro-bono"}
 
+// MaxEmbargoDays bounds the disclosure embargo an order may ask for: the
+// auditors' unsolicited policies hold findings "for up to 90 days".
+const MaxEmbargoDays = 90
+
+// Check bounds disclosure terms at intake and before an auditor signs: a
+// subject must not be able to have a fail held for a century.
+func (d Disclosure) Check() error {
+	switch {
+	case d.EmbargoDays < 0 || d.EmbargoDays > MaxEmbargoDays:
+		return fmt.Errorf("embargoDays must be 0–%d", MaxEmbargoDays)
+	case d.AttestationPublication != "public-on-issuance":
+		return fmt.Errorf("attestationPublication %q", d.AttestationPublication)
+	case !oneOf(d.FailPublication, "public-on-issuance", "public-after-embargo"):
+		return fmt.Errorf("failPublication %q", d.FailPublication)
+	}
+	return nil
+}
+
 // OrderSignature is one party's signature over the order (profile §4.3).
 type OrderSignature struct {
 	Role      string  `json:"role"`
@@ -424,6 +442,9 @@ func ParseOrderRequest(raw []byte, auditorComponent string) (*AuditOrder, error)
 	}
 	if o.OrderVersion != 1 || !idRE.MatchString(o.OrderID) || !componentRE.MatchString(o.Subject) {
 		return nil, fmt.Errorf("%w: orderVersion/orderId/subject", canon.ErrMalformed)
+	}
+	if err := o.Disclosure.Check(); err != nil {
+		return nil, fmt.Errorf("%w: disclosure: %v", canon.ErrMalformed, err)
 	}
 	if err := o.Artifact.validate(); err != nil {
 		return nil, fmt.Errorf("%w: %v", canon.ErrMalformed, err)

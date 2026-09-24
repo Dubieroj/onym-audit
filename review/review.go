@@ -167,7 +167,9 @@ func checkout(repo, commit, dir string) error {
 		}
 		return strings.TrimSpace(string(out)), nil
 	}
-	for _, a := range [][]string{{"init", "-q"}, {"remote", "add", "origin", repo}, {"fetch", "-q", "--depth", "1", "origin", commit}, {"checkout", "-q", "--detach", "FETCH_HEAD"}} {
+	// core.symlinks=false: a symlink in the repository is checked out as a
+	// plain file holding its target, never as a link out of the workspace.
+	for _, a := range [][]string{{"init", "-q"}, {"config", "core.symlinks", "false"}, {"remote", "add", "origin", repo}, {"fetch", "-q", "--depth", "1", "origin", commit}, {"checkout", "-q", "--detach", "FETCH_HEAD"}} {
 		if _, err := run(a...); err != nil {
 			return err
 		}

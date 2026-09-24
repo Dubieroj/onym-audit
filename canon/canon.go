@@ -15,6 +15,7 @@
 package canon
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"sort"
@@ -256,7 +257,9 @@ func (p *parser) value(depth int) (any, error) {
 }
 
 func (p *parser) lit(word string) error {
-	if !strings.HasPrefix(string(p.s[p.i:]), word) {
+	// bytes.HasPrefix: converting the rest of the input to a string would
+	// copy it for every literal, quadratic in the document's size.
+	if !bytes.HasPrefix(p.s[p.i:], []byte(word)) {
 		return p.fail("invalid literal")
 	}
 	p.i += len(word)

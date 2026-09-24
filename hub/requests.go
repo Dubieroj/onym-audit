@@ -100,6 +100,19 @@ func (h *Hub) loadRequest(id string) (*Request, error) {
 	return &q, nil
 }
 
+// openRequests counts requests still open: expired and closed ones do not
+// hold a place under the cap.
+func (h *Hub) openRequests() int {
+	n := 0
+	paths, _ := filepath.Glob(filepath.Join(h.Root, "requests", "*.json"))
+	for _, p := range paths {
+		if q, err := h.loadRequest(strings.TrimSuffix(filepath.Base(p), ".json")); err == nil && h.open(q) {
+			n++
+		}
+	}
+	return n
+}
+
 func (h *Hub) open(q *Request) bool {
 	exp, err := sig.ParseTime(q.ExpiresAt)
 	if err != nil || !h.Now().Before(exp) {
@@ -158,7 +171,7 @@ func (h *Hub) postRequest(w http.ResponseWriter, r *http.Request) {
 		fail(w, 409, errors.New("a request with this id exists"))
 		return
 	}
-	if n, _ := filepath.Glob(filepath.Join(h.Root, "requests", "*.json")); len(n) >= MaxOpenRequests {
+	if h.openRequests() >= MaxOpenRequests {
 		fail(w, 503, errors.New("the hub holds too many requests; try again later"))
 		return
 	}

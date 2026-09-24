@@ -23,7 +23,14 @@ test -f keys/status.key || { echo "keys/status.key missing" >&2; exit 1; }
 test -f keys/discovery.key || { echo "keys/discovery.key missing (onym-audit keygen -out keys/discovery.key)" >&2; exit 1; }
 test -f public/manifest.json || { echo "run onym-audit publish first" >&2; exit 1; }
 
-go test ./...
+# This module's packages only, and never code that came from elsewhere:
+# review checkouts and pulled orders live in reviews/ and inbox/.
+pkgs=$(go list ./...)
+if echo "$pkgs" | grep -q -e '/reviews/' -e '/inbox/'; then
+  echo "refusing to test: reviews/ or inbox/ is part of the Go module (run the console once to fence them)" >&2
+  exit 1
+fi
+go test $pkgs
 node tools/verify-js-test.mjs >/dev/null
 node tools/onym-id-test.mjs >/dev/null
 node tools/stellar-test.mjs >/dev/null
@@ -34,26 +41,28 @@ GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o dis
 scp dist/onym-audit "$DEPLOY_HOST:/usr/local/bin/onym-audit.upload"
 scp deploy/onym-audit.service "$DEPLOY_HOST:/etc/systemd/system/onym-audit.service"
 scp deploy/onym-audit.nginx.conf "$DEPLOY_HOST:/etc/nginx/snippets/onym-audit.conf"
-scp config.json "$DEPLOY_HOST:/tmp/onym-audit.config.json"
-ssh "$DEPLOY_HOST" 'test -f /etc/onym-audit/status.key' || scp keys/status.key "$DEPLOY_HOST:/tmp/onym-audit.status.key"
-ssh "$DEPLOY_HOST" 'test -f /etc/onym-audit/discovery.key' || scp keys/discovery.key "$DEPLOY_HOST:/tmp/onym-audit.discovery.key"
+# Config and keys go through a root-only staging directory, never /tmp: no
+# other user on the host can plant a file there for the steps below to install.
+STAGE=/root/onym-audit-upload
+ssh "$DEPLOY_HOST" "rm -rf $STAGE && install -d -m 700 $STAGE"
+scp config.json "$DEPLOY_HOST:$STAGE/config.json"
+ssh "$DEPLOY_HOST" 'test -f /etc/onym-audit/status.key' || scp keys/status.key "$DEPLOY_HOST:$STAGE/status.key"
+ssh "$DEPLOY_HOST" 'test -f /etc/onym-audit/discovery.key' || scp keys/discovery.key "$DEPLOY_HOST:$STAGE/discovery.key"
 
 ssh "$DEPLOY_HOST" 'bash -s' <<'REMOTE'
 set -euo pipefail
+STAGE=/root/onym-audit-upload
 id onym-audit >/dev/null 2>&1 || useradd --system --no-create-home --shell /usr/sbin/nologin onym-audit
 install -d -m 755 -o onym-audit -g onym-audit /var/lib/onym-audit /var/lib/onym-audit/site
 install -d -m 700 -o onym-audit -g onym-audit /var/lib/onym-audit/inbox /var/lib/onym-audit/hub
 install -d -m 750 -o root -g onym-audit /etc/onym-audit
-install -m 640 -o root -g onym-audit /tmp/onym-audit.config.json /etc/onym-audit/config.json
-rm -f /tmp/onym-audit.config.json
-if [ -f /tmp/onym-audit.status.key ]; then
-    install -m 440 -o root -g onym-audit /tmp/onym-audit.status.key /etc/onym-audit/status.key
-    rm -f /tmp/onym-audit.status.key
-fi
-if [ -f /tmp/onym-audit.discovery.key ]; then
-    install -m 440 -o root -g onym-audit /tmp/onym-audit.discovery.key /etc/onym-audit/discovery.key
-    rm -f /tmp/onym-audit.discovery.key
-fi
+install -m 640 -o root -g onym-audit "$STAGE/config.json" /etc/onym-audit/config.json
+for k in status discovery; do
+    if [ -f "$STAGE/$k.key" ]; then
+        install -m 440 -o root -g onym-audit "$STAGE/$k.key" "/etc/onym-audit/$k.key"
+    fi
+done
+rm -rf "$STAGE"
 mv -f /usr/local/bin/onym-audit.upload /usr/local/bin/onym-audit
 chmod 755 /usr/local/bin/onym-audit
 REMOTE
@@ -63,9 +72,10 @@ rsync -rlt --exclude status.json --exclude status.json.sig --exclude responses/ 
 
 ssh "$DEPLOY_HOST" SITE_CONF="$SITE_CONF" 'bash -s' <<'REMOTE'
 set -euo pipefail
+# chown -R does not follow symlinks; permissions are then set as the service
+# user, so a symlink it planted cannot make root change any other file.
 chown -R onym-audit:onym-audit /var/lib/onym-audit/site
-find /var/lib/onym-audit/site -type d -exec chmod 755 {} +
-find /var/lib/onym-audit/site -type f -exec chmod 644 {} +
+runuser -u onym-audit -- chmod -R u=rwX,go=rX /var/lib/onym-audit/site
 if ! grep -q "snippets/onym-audit.conf" "$SITE_CONF"; then
     mkdir -p /root/nginx-backups
     BACKUP="/root/nginx-backups/$(basename "$SITE_CONF").$(date +%Y%m%d-%H%M%S)"

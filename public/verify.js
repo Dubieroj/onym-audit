@@ -204,8 +204,10 @@ export async function verifyAttestation({ manifestText, attText, statusText, tar
       fresh = Date.parse(st.nextUpdate) + SKEW >= now;
       if (!fresh) r.error = "status_unavailable";
       if (!entry) { fresh = false; r.notes.push("status list does not cover this attestation"); }
-      else if (entry.attestation.digest !== (await digest(enc.encode(attText)))) { fresh = false; r.error = "status_list_invalid"; }
+      // The list's state for this id stands whatever bytes are presented: a
+      // re-serialized revoked attestation must not hide its revocation.
       else if (entry.state !== "active") return { display: entry.state, error: "attestation_" + entry.state, att: a, entry };
+      else if (entry.attestation.digest !== (await digest(enc.encode(attText)))) { fresh = false; r.error = "status_list_invalid"; }
     }
   }
   if (a.expiresAt && Date.parse(a.expiresAt) + SKEW < now) return { display: "expired", error: "attestation_expired", att: a, entry };

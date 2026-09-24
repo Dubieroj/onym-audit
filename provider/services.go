@@ -53,18 +53,16 @@ type Attestation struct {
 // sources whose auditor this provider credits (Config.Credited), each
 // checked against the auditor's signed status list and its operator key.
 func CreditedAttestations(sources []Source, c Config, now time.Time) []Attestation {
-	credited := map[string]bool{}
-	for _, id := range c.Credited {
-		credited[id] = true
-	}
 	var out []Attestation
 	for _, s := range sources {
 		raw, err := os.ReadFile(filepath.Join(s.Dir, "manifest.json"))
 		if err != nil {
 			continue
 		}
+		// Credited by name and key: a name alone could be registered anew by
+		// someone else if it were ever released.
 		m, err := audit.ParseManifest(raw, now)
-		if err != nil || !credited[m.ComponentID] {
+		if err != nil || c.Credited[m.ComponentID] == "" || c.Credited[m.ComponentID] != m.Operator {
 			continue
 		}
 		stRaw, err := os.ReadFile(filepath.Join(s.Dir, "status.json"))

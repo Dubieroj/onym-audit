@@ -138,7 +138,9 @@ func FormatTime(t time.Time) string { return t.UTC().Truncate(time.Second).Forma
 // ParseTime accepts only the profile's timestamp form.
 func ParseTime(s string) (time.Time, error) {
 	t, err := time.Parse(TimeFormat, s)
-	if err != nil {
+	// time.Parse accepts a fractional second the layout does not name
+	// ("…:05.123Z", "…:05,5Z"); the profile's form has none.
+	if err != nil || FormatTime(t) != s {
 		return time.Time{}, fmt.Errorf("timestamp %q is not RFC 3339 UTC with Z and second precision", s)
 	}
 	return t, nil

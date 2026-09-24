@@ -555,7 +555,9 @@
    "anchor_fail": "Could not anchor in Stellar: {err}",
    "lib_anchor_match": "⚓ register anchored in Stellar {at}",
    "lib_anchor_stale": "⚓ register changed since its anchor",
-   "l_verdict": "attestation page"
+   "l_verdict": "attestation page",
+   "terms_signed": "Terms you countersign",
+   "confirm_logout_unsynced": "Your vault on the hub cannot be reached, so it may not have your latest orders and requests. Remove them from this browser anyway?"
   },
   "o_brand": "Onym auditors",
   "o_rule": "Orders under signed offers · Onym audit seat",
@@ -1369,7 +1371,9 @@
    "anchor_fail": "Не удалось закрепить в Stellar: {err}",
    "lib_anchor_match": "⚓ реестр закреплён в Stellar {at}",
    "lib_anchor_stale": "⚓ реестр изменился после закрепления",
-   "l_verdict": "страница проверки"
+   "l_verdict": "страница проверки",
+   "terms_signed": "Условия, которые вы подписываете",
+   "confirm_logout_unsynced": "Хранилище на хабе недоступно, в нём может не быть последних заказов и запросов. Всё равно удалить их из этого браузера?"
   },
   "o_brand": "Аудиторы Onym",
   "o_rule": "Заказы по подписанным предложениям · место аудитора Onym",
@@ -2183,7 +2187,9 @@
    "anchor_fail": "Nije uspjelo učvršćivanje u Stellar: {err}",
    "lib_anchor_match": "⚓ registar učvršćen u Stellar {at}",
    "lib_anchor_stale": "⚓ registar se promijenio nakon učvršćivanja",
-   "l_verdict": "stranica provjere"
+   "l_verdict": "stranica provjere",
+   "terms_signed": "Uslovi koje potpisujete",
+   "confirm_logout_unsynced": "Trezor na hubu nije dostupan, možda nema vaše posljednje narudžbe i zahtjeve. Ipak ih ukloniti iz ovog pregledača?"
   },
   "o_brand": "Onym revizori",
   "o_rule": "Narudžbe po potpisanim ponudama · Onym mjesto revizora",

@@ -40,6 +40,8 @@ type run struct {
 	findings     map[string][]finding
 	stopped      string
 	cache        map[string]*fetched
+	fetches      int   // requests made, against MaxRunFetches
+	bytes        int64 // body bytes held, against MaxRunBytes
 	docs         []Document
 	served       []*fetched // provider-served responses, for serving.no-cookies
 
@@ -119,6 +121,18 @@ func (x *fetched) state(optional bool) (fstate, string) {
 	return fsRefused, fmt.Sprintf("HTTP %d", s)
 }
 
+// A run's budget. Each document has its own bound, but a provider chooses
+// how many documents there are; the hub runs this suite for anyone, so one
+// run must not make the server fetch or hold without limit. A legitimate
+// provider needs a small fraction of this; past it, the rest is inconclusive.
+const (
+	MaxRunFetches = 2000
+	MaxRunBytes   = 64 << 20
+)
+
+// ErrBudget reports a fetch skipped because the run's budget is spent.
+var ErrBudget = errors.New("the run's fetch budget is spent")
+
 // get fetches uri once per run (cached), recording 200 bodies as documents
 // and provider-served responses for the cookie check.
 func (r *run) get(uri string, limit int64, role string, providerServed bool) *fetched {
@@ -127,7 +141,16 @@ func (r *run) get(uri string, limit int64, role string, providerServed bool) *fe
 		return x
 	}
 	x := &fetched{uri: uri, limit: limit}
+	if r.fetches >= MaxRunFetches || r.bytes >= MaxRunBytes {
+		x.err = fmt.Errorf("%w (%d requests, %d bytes)", ErrBudget, r.fetches, r.bytes)
+		r.cache[key] = x
+		return x
+	}
+	r.fetches++
 	x.resp, x.err = r.f.Get(WithLimit(r.ctx, limit), uri)
+	if x.resp != nil {
+		r.bytes += int64(len(x.resp.Body))
+	}
 	if x.err == nil && x.resp == nil {
 		x.err = errors.New("fetcher returned no response")
 	}

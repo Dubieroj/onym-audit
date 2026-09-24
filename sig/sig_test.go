@@ -76,3 +76,14 @@ func TestSignRoundTripIsCanonical(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestParseTimeIsSecondPrecisionOnly(t *testing.T) {
+	if _, err := ParseTime("2026-09-24T10:00:00Z"); err != nil {
+		t.Fatal(err)
+	}
+	for _, bad := range []string{"2026-09-24T10:00:00.123Z", "2026-09-24T10:00:00,5Z", "2026-09-24T10:00:00+00:00", "2026-09-24 10:00:00Z"} {
+		if _, err := ParseTime(bad); err == nil {
+			t.Errorf("accepted %q", bad)
+		}
+	}
+}

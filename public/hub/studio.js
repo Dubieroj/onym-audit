@@ -477,7 +477,8 @@ async function loadOrders() {
         el("p", { class: "who", text: `${t("m_" + o.methodologyClass)} · ${o.artifact.kind} · ${o.fee.model} · ${o.fee.offerId}` }),
         el("p", { class: "small mono", text: `${o.artifact.source} @ ${o.artifact.revision}` }),
         el("pre", { class: "quote", text: q.scopeText }),
-        el("p", { class: "small" }, el("a", { href: q.contact, text: q.contact.replace(/^mailto:/, "") }), ` · ${t("sponsor_fp", { fp: await fingerprint(o.sponsor) })} · ${o.orderId} · ${t("received", { date: q.receivedAt.slice(0, 10) })}`),
+        termsBox(o),
+        el("p", { class: "small" }, el("a", { href: /^mailto:/.test(q.contact) ? q.contact : null, text: q.contact.replace(/^mailto:/, "") }), ` · ${t("sponsor_fp", { fp: await fingerprint(o.sponsor) })} · ${o.orderId} · ${t("received", { date: q.receivedAt.slice(0, 10) })}`),
         el("p", { class: "row-inline" }, el("button", { class: "btn btn-ink small-btn", text: t("take"), onclick: () => takeOrder(q) }), el("button", { class: "btn btn-line small-btn", text: t("decline"), onclick: decline })))));
   }
   box.replaceChildren(...(rows.length ? rows : [el("p", { class: "empty", text: t("no_orders") })]));
@@ -558,6 +559,13 @@ $("d-export").addEventListener("click", guard(async () => {
 }));
 const signOut = guard(async () => {
   if (!confirm(t("confirm_logout"))) return;
+  // The list of this identity's orders and requests is the only thing that
+  // ties its per-order keys together: it leaves this browser too, once the
+  // vault has it (the next sign-in restores it from there).
+  const synced = await syncVault().then(() => true, () => false);
+  if (synced || confirm(t("confirm_logout_unsynced"))) {
+    for (const r of await mine()) await idbDo("readwrite", (s) => s.delete(idOf(r)), "orders");
+  }
   await forgetIdentity();
   me = null;
   VAULT = null;
@@ -604,6 +612,15 @@ function startAudit() {
 
 // takeOrder starts an examination bound to a queued order: the target and
 // the scope are the order's, and signing countersigns it.
+// termsOf lists every term the auditor's countersignature covers, as signed.
+const termsOf = (o) => [
+  `cooperation: ${o.cooperation}`,
+  `disclosure: findingsToSubjectFirst ${o.disclosure.findingsToSubjectFirst}; embargoDays ${o.disclosure.embargoDays}; attestation ${o.disclosure.attestationPublication}; fail ${o.disclosure.failPublication}`,
+  `fee: ${o.fee.model} (${o.fee.offerId})`,
+  `timeline: ${Object.entries(o.timeline).map(([k, v]) => `${k} ${v}`).join(", ")}`,
+].join("\n");
+const termsBox = (o) => el("details", {}, el("summary", { text: t("terms_signed") }), el("pre", { class: "quote", text: termsOf(o) }));
+
 function takeOrder(q) {
   show("audit");
   A.order = q;
@@ -611,11 +628,12 @@ function takeOrder(q) {
   const kind = o.methodologyClass === "conformance-run" ? "discovery" : o.artifact.kind;
   const banner = $("a-order-banner");
   banner.replaceChildren(el("p", {}, el("b", { text: t("order_banner", { id: o.orderId }) }), " ", t("order_banner_h")),
-    el("p", { class: "mono small", text: [o.artifact.source, o.artifact.revision, o.artifact.artifactHash].filter(Boolean).join(" · ") }));
+    el("p", { class: "mono small", text: [o.artifact.source, o.artifact.revision, o.artifact.artifactHash].filter(Boolean).join(" · ") }),
+    termsBox(o));
   banner.hidden = false;
   $("a-unsol").hidden = true;
   $("a-comm").hidden = false;
-  $("a-comm-contact").href = q.contact;
+  if (/^mailto:/.test(q.contact)) $("a-comm-contact").href = q.contact;
   $("a-comm-contact").textContent = q.contact.replace(/^mailto:/, "");
   $("a-sent").closest("label").hidden = !o.disclosure.findingsToSubjectFirst;
   for (const b of document.querySelectorAll("#a-step1 .choice")) b.disabled = b.dataset.kind !== kind;

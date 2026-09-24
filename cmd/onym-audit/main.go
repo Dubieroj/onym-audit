@@ -453,8 +453,34 @@ func serve(args []string) error {
 		}
 		// In the background: the services catalog fetches from Onym's hosts.
 		go refresh()
+		// Changes on the hub refresh the catalogs at most every two minutes
+		// (the last change always gets its run), so registrations cannot
+		// make the provider sign snapshots without limit.
+		var tmu sync.Mutex
+		var last time.Time
+		var queued bool
+		throttled := func() {
+			tmu.Lock()
+			defer tmu.Unlock()
+			if queued {
+				return
+			}
+			wait := time.Until(last.Add(2 * time.Minute))
+			if wait <= 0 {
+				last = time.Now()
+				go refresh()
+				return
+			}
+			queued = true
+			time.AfterFunc(wait, func() {
+				tmu.Lock()
+				queued, last = false, time.Now()
+				tmu.Unlock()
+				refresh()
+			})
+		}
 		if h != nil {
-			h.OnChange = refresh
+			h.OnChange = throttled
 			s.HubResign = func() { h.ResignAll(); refresh() }
 		} else {
 			s.HubResign = refresh
@@ -1272,6 +1298,15 @@ func runConsole(args []string) error {
 		if err := os.MkdirAll(d, 0o700); err != nil {
 			return err
 		}
+		// Review checkouts and pulled orders hold other people's code. A
+		// go.mod makes each directory a module of its own, so `go test ./...`
+		// in this repository (deploy.sh runs it) never builds or runs that code.
+		fence := filepath.Join(d, "go.mod")
+		if _, err := os.Stat(fence); err != nil {
+			if err := os.WriteFile(fence, []byte("// Other people's code: never part of onym-audit.\nmodule fenced.invalid\n"), 0o600); err != nil {
+				return err
+			}
+		}
 	}
 	wd, _ := os.Getwd()
 	con := &console.Console{PublicRoot: *root, Config: c, AuditorKey: k, StatusKey: sk, Reviews: *reviews, Inbox: *inbox, RepoRoot: wd, DeployHost: *host, Provider: *provider}
@@ -1304,6 +1339,7 @@ func anchorCmd(args []string) error {
 	keyPath := fs.String("key", "keys/auditor.key", "auditor key")
 	status := fs.String("status", "https://foldy.io/audit/status.json", "status list URI or file (the served one is the register readers see)")
 	check := fs.Bool("check", false, "only compare the register with its anchor")
+	manifestPath := fs.String("manifest", "public/manifest.json", "this auditor's own manifest (local), which names the status key")
 	fs.Parse(args)
 	var raw []byte
 	var err error
@@ -1328,6 +1364,23 @@ func anchorCmd(args []string) error {
 		return err
 	}
 	account := onymid.AccountID(k.Public().(ed25519.PublicKey))
+	// Only a list this auditor's status key signed is anchored: the list may
+	// come from the network, and the anchor exists to catch a host that
+	// serves another one.
+	mraw, err := os.ReadFile(*manifestPath)
+	if err != nil {
+		return err
+	}
+	m, err := audit.ParseManifest(mraw, time.Now())
+	if err != nil {
+		return err
+	}
+	if m.Operator != site.KeyOf(k) {
+		return fmt.Errorf("%s is not this key's manifest", *manifestPath)
+	}
+	if l, err := audit.ParseStatus(raw, m, nil, time.Now()); l == nil {
+		return fmt.Errorf("the status list does not verify under this auditor's status key: %v", err)
+	}
 	if !*check {
 		d, err := stellar.Digest(raw)
 		if err != nil {

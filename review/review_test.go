@@ -201,16 +201,20 @@ func TestCommissionedFailIsHeldUntilEmbargoEnds(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(root, "attestations", "att-commissioned-001.json")); err == nil {
 		t.Fatal("a fail was published inside the order's embargo")
 	}
-	// The countersigned order and its scope are public; the order is complete.
-	full, err := os.ReadFile(filepath.Join(root, "orders", o.OrderID+".json"))
-	if err != nil {
+	// The countersigned order and its scope wait with the attestation: an
+	// order published alone would say the result was a fail.
+	if _, err := os.Stat(filepath.Join(root, "orders", o.OrderID+".json")); err == nil {
+		t.Fatal("the order of a held fail was published")
+	}
+	if _, err := os.Stat(filepath.Join(root, "scopes", "order-"+o.OrderID+".md")); err == nil {
+		t.Fatal("the scope of a held fail was published")
+	}
+	full := []byte(s.Held["orders/"+o.OrderID+".json"])
+	if full, err = os.ReadFile(string(full)); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := audit.ParseOrder(full); err != nil {
-		t.Fatalf("published order: %v", err)
-	}
-	if b, _ := os.ReadFile(filepath.Join(root, "scopes", "order-"+o.OrderID+".md")); string(b) != string(scope) {
-		t.Error("scope not published byte-for-byte")
+		t.Fatalf("held order: %v", err)
 	}
 	if err := r.Release(root, c, key("status"), now.Add(24*time.Hour)); err == nil {
 		t.Error("released inside the embargo")
@@ -228,5 +232,36 @@ func TestCommissionedFailIsHeldUntilEmbargoEnds(t *testing.T) {
 	}
 	if a.Engagement != "commissioned" || a.OrderRef == nil || *a.OrderRef != sig.Digest(full) || a.SubjectOperator != site.KeyOf(subject) {
 		t.Errorf("commissioned attestation %+v", a)
+	}
+}
+
+// A planted order cannot choose where signing writes: the scope's path is
+// the one its order id names.
+func TestOrderScopePathIsPinned(t *testing.T) {
+	root, c := publicTree(t)
+	r := newReview(t, KindManual)
+	r.AddManual(manualFinding("low"))
+	r.SetCoverage(agent.Coverage{Summary: "Read src/.", Complete: true})
+	subject := key("subject")
+	scope := []byte("console.log('planted')\n")
+	o := audit.AuditOrder{OrderVersion: 1, OrderID: "ord-planted-00000001", Auditor: c.ComponentID, Subject: "onym:component:example", Sponsor: site.KeyOf(subject),
+		Artifact: audit.Artifact{Kind: audit.KindSource, Source: repoURL, Revision: commit}, MethodologyCls: audit.SecurityReview,
+		Scope:       audit.DocRef{URI: c.BaseURI + "../tools/verify-js-test.mjs", Digest: sig.Digest(scope)},
+		Cooperation: "public", Disclosure: audit.Disclosure{FindingsToSubjectFirst: true, EmbargoDays: 0, AttestationPublication: "public-on-issuance", FailPublication: "public-on-issuance"},
+		Timeline: map[string]string{"start": "2026-09-24", "reportDue": "2026-10-01"}, Fee: audit.Fee{Model: "pro-bono", OfferID: "x"}, Signatures: []audit.OrderSignature{}}
+	ob, _ := audit.CanonicalOf(o)
+	ob, _ = audit.SignOrder(ob, "subject", subject)
+	ob, _ = audit.SignOrder(ob, "sponsor", subject)
+	odir := filepath.Join(t.TempDir(), o.OrderID)
+	os.MkdirAll(odir, 0o755)
+	os.WriteFile(filepath.Join(odir, "order.json"), ob, 0o644)
+	os.WriteFile(filepath.Join(odir, "scope.md"), scope, 0o644)
+	opts := SignOptions{PublicRoot: root, Config: c, AuditorKey: key("auditor"), StatusKey: key("status"), AttestationID: "att-planted-000001", Relationships: "none",
+		OrderDir: odir, FindingsSentAt: "2026-09-24T11:00:00Z", Now: time.Date(2026, 9, 24, 12, 0, 0, 0, time.UTC)}
+	if _, err := r.Sign(opts); err == nil || !strings.Contains(err.Error(), "scope must be") {
+		t.Fatalf("signed an order whose scope names another path: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(filepath.Dir(root), "tools", "verify-js-test.mjs")); err == nil {
+		t.Fatal("a file was written outside the public tree")
 	}
 }

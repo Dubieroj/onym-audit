@@ -74,7 +74,7 @@ func (x *Review) sign(o SignOptions) (*Signed, error) {
 	// Engagement.
 	a := audit.Attestation{AttestationVersion: 1, AttestationID: o.AttestationID, Relationships: strings.TrimSpace(o.Relationships)}
 	var scopeBytes []byte
-	var scopePath string
+	var scopePath, orderPath string
 	var failEmbargo time.Time
 	if o.OrderDir != "" {
 		ob, err := os.ReadFile(filepath.Join(o.OrderDir, "order.json"))
@@ -101,11 +101,19 @@ func (x *Review) sign(o SignOptions) (*Signed, error) {
 		if _, err := audit.ParseOrder(full); err != nil {
 			return nil, err
 		}
+		if err := ord.Disclosure.Check(); err != nil {
+			return nil, fmt.Errorf("the order's disclosure terms: %v", err)
+		}
 		scopeBytes, err = os.ReadFile(filepath.Join(o.OrderDir, "scope.md"))
 		if err != nil || sig.Digest(scopeBytes) != ord.Scope.Digest {
 			return nil, errors.New("the order's scope text is missing or does not match its digest")
 		}
-		scopePath = strings.TrimPrefix(ord.Scope.URI, c.BaseURI)
+		// The path comes from the order id, never from the order's own URI:
+		// a planted order must not choose where signing writes.
+		scopePath = "scopes/order-" + ord.OrderID + ".md"
+		if ord.Scope.URI != c.BaseURI+scopePath {
+			return nil, fmt.Errorf("the order's scope must be %s%s", c.BaseURI, scopePath)
+		}
 		var subjectKey sig.Key
 		for _, s := range ord.Signatures {
 			if s.Role == "subject" {
@@ -116,7 +124,8 @@ func (x *Review) sign(o SignOptions) (*Signed, error) {
 		a.Engagement, a.OrderRef = "commissioned", &orderRef
 		a.Subject, a.SubjectOperator = ord.Subject, subjectKey
 		a.Sponsor, a.SponsorName = ord.Sponsor, "the sponsor of order "+ord.OrderID
-		pub["orders/"+ord.OrderID+".json"] = full
+		orderPath = "orders/" + ord.OrderID + ".json"
+		pub[orderPath] = full
 		if ord.Disclosure.FailPublication == "public-after-embargo" {
 			failEmbargo = o.Now.Add(time.Duration(ord.Disclosure.EmbargoDays) * 24 * time.Hour)
 		}
@@ -240,6 +249,12 @@ func (x *Review) sign(o SignOptions) (*Signed, error) {
 	s := &Signed{AttestationID: o.AttestationID, Attestation: audit.DocRef{URI: c.BaseURI + apath, Digest: sig.Digest(ab)}, Result: a.Result, Held: map[string]string{}}
 	if holdAttestation {
 		held[apath] = ab
+		// The countersigned order and its scope wait too: published alone,
+		// an order without its attestation would say the result was a fail.
+		for _, p := range []string{orderPath, scopePath} {
+			held[p] = pub[p]
+			delete(pub, p)
+		}
 		s.HeldUntil = sig.FormatTime(failEmbargo)
 	} else {
 		pub[apath] = ab

@@ -94,6 +94,7 @@ func NewHTTPFetcher() Fetcher {
 	t := http.DefaultTransport.(*http.Transport).Clone()
 	t.Proxy = nil
 	t.DisableCompression = true
+	t.MaxResponseHeaderBytes = 64 << 10 // headers are kept for the run; 10 MB each by default
 	t.TLSClientConfig = &tls.Config{MinVersion: tls.VersionTLS12}
 	// netguard.Control refuses any non-public address after DNS resolution,
 	// so a name that resolves inside the host's network is never dialed.

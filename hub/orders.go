@@ -13,6 +13,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -111,11 +112,24 @@ func (h *Hub) postOrder(w http.ResponseWriter, r *http.Request) {
 			err = errors.New("contact must be a mailto: address")
 		}
 	}
+	// An offer made for a request is taken only by that request's author,
+	// for what the request asked: its sponsor key is the request's key.
+	if err == nil && strings.HasPrefix(o.Fee.OfferID, "rsp-") {
+		q, qerr := h.loadRequest(requestOf(o.Fee.OfferID))
+		switch {
+		case qerr != nil:
+			err = errors.New("the request this offer answers is gone")
+		case o.Sponsor != q.Requester:
+			err = errors.New("only the request's author can order under its responses (sponsor must be the requester key)")
+		case o.Subject != q.Subject || o.MethodologyCls != q.MethodologyCls || !sameArtifact(o.Artifact, q.Artifact):
+			err = errors.New("the order must be for the subject and artifact the request named")
+		}
+	}
 	if err != nil {
 		fail(w, 422, err)
 		return
 	}
-	if _, err := os.Stat(filepath.Join(h.tenantDir(slug), "orders", o.OrderID+".json")); err == nil {
+	if _, err := os.Stat(filepath.Join(h.tenantDir(slug), "orders", o.OrderID+".json")); err == nil || h.heldOrder(slug, o.OrderID) != nil {
 		fail(w, 409, errors.New("this order has already been fulfilled"))
 		return
 	}
@@ -346,6 +360,26 @@ func (h *Hub) held(slug string) []heldEntry {
 	return out
 }
 
+// heldOrder returns the countersigned order held with an embargoed
+// attestation, if any.
+func (h *Hub) heldOrder(slug, orderID string) []byte {
+	paths, _ := filepath.Glob(filepath.Join(h.heldDir(slug), "*.json"))
+	for _, p := range paths {
+		var hf heldFile
+		if b, err := os.ReadFile(p); err == nil && json.Unmarshal(b, &hf) == nil {
+			if o, ok := hf.Files["orders/"+orderID+".json"]; ok {
+				return []byte(o)
+			}
+		}
+	}
+	return nil
+}
+
+func sameArtifact(a, b audit.Artifact) bool {
+	return a.Kind == b.Kind && a.Source == b.Source && a.Revision == b.Revision &&
+		(a.ArtifactHash == nil) == (b.ArtifactHash == nil) && (a.ArtifactHash == nil || *a.ArtifactHash == *b.ArtifactHash)
+}
+
 func (h *Hub) isHeld(slug, id string) bool {
 	_, err := os.Stat(filepath.Join(h.heldDir(slug), id+".json"))
 	return err == nil
@@ -370,6 +404,7 @@ func (h *Hub) release(slug string) {
 			files[f] = []byte(s)
 		}
 		if err := h.write(slug, files); err != nil {
+			log.Printf("hub: %s: held %s not released: %v", slug, filepath.Base(p), err)
 			continue
 		}
 		os.Remove(p)
@@ -413,11 +448,17 @@ func (h *Hub) orderStatus(w http.ResponseWriter, r *http.Request) {
 		fail(w, 403, errors.New("the request must be signed by the order's sponsor key, now"))
 		return
 	}
-	queued := false
+	queued, held := false, false
 	if b, err := os.ReadFile(filepath.Join(h.inboxDir(slug), q.OrderID, "order.json")); err == nil {
 		if o, err := audit.ParseOrderRequest(b, "onym:component:"+slug); err == nil && o.Sponsor == q.Sponsor {
 			queued = true
 		}
 	}
-	reply(w, 200, map[string]bool{"queued": queued})
+	if b := h.heldOrder(slug, q.OrderID); b != nil {
+		var o struct {
+			Sponsor sig.Key `json:"sponsor"`
+		}
+		held = json.Unmarshal(b, &o) == nil && o.Sponsor == q.Sponsor
+	}
+	reply(w, 200, map[string]bool{"queued": queued, "held": held})
 }

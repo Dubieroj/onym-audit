@@ -14,6 +14,9 @@ NoNewPrivileges=true
 ProtectSystem=strict
 ProtectHome=true
 PrivateTmp=true
+# A ceiling far above normal use (a few MB): a runaway fetch or run is
+# stopped here instead of taking the host's memory.
+MemoryMax=768M
 ReadWritePaths=/var/lib/onym-audit
 ReadOnlyPaths=/etc/onym-audit
 

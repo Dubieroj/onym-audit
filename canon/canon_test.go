@@ -5,7 +5,9 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
+	"time"
 )
 
 func ref(t *testing.T, name string) []byte {
@@ -87,5 +89,26 @@ func TestSurrogatePairDecodes(t *testing.T) {
 	got, err := SigningBytes([]byte(`{"a":"\ud83d\ude00"}`))
 	if err != nil || string(got) != "{\"a\":\"\U0001F600\"}" {
 		t.Fatalf("%q %v", got, err)
+	}
+}
+
+// Parsing is linear: a large document of literals, the shape an anonymous
+// order body could take, parses in well under a second.
+func TestParseLiteralsLinear(t *testing.T) {
+	var b strings.Builder
+	b.WriteString(`{"a":[`)
+	for i := 0; i < 200000; i++ {
+		if i > 0 {
+			b.WriteByte(',')
+		}
+		b.WriteString("true")
+	}
+	b.WriteString(`]}`)
+	start := time.Now()
+	if _, err := Parse([]byte(b.String())); err != nil {
+		t.Fatal(err)
+	}
+	if d := time.Since(start); d > time.Second {
+		t.Errorf("1 MB of literals took %v", d)
 	}
 }

@@ -20,8 +20,8 @@ A service is listed while both hold:
    been published by one of these auditors, verified against the auditor's
    signed status list and operator key:
 
-- `onym:component:llm-audit`
-- `onym:component:onym-audit`
+- `onym:component:llm-audit`, operator key `onym:key:f3c570a461c6901c48750015783e18e0fbaa827a5061e4a3880fb2636e73d006`
+- `onym:component:onym-audit`, operator key `onym:key:0e803a08eb56c5742ca0494628f374f86fcae53bd446663e5109e785ddc0ee03`
 
 Each entry pins the digest of the service's manifest bytes as this provider
 fetched them, after checking what a client checks: the component id, the

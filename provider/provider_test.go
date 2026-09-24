@@ -5,6 +5,7 @@ import (
 	"crypto/ed25519"
 	"crypto/sha256"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -128,6 +129,18 @@ func TestCatalogPassesTheSuite(t *testing.T) {
 	if ok, _ := Refresh(prov, c, pk, srcs, now.Add(24*24*time.Hour)); !ok {
 		t.Error("no renewal inside the margin")
 	}
+	// Retained snapshots that have expired are pruned; the chain still passes.
+	later := now.Add(50 * 24 * time.Hour)
+	if ok, _ := Refresh(prov, c, pk, srcs, later); !ok {
+		t.Fatal("no renewal")
+	}
+	for _, k := range []int{1, 2} {
+		if _, err := os.Stat(filepath.Join(prov, "catalogs", fmt.Sprintf("onym-auditors-%d.json", k))); err == nil {
+			t.Errorf("expired snapshot %d kept", k)
+		}
+	}
+	rep = discovery.Run(context.Background(), fetch, c.Base+"manifest.json", later.Add(time.Minute))
+	clean(t, rep)
 }
 
 // signed writes a document signed with k at dir/p.
@@ -240,9 +253,43 @@ func TestCreditedAttestationsReadsTheSeat(t *testing.T) {
 	if !found {
 		t.Errorf("attestations %+v", atts)
 	}
+	// Credited by name and key: the same name under another key is not.
 	c := Default
+	c.Credited = map[string]sig.Key{"onym:component:onym-audit": site.KeyOf(key("impostor"))}
+	if len(CreditedAttestations([]Source{{Base: "https://foldy.io/audit/", Dir: "../public", CommonOwner: true}}, c, now.Add(time.Minute))) != 0 {
+		t.Error("an auditor was credited under another key")
+	}
 	c.Credited = nil
 	if len(CreditedAttestations([]Source{{Base: "https://foldy.io/audit/", Dir: "../public", CommonOwner: true}}, c, now.Add(time.Minute))) != 0 {
 		t.Error("an uncredited auditor's attestations were read")
+	}
+}
+
+// Past 512 entries a client rejects the whole snapshot: the catalog keeps
+// this site's own seat and the longest-listed auditors.
+func TestAuditorsCatalogStaysWithinTheBound(t *testing.T) {
+	now := time.Date(2026, 9, 24, 12, 0, 0, 0, time.UTC)
+	root := t.TempDir()
+	auditor(t, root, host, "onym:component:zz-operator-seat", key("operator"))
+	srcs := []Source{{Base: host, Dir: root, CommonOwner: true}}
+	listed := map[string]string{}
+	for i := 0; i < MaxEntries+5; i++ {
+		d := t.TempDir()
+		id := fmt.Sprintf("onym:component:a%04d", i)
+		auditor(t, d, fmt.Sprintf("%sa/a%04d/", host, i), id, key(id))
+		srcs = append(srcs, Source{Base: fmt.Sprintf("%sa/a%04d/", host, i), Dir: d})
+		listed[id] = sig.FormatTime(now.Add(time.Duration(i) * time.Minute))
+	}
+	es := entries(srcs, now, listed)
+	if len(es) != MaxEntries {
+		t.Fatalf("%d entries", len(es))
+	}
+	seat, newest := false, false
+	for _, e := range es {
+		seat = seat || e.ComponentID == "onym:component:zz-operator-seat"
+		newest = newest || e.ComponentID == fmt.Sprintf("onym:component:a%04d", MaxEntries+4)
+	}
+	if !seat || newest {
+		t.Errorf("own seat kept %v, newest auditor kept %v", seat, newest)
 	}
 }

@@ -1,7 +1,7 @@
 # Onym audit hub — terms
 
 Operated by onym audit (`https://foldy.io/audit/`) at `https://foldy.io/audit/hub/`.
-Version 4, 24 September 2026 (adds requests, vaults, Stellar anchors, the Discovery catalog).
+Version 5, 24 September 2026 (tightens registration, embargoed orders, and orders under responses to requests).
 
 ## What the hub is
 
@@ -41,6 +41,15 @@ responsible for what you sign; the hub is not a party to any attestation.
   rather than silently altered. The hub never edits or deletes a signed
   document to take it down.
 
+## Registering
+
+A manifest is registered with the documents it references — policies,
+methodologies, offers and their scopes — and nothing else: manifests are
+public, and re-sending one cannot add or replace any other file in the
+auditor's tree. A manifest older than the registered one (an earlier
+`validUntil`) is refused. The contact is a `mailto:` address or an
+`https://` URL, since pages show it as a link.
+
 ## Orders
 
 An auditor who publishes signed offers can be ordered from by anyone, at
@@ -52,9 +61,10 @@ technically read them, and the hub deletes an order when the auditor takes
 or declines it.
 
 The hub enforces the order's disclosure terms: a `fail` under an order that
-embargoes failures is held — the countersigned order is published at once,
-the attestation and its report when the embargo ends (checked every six
-hours). The hub takes no part in payment and handles no money; a fixed fee
+embargoes failures is held — the attestation, its report, the countersigned
+order and its scope are all published when the embargo ends (checked every
+six hours), so nothing public shows the result before then. An order may
+ask for an embargo of at most 90 days. The hub takes no part in payment and handles no money; a fixed fee
 is settled between orderer and auditor, and can never depend on the result.
 
 ## Requests for proposals
@@ -64,7 +74,9 @@ every auditor, or address it to one Stellar account. A public request is
 public; an addressed one is shown only to a request signed by its
 addressee's key. Auditors answer with an offer made for that request, and
 only the request's own key can read the answers. Choosing one places an
-ordinary order under that offer and closes the request. Requests expire
+ordinary order under that offer, signed with the request's own key, and
+closes the request; nobody else can order under the answers, and only for
+the subject and bytes the request named. Requests expire
 after at most 30 days. No contact details are part of a request: the email
 is given with the order, to the chosen auditor only.
 

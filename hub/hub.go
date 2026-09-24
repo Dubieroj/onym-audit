@@ -14,11 +14,13 @@ import (
 	"context"
 	"crypto/ed25519"
 	"crypto/rand"
+	"crypto/sha256"
 	"crypto/tls"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"hash/fnv"
 	"io"
 	"io/fs"
 	"log"
@@ -61,7 +63,7 @@ type Hub struct {
 	OnChange   func() // called after an auditor registers, publishes, or revokes
 
 	mu      sync.Mutex
-	tenants map[string]*sync.Mutex
+	stripes [256]sync.Mutex // per-tenant locks, by hash of the name
 	limiter *limiter
 	client  *http.Client
 	heavy   chan struct{} // bounds concurrent digests and conformance runs
@@ -81,7 +83,7 @@ func New(root, publicRoot, publicBase string) (*Hub, error) {
 	t.DialContext = d.DialContext
 	return &Hub{
 		Root: root, PublicRoot: publicRoot, PublicBase: publicBase, Now: time.Now,
-		tenants: map[string]*sync.Mutex{}, limiter: newLimiter(), heavy: make(chan struct{}, 2),
+		limiter: newLimiter(), heavy: make(chan struct{}, 2),
 		client: &http.Client{Transport: t, Timeout: 60 * time.Second, CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			if len(via) > 3 {
 				return errors.New("more than 3 redirects")
@@ -100,15 +102,12 @@ var (
 func (h *Hub) base(slug string) string      { return h.PublicBase + "a/" + slug + "/" }
 func (h *Hub) tenantDir(slug string) string { return filepath.Join(h.Root, "tenants", slug) }
 
+// lock returns the tenant's lock: one of a fixed set, so names taken from
+// requests cannot grow memory.
 func (h *Hub) lock(slug string) *sync.Mutex {
-	h.mu.Lock()
-	defer h.mu.Unlock()
-	m, ok := h.tenants[slug]
-	if !ok {
-		m = &sync.Mutex{}
-		h.tenants[slug] = m
-	}
-	return m
+	f := fnv.New32a()
+	f.Write([]byte(slug))
+	return &h.stripes[f.Sum32()%uint32(len(h.stripes))]
 }
 
 func (h *Hub) config(slug string, m *audit.AuditorManifest) *site.Config {
@@ -175,8 +174,12 @@ func client(r *http.Request) string {
 	host, _, _ := net.SplitHostPort(r.RemoteAddr)
 	if host == "127.0.0.1" || host == "::1" {
 		if ip := r.Header.Get("X-Real-IP"); ip != "" {
-			return ip
+			host = ip
 		}
+	}
+	// One IPv6 holder has a whole /64: count it as one address.
+	if ip := net.ParseIP(host); ip != nil && ip.To4() == nil {
+		return ip.Mask(net.CIDRMask(64, 128)).String() + "/64"
 	}
 	return host
 }
@@ -321,8 +324,11 @@ func (h *Hub) usage(slug string) int64 {
 
 func (h *Hub) write(slug string, files map[string][]byte) error {
 	var add int64
-	for _, b := range files {
+	for p, b := range files {
 		add += int64(len(b))
+		if fi, err := os.Stat(filepath.Join(h.tenantDir(slug), filepath.FromSlash(p))); err == nil {
+			add -= fi.Size()
+		}
 	}
 	if h.usage(slug)+add > MaxTenantBytes {
 		return errors.New("this auditor's storage on the hub is full (20 MiB); self-host the tree to grow")
@@ -398,6 +404,9 @@ func (h *Hub) register(w http.ResponseWriter, r *http.Request) {
 		err = fmt.Errorf("statusEndpoint must be %sstatus.json", h.base(in.Slug))
 	case m.StatusKey != site.KeyOf(k):
 		err = errors.New("statusKey must be the key the hub issued for this name")
+	case !contactRE.MatchString(m.Contact) && urirule.Check(m.Contact) != nil:
+		// Pages render the contact as a link: only mailto: or https:.
+		err = errors.New("contact must be a mailto: address or an https:// URL")
 	}
 	if err != nil {
 		fail(w, 422, err)
@@ -405,12 +414,21 @@ func (h *Hub) register(w http.ResponseWriter, r *http.Request) {
 	}
 	if prev, perr := os.ReadFile(filepath.Join(h.tenantDir(in.Slug), "manifest.json")); perr == nil {
 		var p struct {
-			Operator sig.Key `json:"operator"`
+			Operator   sig.Key `json:"operator"`
+			ValidUntil string  `json:"validUntil"`
 		}
 		json.Unmarshal(prev, &p)
 		if p.Operator != m.Operator {
 			fail(w, 403, errors.New("this name belongs to another key"))
 			return
+		}
+		// Manifests are public, so a replayed older one must not roll the
+		// auditor back: each re-signing moves validUntil forward.
+		if pu, err := sig.ParseTime(p.ValidUntil); err == nil {
+			if nu, err := sig.ParseTime(m.ValidUntil); err != nil || nu.Before(pu) {
+				fail(w, 409, errors.New("an older manifest than the one registered"))
+				return
+			}
 		}
 	}
 	offered, err := h.docs(in.Docs)
@@ -455,6 +473,24 @@ func (h *Hub) register(w http.ResponseWriter, r *http.Request) {
 	for _, ref := range refs {
 		if err := h.pinned(in.Slug, ref, offered); err != nil {
 			fail(w, 422, err)
+			return
+		}
+	}
+	// Only documents this manifest pins or lists are written. Anyone can
+	// resend a public manifest, so it must not carry other files into the
+	// auditor's tree (an attestation's scope or report, notes, …).
+	wanted := map[string]bool{}
+	for _, ref := range refs {
+		if strings.HasPrefix(ref.URI, h.base(in.Slug)) {
+			wanted[strings.TrimPrefix(ref.URI, h.base(in.Slug))] = true
+		}
+	}
+	for _, id := range m.Offers {
+		wanted["offers/"+id+".json"] = true
+	}
+	for p := range offered {
+		if !wanted[p] {
+			fail(w, 422, fmt.Errorf("%s is not a document this manifest references", p))
 			return
 		}
 	}
@@ -586,25 +622,13 @@ func (h *Hub) publish(w http.ResponseWriter, r *http.Request) {
 			os.RemoveAll(filepath.Join(h.inboxDir(slug), order.OrderID))
 		}
 	}
-	// A failing result under an order that embargoes failures is held: the
-	// order and its scope are published now, the attestation and its
-	// report when the embargo ends.
+	// A failing result under an order that embargoes failures is held:
+	// the attestation, its report, the countersigned order and its scope
+	// are all published when the embargo ends. Publishing the order alone
+	// would tell everyone that the result was a fail.
 	if order != nil && a.Result == audit.Fail && order.Disclosure.FailPublication == "public-after-embargo" && order.Disclosure.EmbargoDays > 0 {
 		releaseAt := h.Now().Add(time.Duration(order.Disclosure.EmbargoDays) * 24 * time.Hour)
-		now := map[string][]byte{opath: offered[opath]}
-		later := map[string][]byte{}
-		for p, b := range offered {
-			if p == opath || p == strings.TrimPrefix(a.Scope.URI, h.base(slug)) {
-				now[p] = b
-			} else {
-				later[p] = b
-			}
-		}
-		if err := h.write(slug, now); err != nil {
-			fail(w, 507, err)
-			return
-		}
-		if err := h.hold(slug, a.AttestationID, releaseAt, later); err != nil {
+		if err := h.hold(slug, a.AttestationID, releaseAt, offered); err != nil {
 			fail(w, 500, err)
 			return
 		}
@@ -790,12 +814,34 @@ func (h *Hub) digest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer func() { <-h.heavy }()
-	resp, b, err := h.get(r.Context(), in.URL, MaxHashBytes)
+	// Hashed as it streams: a file up to MaxHashBytes is never held in memory.
+	if err := urirule.Check(in.URL); err != nil {
+		fail(w, 502, err)
+		return
+	}
+	req, err := http.NewRequestWithContext(r.Context(), http.MethodGet, in.URL, nil)
 	if err != nil {
 		fail(w, 502, err)
 		return
 	}
-	reply(w, 200, map[string]any{"url": resp.Request.URL.String(), "status": resp.StatusCode, "digest": sig.Digest(b), "size": len(b)})
+	req.Header.Set("User-Agent", "onym-audit-hub/1.0")
+	resp, err := h.client.Do(req)
+	if err != nil {
+		fail(w, 502, err)
+		return
+	}
+	defer resp.Body.Close()
+	sum := sha256.New()
+	n, err := io.Copy(sum, io.LimitReader(resp.Body, MaxHashBytes+1))
+	switch {
+	case err != nil:
+		fail(w, 502, err)
+		return
+	case n > MaxHashBytes:
+		fail(w, 502, fmt.Errorf("larger than %d bytes", MaxHashBytes))
+		return
+	}
+	reply(w, 200, map[string]any{"url": resp.Request.URL.String(), "status": resp.StatusCode, "digest": "sha256:" + hex.EncodeToString(sum.Sum(nil)), "size": n})
 }
 
 // conformance runs the Discovery provider suite for the studio.
@@ -1011,7 +1057,12 @@ func (l *limiter) allow(key string, cost int) bool {
 	b, ok := l.buckets[key]
 	if !ok {
 		if len(l.buckets) > 10000 {
-			l.buckets = map[string]*bucket{}
+			// Drop buckets that have refilled: forgetting them changes nothing.
+			for k, x := range l.buckets {
+				if x.tokens+now.Sub(x.last).Seconds()*l.rate >= l.burst {
+					delete(l.buckets, k)
+				}
+			}
 		}
 		b = &bucket{tokens: l.burst, last: now}
 		l.buckets[key] = b

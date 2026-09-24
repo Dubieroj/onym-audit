@@ -137,6 +137,7 @@ type orderView struct {
 	SubjectKey string `json:"subjectKey"`
 	Scope      string `json:"scope"`
 	Contact    string `json:"contact"`
+	Terms      string `json:"terms"` // everything the auditor's countersignature covers
 	ReceivedAt string `json:"receivedAt"`
 	Valid      bool   `json:"valid"`
 	Problem    string `json:"problem,omitempty"`
@@ -168,6 +169,9 @@ func (c *Console) orders(reviews []*review.Review) []orderView {
 		} else {
 			v.Valid = true
 			v.Repo, v.Commit, v.Subject = o.Artifact.Source, o.Artifact.Revision, o.Subject
+			d := o.Disclosure
+			v.Terms = fmt.Sprintf("Methodology: %s\nCooperation: %s\nDisclosure: findings to the subject first: %v; embargo %d days; attestation %s; a fail %s\nFee: %s (offer %s)\nTimeline: %v\nSponsor: %s",
+				o.MethodologyCls, o.Cooperation, d.FindingsToSubjectFirst, d.EmbargoDays, d.AttestationPublication, d.FailPublication, o.Fee.Model, o.Fee.OfferID, o.Timeline, o.Sponsor)
 			for _, s := range o.Signatures {
 				if s.Role == "subject" {
 					v.SubjectKey = string(s.Key)
@@ -226,7 +230,11 @@ func (c *Console) pullOrders(w http.ResponseWriter, r *http.Request) {
 		fail(w, 500, err)
 		return
 	}
-	cmd := exec.Command("rsync", "-rlt", "-e", "ssh -o BatchMode=yes -o ConnectTimeout=15", c.DeployHost+":/var/lib/onym-audit/inbox/", c.Inbox+"/")
+	// Regular files only (no -l: symlinks are skipped), and only the three
+	// an order consists of: the server holding the inbox is not trusted
+	// with this machine's files.
+	cmd := exec.Command("rsync", "-rt", "--include=*/", "--include=order.json", "--include=scope.md", "--include=meta.json", "--exclude=*",
+		"-e", "ssh -o BatchMode=yes -o ConnectTimeout=15", c.DeployHost+":/var/lib/onym-audit/inbox/", c.Inbox+"/")
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		fail(w, 502, fmt.Errorf("rsync: %v: %s", err, strings.TrimSpace(string(out))))

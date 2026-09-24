@@ -64,6 +64,7 @@ function orderItem(o) {
     el("button", { class: "small-btn", text: "Start LLM review", onclick: guard(() => startFromOrder(o, "llm")) }),
     el("button", { class: "small-btn ghost", text: "Manual", onclick: guard(() => startFromOrder(o, "manual")) })));
   li.append(el("details", {}, el("summary", { text: "scope" }), el("pre", { class: "scope", text: o.scope })));
+  if (o.terms) li.append(el("details", {}, el("summary", { text: "terms you countersign" }), el("pre", { class: "scope", text: o.terms })));
   return li;
 }
 
@@ -328,7 +329,8 @@ function signView() {
     field("Relationships with the subject", input("relationships", { value: "none" }), "published verbatim; “none” when none"),
   ];
   if (order) {
-    fields.push(el("p", { class: "small", text: `Commissioned by order ${order.id}: subject ${order.subject}, subject key ${order.subjectKey.slice(0, 22)}…. The order will be countersigned and published.` }));
+    fields.push(el("p", { class: "small", text: `Commissioned by order ${order.id}: subject ${order.subject}, subject key ${order.subjectKey.slice(0, 22)}…. The order will be countersigned and published with these terms:` }));
+    fields.push(el("pre", { class: "scope", text: order.terms }));
     fields.push(field("Findings sent to the subject at", input("findingsSentAt", { value: nowISO, class: "mono" }), "the order requires findings to reach the subject first — RFC 3339 UTC"));
   } else {
     fields.push(field("Subject component", input("subject", { placeholder: "onym:component:…", class: "mono" })));
