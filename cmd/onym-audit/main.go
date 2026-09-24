@@ -425,6 +425,7 @@ func serve(args []string) error {
 		}
 		pc := provider.Default
 		pc.Base = c.BaseURI + "discovery/"
+		fetcher := discovery.NewHTTPFetcher()
 		var mu sync.Mutex
 		refresh := func() {
 			mu.Lock()
@@ -441,8 +442,17 @@ func serve(args []string) error {
 			} else if changed {
 				log.Printf("discovery catalog: new snapshot")
 			}
+			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+			defer cancel()
+			atts := provider.CreditedAttestations(srcs, pc, time.Now())
+			if changed, err := provider.RefreshServices(ctx, filepath.Join(*root, "discovery"), pc, dk, atts, fetcher, time.Now()); err != nil {
+				log.Printf("discovery services catalog: %v", err)
+			} else if changed {
+				log.Printf("discovery services catalog: new snapshot")
+			}
 		}
-		refresh()
+		// In the background: the services catalog fetches from Onym's hosts.
+		go refresh()
 		if h != nil {
 			h.OnChange = refresh
 			s.HubResign = func() { h.ResignAll(); refresh() }

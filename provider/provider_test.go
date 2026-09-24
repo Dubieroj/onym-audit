@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/ed25519"
 	"crypto/sha256"
+	"encoding/json"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -126,5 +127,122 @@ func TestCatalogPassesTheSuite(t *testing.T) {
 	// Renewal before expiry.
 	if ok, _ := Refresh(prov, c, pk, srcs, now.Add(24*24*time.Hour)); !ok {
 		t.Error("no renewal inside the margin")
+	}
+}
+
+// signed writes a document signed with k at dir/p.
+func signed(t *testing.T, dir, p string, doc map[string]any, k ed25519.PrivateKey) []byte {
+	t.Helper()
+	raw, err := audit.SignDoc(doc, k)
+	if err != nil {
+		t.Fatal(err)
+	}
+	os.MkdirAll(filepath.Dir(filepath.Join(dir, p)), 0o755)
+	if err := os.WriteFile(filepath.Join(dir, p), raw, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	return raw
+}
+
+func TestServicesCatalogShowsAttestationsAsStatus(t *testing.T) {
+	const dirBase, relayBase = "https://dir.example.org/", "https://relay.example.org/"
+	root, prov, dirDir, relayDir := t.TempDir(), t.TempDir(), t.TempDir(), t.TempDir()
+	dk, rk, pk := key("onym directory"), key("relay"), key("provider")
+	now := time.Date(2026, 9, 24, 12, 0, 0, 0, time.UTC)
+	c := Config{Base: host + "discovery/", ProviderID: "onym:component:test-discovery", CatalogID: "onym-auditors", Window: 30 * 24 * time.Hour, Renew: 7 * 24 * time.Hour,
+		ServicesCatalogID: "onym-audited-services", Directory: dirBase + "manifest.json", DirectoryKey: site.KeyOf(dk)}
+
+	// Onym's directory lists a notary and a courier; only the notary is attested.
+	relay := signed(t, relayDir, "manifest.json", map[string]any{"version": 1, "componentId": "onym:component:relay", "seat": "notary", "operator": string(site.KeyOf(rk)),
+		"implementationProfiles": []string{"onym:notary-implementation:test"}, "validUntil": "2027-09-24T00:00:00Z"}, rk)
+	signed(t, dirDir, "manifest.json", map[string]any{"catalogs": []map[string]any{{"snapshot": dirBase + "catalogs/svc.json"}}}, dk)
+	signed(t, dirDir, "catalogs/svc.json", map[string]any{"entries": []map[string]any{
+		{"componentId": "onym:component:relay", "seatType": "notary", "operator": string(site.KeyOf(rk)), "manifest": map[string]any{"uri": relayBase + "manifest.json", "digest": sig.Digest(relay)}, "profiles": []string{"onym:notary-implementation:test"}},
+		{"componentId": "onym:component:courier", "seatType": "transport.message", "operator": string(site.KeyOf(rk)), "manifest": map[string]any{"uri": relayBase + "courier.json", "digest": sig.Digest(relay)}},
+	}}, dk)
+
+	auditor(t, root, host, "onym:component:operator-seat", key("operator"))
+	if err := PublishStatic(prov, c, pk, now.AddDate(1, 0, 0)); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Refresh(prov, c, pk, []Source{{Base: host, Dir: root, CommonOwner: true}}, now); err != nil {
+		t.Fatal(err)
+	}
+	fetch := files{host: root, c.Base: prov, dirBase: dirDir, relayBase: relayDir}
+	atts := []Attestation{{ID: "att-review-0000000001", Slug: "alice", Auditor: "Alice <b>", Subject: "onym:component:relay", Result: "findings-noted", Scope: "LLM review", IssuedAt: "2026-09-24T10:00:00Z"}}
+	if ok, err := RefreshServices(context.Background(), prov, c, pk, atts, fetch, now); err != nil || !ok {
+		t.Fatalf("services snapshot: %v %v", ok, err)
+	}
+	var snap snapshot
+	raw, _ := os.ReadFile(filepath.Join(prov, "catalogs", "onym-audited-services.json"))
+	if err := json.Unmarshal(raw, &snap); err != nil || len(snap.Entries) != 1 {
+		t.Fatalf("entries: %v %s", err, raw)
+	}
+	e := snap.Entries[0]
+	if e.ComponentID != "onym:component:relay" || e.Status == nil || e.Status.State != "review" || e.Status.URI != c.Base+"status/relay/" || e.Manifest.Digest != sig.Digest(relay) {
+		t.Errorf("entry %+v status %+v", e, e.Status)
+	}
+	page, _ := os.ReadFile(filepath.Join(prov, "status", "relay", "index.html"))
+	if !strings.Contains(string(page), "verdict/?a=alice&amp;id=att-review-0000000001") || strings.Contains(string(page), "Alice <b>") {
+		t.Errorf("status page:\n%s", page)
+	}
+
+	// Both catalogs pass the provider suite, destinations included.
+	rep := discovery.Run(context.Background(), fetch, c.Base+"manifest.json", now.Add(time.Minute))
+	clean(t, rep)
+	if rep.Result != discovery.ResultClear {
+		t.Errorf("result %s", rep.Result)
+	}
+
+	// A fail warns; a revoked-away attestation drops the entry and its page.
+	atts[0].Result = "fail"
+	if ok, _ := RefreshServices(context.Background(), prov, c, pk, atts, fetch, now.Add(time.Hour)); !ok {
+		t.Fatal("no snapshot after the result changed")
+	}
+	raw, _ = os.ReadFile(filepath.Join(prov, "catalogs", "onym-audited-services.json"))
+	json.Unmarshal(raw, &snap)
+	if snap.Entries[0].Status.State != "warning" || snap.Sequence != 2 {
+		t.Errorf("after a fail: %+v seq %d", snap.Entries[0].Status, snap.Sequence)
+	}
+	if ok, _ := RefreshServices(context.Background(), prov, c, pk, nil, fetch, now.Add(2*time.Hour)); !ok {
+		t.Fatal("no snapshot after the attestation went away")
+	}
+	if _, err := os.Stat(filepath.Join(prov, "status", "relay")); err == nil {
+		t.Error("stale status page kept")
+	}
+
+	// A directory not signed by the pinned key is refused, and nothing is written.
+	signed(t, dirDir, "manifest.json", map[string]any{"catalogs": []any{}}, key("impostor"))
+	if _, err := RefreshServices(context.Background(), prov, c, pk, atts, fetch, now.Add(3*time.Hour)); err == nil {
+		t.Error("an unsigned directory was accepted")
+	}
+}
+
+// The published seat's own attestation is read back from the repository's
+// tree: active, verified against the status list, attributed to the seat.
+func TestCreditedAttestationsReadsTheSeat(t *testing.T) {
+	raw, err := os.ReadFile("../public/status.json")
+	if err != nil {
+		t.Skip("no published seat")
+	}
+	var st struct {
+		IssuedAt string `json:"issuedAt"`
+	}
+	json.Unmarshal(raw, &st)
+	now, _ := sig.ParseTime(st.IssuedAt)
+	atts := CreditedAttestations([]Source{{Base: "https://foldy.io/audit/", Dir: "../public", CommonOwner: true}}, Default, now.Add(time.Minute))
+	found := false
+	for _, a := range atts {
+		if a.ID == "onym-discovery-2026-09-24" {
+			found = a.Slug == "" && a.Subject == "onym:component:onym-discovery" && a.Result == "fail"
+		}
+	}
+	if !found {
+		t.Errorf("attestations %+v", atts)
+	}
+	c := Default
+	c.Credited = nil
+	if len(CreditedAttestations([]Source{{Base: "https://foldy.io/audit/", Dir: "../public", CommonOwner: true}}, c, now.Add(time.Minute))) != 0 {
+		t.Error("an uncredited auditor's attestations were read")
 	}
 }

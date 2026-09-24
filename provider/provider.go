@@ -1,8 +1,9 @@
 // Package provider publishes a Discovery provider (Discovery-Static-Ed25519)
-// for audit seats: the catalog "onym-auditors" lists this site's own seat
-// and every auditor hosted on its hub whose manifest verifies under the
-// audit profile. Onym's default catalog lists four seat types and no audit
-// seat; the Discovery contract keeps direct import open, so any client can
+// with two catalogs. "onym-auditors" lists this site's own seat and every
+// auditor hosted on its hub whose manifest verifies under the audit profile.
+// "onym-audited-services" (services.go) lists the Onym services that a
+// credited auditor has attested, with the attestations surfaced as entry
+// status. The Discovery contract keeps direct import open, so any client can
 // add this provider by its manifest URL.
 //
 // The provider manifest, inclusion policy and privacy profile are static
@@ -31,30 +32,56 @@ const (
 	SeatType  = "audit"
 )
 
-// Config names the provider and its one catalog.
+// Config names the provider and its catalogs.
 type Config struct {
 	Base       string        // https://foldy.io/audit/discovery/
 	ProviderID string        // onym:component:onym-audit-discovery
 	CatalogID  string        // onym-auditors
 	Window     time.Duration // snapshot lifetime
 	Renew      time.Duration // renew when less than this remains
+
+	// The services catalog; empty ServicesCatalogID publishes none.
+	ServicesCatalogID string   // onym-audited-services
+	Directory         string   // Onym's default provider manifest, read for where services live
+	DirectoryKey      sig.Key  // its operator key, pinned
+	Credited          []string // auditors whose attestations set a service's status
 }
 
 // Default is this site's provider.
 var Default = Config{
 	Base: "https://foldy.io/audit/discovery/", ProviderID: "onym:component:onym-audit-discovery", CatalogID: "onym-auditors",
 	Window: 30 * 24 * time.Hour, Renew: 7 * 24 * time.Hour,
+	ServicesCatalogID: "onym-audited-services",
+	Directory:         "https://discovery.onym.app/manifest.json",
+	DirectoryKey:      "onym:key:42b0da001104dd03052c7feddab9520c920c9e40d11b245c46c27cf6be853f24",
+	Credited:          []string{"onym:component:llm-audit", "onym:component:onym-audit"},
 }
-
-func (c Config) snapshotURI() string { return c.Base + "catalogs/" + c.CatalogID + ".json" }
 
 // PublishStatic writes the provider manifest (and its .sig), the catalog's
 // inclusion policy and the privacy profile into dir, the directory served
 // at c.Base.
 func PublishStatic(dir string, c Config, key ed25519.PrivateKey, validUntil time.Time) error {
-	policy := []byte(fmt.Sprintf(policyText, c.CatalogID, c.ProviderID, c.Base, int(c.Renew.Hours()/24), int(c.Window.Hours()/24)))
+	days := func(d time.Duration) int { return int(d.Hours() / 24) }
+	policy := []byte(fmt.Sprintf(policyText, c.CatalogID, c.ProviderID, c.Base, days(c.Renew), days(c.Window)))
 	privacy := []byte(privacyText)
-	for p, b := range map[string][]byte{"policies/" + c.CatalogID + ".md": policy, "privacy.md": privacy} {
+	docs := map[string][]byte{"policies/" + c.CatalogID + ".md": policy, "privacy.md": privacy}
+	descriptor := func(id string, seats []string, policy []byte) map[string]any {
+		return map[string]any{
+			"catalogId": id, "audience": "public", "seatTypes": seats,
+			"policy": sig.Digest(policy), "policyUri": c.Base + "policies/" + id + ".md", "snapshot": c.Base + "catalogs/" + id + ".json",
+		}
+	}
+	catalogs := []map[string]any{descriptor(c.CatalogID, []string{SeatType}, policy)}
+	if c.ServicesCatalogID != "" {
+		credited := ""
+		for _, id := range c.Credited {
+			credited += "- `" + id + "`\n"
+		}
+		sp := []byte(fmt.Sprintf(servicesPolicyText, c.ServicesCatalogID, c.ProviderID, c.Base, c.Directory, c.DirectoryKey, credited, days(c.Renew), days(c.Window)))
+		docs["policies/"+c.ServicesCatalogID+".md"] = sp
+		catalogs = append(catalogs, descriptor(c.ServicesCatalogID, ServiceSeats, sp))
+	}
+	for p, b := range docs {
 		if err := site.WriteAtomic(filepath.Join(dir, filepath.FromSlash(p)), b); err != nil {
 			return err
 		}
@@ -62,11 +89,7 @@ func PublishStatic(dir string, c Config, key ed25519.PrivateKey, validUntil time
 	m := map[string]any{
 		"version": 1, "seat": "discovery", "implementationProfileId": ProfileID, "providerId": c.ProviderID,
 		"operator": string(site.KeyOf(key)), "capabilities": []string{"signed-snapshot-v1", "local-filtering-v1"},
-		"catalogs": []map[string]any{{
-			"catalogId": c.CatalogID, "audience": "public", "seatTypes": []string{SeatType},
-			"policy": sig.Digest(policy), "policyUri": c.Base + "policies/" + c.CatalogID + ".md", "snapshot": c.snapshotURI(),
-		}},
-		"offers": []any{}, "privacyProfile": sig.Digest(privacy), "privacyProfileUri": c.Base + "privacy.md",
+		"catalogs": catalogs, "offers": []any{}, "privacyProfile": sig.Digest(privacy), "privacyProfileUri": c.Base + "privacy.md",
 		"validUntil": sig.FormatTime(validUntil),
 	}
 	raw, err := audit.SignDoc(m, key)
@@ -91,8 +114,15 @@ type entry struct {
 	ListedAt     string       `json:"listedAt"`
 	Relationship string       `json:"relationship"`
 	Placement    string       `json:"placement"`
-	Profiles     []string     `json:"profiles"`
+	Profiles     []string     `json:"profiles,omitempty"`
 	Evidence     []any        `json:"evidence"`
+	Status       *entryStatus `json:"status,omitempty"`
+}
+
+// entryStatus is the §4.2 disclosed warning or review on an entry.
+type entryStatus struct {
+	State string `json:"state"`
+	URI   string `json:"uri"`
 }
 
 type snapshot struct {
@@ -139,14 +169,21 @@ func entries(sources []Source, now time.Time, listed map[string]string) []entry 
 	return out
 }
 
-// Refresh writes a new snapshot when the listed auditors changed or the
-// current one nears expiry; it reports whether it did.
+// Refresh writes a new auditors snapshot when the listed auditors changed or
+// the current one nears expiry; it reports whether it did.
 func Refresh(dir string, c Config, key ed25519.PrivateKey, sources []Source, now time.Time) (bool, error) {
-	policy, err := os.ReadFile(filepath.Join(dir, "policies", c.CatalogID+".md"))
+	return writeCatalog(dir, c, c.CatalogID, key, func(listed map[string]string) []entry { return entries(sources, now, listed) }, now)
+}
+
+// writeCatalog builds a catalog's entries (keeping each component's first
+// listing time) and writes a new snapshot when they changed, the policy
+// changed, or the current snapshot nears expiry.
+func writeCatalog(dir string, c Config, catalogID string, key ed25519.PrivateKey, build func(listed map[string]string) []entry, now time.Time) (bool, error) {
+	policy, err := os.ReadFile(filepath.Join(dir, "policies", catalogID+".md"))
 	if err != nil {
 		return false, errors.New("publish the provider's static documents first")
 	}
-	latestPath := filepath.Join(dir, "catalogs", c.CatalogID+".json")
+	latestPath := filepath.Join(dir, "catalogs", catalogID+".json")
 	var prev snapshot
 	prevRaw, err := os.ReadFile(latestPath)
 	havePrev := err == nil && json.Unmarshal(prevRaw, &prev) == nil
@@ -156,7 +193,7 @@ func Refresh(dir string, c Config, key ed25519.PrivateKey, sources []Source, now
 			listed[e.ComponentID] = e.ListedAt
 		}
 	}
-	es := entries(sources, now, listed)
+	es := build(listed)
 	if havePrev {
 		a, _ := json.Marshal(es)
 		b, _ := json.Marshal(prev.Entries)
@@ -166,7 +203,7 @@ func Refresh(dir string, c Config, key ed25519.PrivateKey, sources []Source, now
 		}
 	}
 	s := snapshot{
-		Version: 1, ImplementationProfileID: ProfileID, ProviderID: c.ProviderID, CatalogID: c.CatalogID, Sequence: 1,
+		Version: 1, ImplementationProfileID: ProfileID, ProviderID: c.ProviderID, CatalogID: catalogID, Sequence: 1,
 		PolicyDigest: sig.Digest(policy), GeneratedAt: sig.FormatTime(now), ExpiresAt: sig.FormatTime(now.Add(c.Window)), Entries: es,
 	}
 	if havePrev {
@@ -178,7 +215,7 @@ func Refresh(dir string, c Config, key ed25519.PrivateKey, sources []Source, now
 		return false, err
 	}
 	// The sibling first: a reader who sees sequence N can always walk back.
-	if err := site.WriteAtomic(filepath.Join(dir, "catalogs", fmt.Sprintf("%s-%d.json", c.CatalogID, s.Sequence)), raw); err != nil {
+	if err := site.WriteAtomic(filepath.Join(dir, "catalogs", fmt.Sprintf("%s-%d.json", catalogID, s.Sequence)), raw); err != nil {
 		return false, err
 	}
 	return true, site.WriteSigned(latestPath, raw)
@@ -231,11 +268,73 @@ days, and clients treat an expired one as stale. Superseded snapshots are
 retained as <catalogId>-<sequence>.json.
 `
 
+const servicesPolicyText = `# Inclusion policy: the ` + "`%s`" + ` catalog
+
+Published by the Discovery provider ` + "`%s`" + ` at ` + "`%s`" + `.
+Every snapshot of this catalog pins these exact bytes by digest.
+
+This catalog exists to show audits where Onym's apps already look: on the
+row of a service. Inclusion is not a recommendation of the service and not
+a certification; it says only that an auditor named below has published an
+attestation about it.
+
+## What is listed
+
+A service is listed while both hold:
+
+1. Onym's own default Discovery catalog lists it. That catalog is read from
+   ` + "`%s`" + `, verified under the operator key
+   ` + "`%s`" + `, and used only as a list of where each
+   service's manifest lives.
+2. At least one active, unexpired attestation about its component id has
+   been published by one of these auditors, verified against the auditor's
+   signed status list and operator key:
+
+%s
+Each entry pins the digest of the service's manifest bytes as this provider
+fetched them, after checking what a client checks: the component id, the
+operator key Onym's catalog names, the seat, the embedded signature, and
+expiry. Entries are listed with the same seat type Onym's catalog gives them.
+
+## Status
+
+- ` + "`warning`" + `: an active attestation's result is ` + "`fail`" + `.
+- ` + "`review`" + `: an active attestation's result is ` + "`findings-noted`" + ` or
+  ` + "`inconclusive`" + `, and none is a fail.
+- no status: every active attestation is ` + "`clear`" + `.
+
+The status ` + "`uri`" + ` opens a page listing those attestations; each links to a
+page that fetches the signed documents and verifies them in the reader's
+browser. Which auditors to credit stays the reader's decision (Audit.md §7).
+
+## Relationships
+
+Every entry's relationship is ` + "`other-disclosed`" + `: this provider takes no
+payment from and has no commercial tie to any listed service, but its
+operator takes part in Sobor 2026, a contest organized by the maintainer of
+Onym's reference services. The credited auditors state their own
+relationships in each attestation.
+
+## Ranking, removal and freshness
+
+No ranking: entries are ordered by component id, placement
+` + "`policy-ranked`" + `. A service drops out when its attestations are revoked,
+superseded or expire, when Onym's catalog stops listing it, or when its
+manifest stops verifying. The provider re-reads everything every six hours
+and when an auditor on its hub publishes; a new snapshot follows any change,
+and otherwise once less than %d days of the current one remain; each is
+valid for %d days.
+`
+
 const privacyText = `# Privacy profile: Onym audit Discovery provider
 
-The provider manifest, the catalog snapshots, the inclusion policy and this
-document are static files served without cookies, access logs, or
-third-party requests. Fetching them tells this provider nothing about who
-fetched them. Clients choose which listed auditors to credit locally; the
-provider never learns it.
+The provider manifest, the catalog snapshots, the inclusion policies, the
+status pages and this document are static files served without cookies,
+access logs, or third-party requests. Fetching them tells this provider
+nothing about who fetched them. Clients choose which listed auditors to
+credit locally; the provider never learns it.
+
+To build its services catalog, the provider's own server fetches Onym's
+default Discovery catalog and the listed services' manifests. Those
+requests carry no information about any client.
 `
