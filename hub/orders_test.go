@@ -225,6 +225,9 @@ func TestOrdersFromAnyone(t *testing.T) {
 	if served("attestations/alice-att-0000000011.json") {
 		t.Error("released before the embargo ended")
 	}
+	// A full tree does not keep the fail hidden past its embargo.
+	os.MkdirAll(filepath.Join(h.tenantDir("alice"), "notes"), 0o755)
+	os.WriteFile(filepath.Join(h.tenantDir("alice"), "notes", "filler.md"), make([]byte, MaxTenantBytes), 0o644)
 	h.Now = func() time.Time { return time.Date(2026, 12, 24, 12, 0, 0, 0, time.UTC) }
 	h.ResignAll()
 	if !served("attestations/alice-att-0000000011.json") || !served("orders/"+id2+".json") {

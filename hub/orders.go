@@ -403,7 +403,9 @@ func (h *Hub) release(slug string) {
 		for f, s := range hf.Files {
 			files[f] = []byte(s)
 		}
-		if err := h.write(slug, files); err != nil {
+		// Outside the quota: a full tree must not keep a fail hidden past its
+		// embargo (the files were accepted when the attestation was published).
+		if err := h.writeFiles(slug, files, false); err != nil {
 			log.Printf("hub: %s: held %s not released: %v", slug, filepath.Base(p), err)
 			continue
 		}

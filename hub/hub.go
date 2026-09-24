@@ -323,6 +323,11 @@ func (h *Hub) usage(slug string) int64 {
 }
 
 func (h *Hub) write(slug string, files map[string][]byte) error {
+	return h.writeFiles(slug, files, true)
+}
+
+// writeFiles writes a tenant's files, within its quota when quota is set.
+func (h *Hub) writeFiles(slug string, files map[string][]byte, quota bool) error {
 	var add int64
 	for p, b := range files {
 		add += int64(len(b))
@@ -330,7 +335,7 @@ func (h *Hub) write(slug string, files map[string][]byte) error {
 			add -= fi.Size()
 		}
 	}
-	if h.usage(slug)+add > MaxTenantBytes {
+	if quota && h.usage(slug)+add > MaxTenantBytes {
 		return errors.New("this auditor's storage on the hub is full (20 MiB); self-host the tree to grow")
 	}
 	for p, b := range files {

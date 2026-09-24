@@ -23,14 +23,17 @@ test -f keys/status.key || { echo "keys/status.key missing" >&2; exit 1; }
 test -f keys/discovery.key || { echo "keys/discovery.key missing (onym-audit keygen -out keys/discovery.key)" >&2; exit 1; }
 test -f public/manifest.json || { echo "run onym-audit publish first" >&2; exit 1; }
 
-# This module's packages only, and never code that came from elsewhere:
-# review checkouts and pulled orders live in reviews/ and inbox/.
-pkgs=$(go list ./...)
-if echo "$pkgs" | grep -q -e '/reviews/' -e '/inbox/'; then
-  echo "refusing to test: reviews/ or inbox/ is part of the Go module (run the console once to fence them)" >&2
-  exit 1
-fi
-go test $pkgs
+# Only committed code is built and tested: review checkouts, pulled orders
+# and engine output hold other people's code, and `go test` runs whatever
+# it compiles. Every package must have its Go files tracked by git.
+for dir in $(go list -f '{{.Dir}}' ./...); do
+  rel=${dir#"$PWD"/}
+  if [ -z "$(git ls-files -- "$rel/*.go")" ] || [ -n "$(git ls-files --others --exclude-standard -- "$rel/*.go"; git ls-files --others --ignored --exclude-standard -- "$rel/*.go")" ]; then
+    echo "refusing to test: $rel holds Go files that are not committed (review checkouts belong in reviews/, fenced by its go.mod)" >&2
+    exit 1
+  fi
+done
+go test ./...
 node tools/verify-js-test.mjs >/dev/null
 node tools/onym-id-test.mjs >/dev/null
 node tools/stellar-test.mjs >/dev/null
