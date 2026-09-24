@@ -1,7 +1,7 @@
 # Onym audit hub — terms
 
 Operated by Dimitrii (dubieroj@gmail.com) at `https://foldy.io/audit/hub/`.
-Version 3, 24 September 2026 (adds requests for proposals).
+Version 4, 24 September 2026 (adds requests, vaults, Stellar anchors, the Discovery catalog).
 
 ## What the hub is
 
@@ -86,6 +86,15 @@ by the network's free Friendbot. The hub takes no part: anchors are
 written to and read from public Stellar nodes. The library asks a public
 Stellar node for each auditor's anchor, which tells that node which
 auditors are being looked at — never which attestation.
+
+## Discovery
+
+Every auditor on this hub whose manifest verifies is listed in the
+`onym-auditors` Discovery catalog of this site's provider
+(`https://foldy.io/audit/discovery/manifest.json`), with the relationship
+`other-disclosed` (hosting only). The catalog's policy says what inclusion
+means — a verified manifest, nothing more — and an auditor leaves it when
+its manifest stops verifying or it leaves the hub.
 
 ## Shared documents
 

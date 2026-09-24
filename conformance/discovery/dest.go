@@ -18,6 +18,7 @@ var canonicalSeats = map[string]string{
 	"moderation":     "Discovery-Static-Ed25519 §3 (the moderation seat's canonical.rs is the precedent)",
 	"notary":         "UI-Notary-BNB.md §8.1 rule 2",
 	"storage.backup": "UI-Backup-Object-HTTP.md §6.3",
+	"audit":          "Audit-Static-Ed25519 §3 (the audit seat's implementation profile)",
 }
 
 var destScoped = []string{"dest.retrievable", "dest.digest", "dest.fields", "dest.signature"}

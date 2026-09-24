@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -33,6 +34,7 @@ import (
 	"onym-audit/console"
 	"onym-audit/hub"
 	"onym-audit/onymid"
+	"onym-audit/provider"
 	"onym-audit/server"
 	"onym-audit/sig"
 	"onym-audit/site"
@@ -57,6 +59,7 @@ Online (holds only the delegated status key):
   serve       -root DIR -config FILE -status-key FILE -inbox DIR [-hub-root DIR] [-listen ADDR]
   hub-disable -hub-root DIR -slug NAME -reason TEXT      take a hosted auditor off the hub
   anchor      [-key FILE] [-status URI|FILE] [-check]   anchor the register's digest in the auditor's Stellar testnet account
+  discovery-publish -key FILE [-root DIR] [-config FILE] sign the onym-auditors Discovery provider's manifest, policy and privacy profile
 
 Anyone:
   verify      -manifest URI|FILE -attestation URI|FILE -target URI [-status URI|FILE] [-credit onym:key:..]
@@ -89,7 +92,7 @@ func main() {
 		"countersign": countersign, "offer": offer, "status": status, "serve": serve, "verify": verify,
 		"respond": respond, "sign-order": signOrder, "fixtures": fixtures,
 		"conformance-discovery": conformanceDiscovery, "draft-conformance": draftConformance,
-		"agent-review": agentReview, "draft-review": draftReview, "console": runConsole, "hub-disable": hubDisable, "anchor": anchorCmd,
+		"agent-review": agentReview, "draft-review": draftReview, "console": runConsole, "hub-disable": hubDisable, "anchor": anchorCmd, "discovery-publish": discoveryPublish,
 	}
 	run, ok := cmds[os.Args[1]]
 	if !ok {
@@ -391,6 +394,7 @@ func serve(args []string) error {
 	inbox := fs.String("inbox", "", "order inbox (not published)")
 	listen := fs.String("listen", "127.0.0.1:8787", "listen address (behind a TLS reverse proxy)")
 	hubRoot := fs.String("hub-root", "", "host other auditors here (studio API and a/<slug>/ trees)")
+	discoveryKey := fs.String("discovery-key", "", "provider key: publish the onym-auditors Discovery catalog under discovery/")
 	fs.Parse(args)
 	if err := need(fs, "root", "config", "status-key", "inbox"); err != nil {
 		return err
@@ -406,13 +410,45 @@ func serve(args []string) error {
 	if err != nil {
 		return err
 	}
+	var h *hub.Hub
 	if *hubRoot != "" {
-		h, err := hub.New(*hubRoot, *root, c.BaseURI)
-		if err != nil {
+		if h, err = hub.New(*hubRoot, *root, c.BaseURI); err != nil {
 			return err
 		}
 		h.ResignAll()
 		s.Hub, s.HubResign = h.Handler(), h.ResignAll
+	}
+	if *discoveryKey != "" {
+		dk, err := site.LoadKey(*discoveryKey)
+		if err != nil {
+			return err
+		}
+		pc := provider.Default
+		pc.Base = c.BaseURI + "discovery/"
+		var mu sync.Mutex
+		refresh := func() {
+			mu.Lock()
+			defer mu.Unlock()
+			srcs := []provider.Source{{Base: c.BaseURI, Dir: *root, CommonOwner: true}}
+			if h != nil {
+				bases, dirs := h.Trees()
+				for i := range bases {
+					srcs = append(srcs, provider.Source{Base: bases[i], Dir: dirs[i]})
+				}
+			}
+			if changed, err := provider.Refresh(filepath.Join(*root, "discovery"), pc, dk, srcs, time.Now()); err != nil {
+				log.Printf("discovery catalog: %v", err)
+			} else if changed {
+				log.Printf("discovery catalog: new snapshot")
+			}
+		}
+		refresh()
+		if h != nil {
+			h.OnChange = refresh
+			s.HubResign = func() { h.ResignAll(); refresh() }
+		} else {
+			s.HubResign = refresh
+		}
 	}
 	stop := make(chan struct{})
 	go s.Loop(audit.ResignInterval, stop)
@@ -1298,5 +1334,35 @@ func anchorCmd(args []string) error {
 		return err
 	}
 	fmt.Printf("account %s\nanchor %s %s\nhttps://stellar.expert/explorer/testnet/account/%s\n", account, state, at, account)
+	return nil
+}
+
+// discoveryPublish signs the Discovery provider's static documents — its
+// manifest, the onym-auditors inclusion policy and the privacy profile —
+// into <root>/discovery; the server signs the snapshots with the same key.
+func discoveryPublish(args []string) error {
+	fs := flag.NewFlagSet("discovery-publish", flag.ExitOnError)
+	keyPath := fs.String("key", "keys/discovery.key", "provider key")
+	root := fs.String("root", "public", "site root")
+	config := fs.String("config", "config.json", "auditor config (for the site's base URI)")
+	fs.Parse(args)
+	b, err := os.ReadFile(*config)
+	if err != nil {
+		return err
+	}
+	var c site.Config
+	if err := json.Unmarshal(b, &c); err != nil {
+		return err
+	}
+	k, err := site.LoadKey(*keyPath)
+	if err != nil {
+		return err
+	}
+	pc := provider.Default
+	pc.Base = c.BaseURI + "discovery/"
+	if err := provider.PublishStatic(filepath.Join(*root, "discovery"), pc, k, time.Now().AddDate(1, 0, 0)); err != nil {
+		return err
+	}
+	fmt.Printf("published %smanifest.json (operator %s)\n", pc.Base, site.KeyOf(k))
 	return nil
 }

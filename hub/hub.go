@@ -58,6 +58,7 @@ type Hub struct {
 	PublicRoot string // the operator's public tree: shared profile, scale, docs
 	PublicBase string // https://foldy.io/audit/
 	Now        func() time.Time
+	OnChange   func() // called after an auditor's manifest is published
 
 	mu      sync.Mutex
 	tenants map[string]*sync.Mutex
@@ -466,6 +467,9 @@ func (h *Hub) register(w http.ResponseWriter, r *http.Request) {
 	if err := h.resign(in.Slug); err != nil {
 		fail(w, 500, fmt.Errorf("registered, but the status list was not signed: %v", err))
 		return
+	}
+	if h.OnChange != nil {
+		go h.OnChange()
 	}
 	reply(w, 201, map[string]string{"page": h.base(in.Slug), "manifest": h.base(in.Slug) + "manifest.json", "digest": sig.Digest(mraw)})
 }
@@ -932,6 +936,20 @@ func (h *Hub) static(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	http.ServeFile(w, r, full)
+}
+
+// Trees lists the hosted auditors that are not disabled: the base their
+// documents are named under and the directory they are served from.
+func (h *Hub) Trees() (bases, dirs []string) {
+	entries, _ := os.ReadDir(filepath.Join(h.Root, "tenants"))
+	for _, e := range entries {
+		slug := e.Name()
+		if !slugRE.MatchString(slug) || h.disabled(slug) {
+			continue
+		}
+		bases, dirs = append(bases, h.base(slug)), append(dirs, h.tenantDir(slug))
+	}
+	return bases, dirs
 }
 
 // ResignAll releases held attestations whose embargo has ended and

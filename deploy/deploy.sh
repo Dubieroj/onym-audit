@@ -20,6 +20,7 @@ SITE_CONF="${SITE_CONF:-/etc/nginx/sites-enabled/foldy.io}"
 
 test -f config.json || { echo "config.json missing" >&2; exit 1; }
 test -f keys/status.key || { echo "keys/status.key missing" >&2; exit 1; }
+test -f keys/discovery.key || { echo "keys/discovery.key missing (onym-audit keygen -out keys/discovery.key)" >&2; exit 1; }
 test -f public/manifest.json || { echo "run onym-audit publish first" >&2; exit 1; }
 
 go test ./...
@@ -35,6 +36,7 @@ scp deploy/onym-audit.service "$DEPLOY_HOST:/etc/systemd/system/onym-audit.servi
 scp deploy/onym-audit.nginx.conf "$DEPLOY_HOST:/etc/nginx/snippets/onym-audit.conf"
 scp config.json "$DEPLOY_HOST:/tmp/onym-audit.config.json"
 ssh "$DEPLOY_HOST" 'test -f /etc/onym-audit/status.key' || scp keys/status.key "$DEPLOY_HOST:/tmp/onym-audit.status.key"
+ssh "$DEPLOY_HOST" 'test -f /etc/onym-audit/discovery.key' || scp keys/discovery.key "$DEPLOY_HOST:/tmp/onym-audit.discovery.key"
 
 ssh "$DEPLOY_HOST" 'bash -s' <<'REMOTE'
 set -euo pipefail
@@ -48,11 +50,15 @@ if [ -f /tmp/onym-audit.status.key ]; then
     install -m 440 -o root -g onym-audit /tmp/onym-audit.status.key /etc/onym-audit/status.key
     rm -f /tmp/onym-audit.status.key
 fi
+if [ -f /tmp/onym-audit.discovery.key ]; then
+    install -m 440 -o root -g onym-audit /tmp/onym-audit.discovery.key /etc/onym-audit/discovery.key
+    rm -f /tmp/onym-audit.discovery.key
+fi
 mv -f /usr/local/bin/onym-audit.upload /usr/local/bin/onym-audit
 chmod 755 /usr/local/bin/onym-audit
 REMOTE
 
-rsync -rlt --exclude status.json --exclude status.json.sig --exclude responses/ \
+rsync -rlt --exclude status.json --exclude status.json.sig --exclude responses/ --exclude discovery/catalogs/ \
     public/ "$DEPLOY_HOST:/var/lib/onym-audit/site/"
 
 ssh "$DEPLOY_HOST" SITE_CONF="$SITE_CONF" 'bash -s' <<'REMOTE'

@@ -162,7 +162,19 @@ is the SHA-256 of the register's canonical form (`stellar/stellar.go`,
 `Digest`). Hub auditors anchor from the app after every issue and
 revocation, and the Library tab shows each register's anchor state.
 
-## 11. Where each requirement is met
+## 11. Find the auditors through Discovery
+
+Onym clients find components through Discovery catalogs. This site runs a
+Discovery provider for audit seats — import it by URL:
+<https://foldy.io/audit/discovery/manifest.json> (catalog `onym-auditors`,
+policy at `discovery/policies/onym-auditors.md`). Check it with the same
+suite that checks Onym's own provider:
+
+```
+bin/onym-audit conformance-discovery -manifest https://foldy.io/audit/discovery/manifest.json
+```
+
+## 12. Where each requirement is met
 
 The profile's §12 maps all nine acceptance criteria of Audit.md §16 to the
 sections and fixtures that meet them; §11 lists what is not done.

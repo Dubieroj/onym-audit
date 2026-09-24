@@ -6,7 +6,7 @@ Wants=network-online.target
 [Service]
 User=onym-audit
 Group=onym-audit
-ExecStart=/usr/local/bin/onym-audit serve -root /var/lib/onym-audit/site -config /etc/onym-audit/config.json -status-key /etc/onym-audit/status.key -inbox /var/lib/onym-audit/inbox -hub-root /var/lib/onym-audit/hub -listen 127.0.0.1:8787
+ExecStart=/usr/local/bin/onym-audit serve -root /var/lib/onym-audit/site -config /etc/onym-audit/config.json -status-key /etc/onym-audit/status.key -inbox /var/lib/onym-audit/inbox -hub-root /var/lib/onym-audit/hub -discovery-key /etc/onym-audit/discovery.key -listen 127.0.0.1:8787
 ExecReload=/bin/kill -HUP $MAINPID
 Restart=always
 RestartSec=5
