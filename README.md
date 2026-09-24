@@ -15,7 +15,7 @@ conformance suite, and a live instance.
 Before this, the seat had a contract and no code, and the Onym iOS app
 showed **"Audit report: Pending — no audits yet"**.
 
-**For the judges:** <https://foldy.io/audit/judge/> — the five-minute path
+**API:** <https://foldy.io/audit/api/> — every address, request and check
 (also in Russian and Montenegrin), and [`EXERCISE.md`](EXERCISE.md).
 
 ## What is here

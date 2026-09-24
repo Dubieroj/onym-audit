@@ -32,12 +32,14 @@
   <!-- Sign in with an auditor phrase -->
   <section id="v-login" class="view" hidden>
     <p class="kicker">{{s_login_kicker}}</p>
-    <h1>{{s_login_h}}</h1>
-    <p class="lede">{{s_login_lede}}</p>
-    <p class="warn-box" role="note">{{s_login_warn}}</p>
+    <h1><span class="for-auditor">{{s_login_h}}</span><span class="for-customer">{{s_login_h_c}}</span></h1>
+    <p class="lede for-auditor">{{s_login_lede}}</p>
+    <p class="lede for-customer">{{s_login_lede_c}}</p>
+    <p class="warn-box for-auditor" role="note">{{s_login_warn}}</p>
+    <p class="warn-box for-customer" role="note">{{s_login_warn_c}}</p>
     <div class="choice-grid login-choices">
-      <button type="button" class="choice" id="login-new"><b>{{s_login_new}}</b><span>{{s_login_new_h}}</span></button>
-      <button type="button" class="choice" id="login-have"><b>{{s_login_have}}</b><span>{{s_login_have_h}}</span></button>
+      <button type="button" class="choice" id="login-new"><b class="for-auditor">{{s_login_new}}</b><b class="for-customer">{{s_login_new_c}}</b><span>{{s_login_new_h}}</span></button>
+      <button type="button" class="choice" id="login-have"><b class="for-auditor">{{s_login_have}}</b><b class="for-customer">{{s_login_have_c}}</b><span class="for-auditor">{{s_login_have_h}}</span><span class="for-customer">{{s_login_have_h_c}}</span></button>
     </div>
     <form id="login-form" class="order-form solo" hidden novalidate>
       <label>{{s_login_phrase}}<textarea id="login-phrase" rows="3" class="mono" autocomplete="off" autocapitalize="off" spellcheck="false"></textarea></label>
@@ -45,6 +47,7 @@
       <button class="btn btn-ink" type="submit" id="login-go">{{s_login_go}}</button>
     </form>
     <p class="small muted">{{s_login_note}}</p>
+    <p class="for-customer">{{s_login_oneoff}} <a href="{{home}}order/">{{s_login_oneoff_link}}</a></p>
     <h2 class="sub-h">{{s_auditors_h}}</h2>
     <ul id="auditor-list" class="docs"></ul>
   </section>
@@ -88,10 +91,10 @@
       <fieldset>
         <legend>{{s_ob_policies}}</legend>
         <p class="hint">{{s_ob_policies_h}}</p>
-        <details><summary>{{s_ob_p_indep}}</summary><textarea id="ob-p-independence" rows="10"></textarea></details>
-        <details><summary>{{s_ob_p_unsol}}</summary><textarea id="ob-p-unsolicited" rows="10"></textarea></details>
-        <details><summary>{{s_ob_p_liab}}</summary><textarea id="ob-p-liability" rows="10"></textarea></details>
-        <details><summary>{{s_ob_p_priv}}</summary><textarea id="ob-p-privacy" rows="8"></textarea></details>
+        <details><summary>{{s_ob_p_indep}}</summary><textarea id="ob-p-independence" aria-label="{{s_ob_p_indep}}" rows="10"></textarea></details>
+        <details><summary>{{s_ob_p_unsol}}</summary><textarea id="ob-p-unsolicited" aria-label="{{s_ob_p_unsol}}" rows="10"></textarea></details>
+        <details><summary>{{s_ob_p_liab}}</summary><textarea id="ob-p-liability" aria-label="{{s_ob_p_liab}}" rows="10"></textarea></details>
+        <details><summary>{{s_ob_p_priv}}</summary><textarea id="ob-p-privacy" aria-label="{{s_ob_p_priv}}" rows="8"></textarea></details>
       </fieldset>
       <label class="check"><input id="ob-terms" type="checkbox" required> <span>{{s_ob_terms}}</span></label>
       <p id="ob-error" class="form-error" role="alert" hidden></p>
@@ -216,7 +219,7 @@
       <div id="r-kinds" class="row-inline"></div>
       <div data-rkind="source build">
         <label>{{s_c_repo}}<input id="r-repo" type="url" placeholder="https://github.com/org/repo" autocomplete="off" spellcheck="false" class="mono"></label>
-        <label>{{s_c_commit}}<input id="r-commit" placeholder="40 hex" autocomplete="off" spellcheck="false" class="mono"></label>
+        <label>{{s_c_commit}}<input id="r-commit" placeholder="{{ph_commit}}" autocomplete="off" spellcheck="false" class="mono"></label>
       </div>
       <div data-rkind="build"><label>{{s_c_file}}<input id="r-file" type="url" placeholder="https://…/app.apk" autocomplete="off" spellcheck="false" class="mono"></label></div>
       <div data-rkind="deployment discovery"><label>{{s_c_manifest}}<input id="r-manifest" type="url" placeholder="https://…/manifest.json" autocomplete="off" spellcheck="false" class="mono"></label></div>
@@ -241,7 +244,7 @@
       <div id="c-kinds" class="row-inline"></div>
       <div data-ckind="source build">
         <label>{{s_c_repo}}<input id="c-repo" type="url" placeholder="https://github.com/org/repo" autocomplete="off" spellcheck="false" class="mono"></label>
-        <label>{{s_c_commit}}<input id="c-commit" placeholder="40 hex" autocomplete="off" spellcheck="false" class="mono"></label>
+        <label>{{s_c_commit}}<input id="c-commit" placeholder="{{ph_commit}}" autocomplete="off" spellcheck="false" class="mono"></label>
       </div>
       <div data-ckind="build"><label>{{s_c_file}}<input id="c-file" type="url" placeholder="https://…/app.apk" autocomplete="off" spellcheck="false" class="mono"></label></div>
       <div data-ckind="deployment discovery"><label>{{s_c_manifest}}<input id="c-manifest" type="url" placeholder="https://…/manifest.json" autocomplete="off" spellcheck="false" class="mono"></label></div>

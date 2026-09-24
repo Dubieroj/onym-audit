@@ -3,21 +3,21 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Onym Auditor · onym audit</title>
+<title>onym audit · an auditor on the Onym network</title>
 <meta name="description" content="An independent audit seat on the Onym network: signed, expiring, revocable opinions about exact bytes — each naming who examined what, how, and at whose expense.">
 <meta name="color-scheme" content="light dark">
 <link rel="alternate" hreflang="en" href="https://foldy.io/audit/">
 <link rel="alternate" hreflang="ru" href="https://foldy.io/audit/ru/">
 <link rel="alternate" hreflang="sr-Latn-ME" href="https://foldy.io/audit/cnr/">
 <link rel="alternate" hreflang="x-default" href="https://foldy.io/audit/">
-<link rel="stylesheet" href="style.css?v=cee39269ad">
-<script type="module" src="app.js?v=cee39269ad"></script>
+<link rel="stylesheet" href="style.css?v=2bf4be7d30">
+<script type="module" src="app.js?v=2bf4be7d30"></script>
 </head>
 <body>
 <div class="grain" aria-hidden="true"></div>
 
 <header class="masthead">
-  <div class="wrap masthead-row">
+  <div class="wrap masthead-row with-cabinets">
     <a class="brand" href="./">
       <span class="brand-mark" aria-hidden="true"></span>
       <span class="brand-text"><b id="brand-name">onym audit</b> <span class="muted">· Onym audit seat</span></span>
@@ -25,9 +25,11 @@
     <nav aria-label="Sections">
       <a href="#register">Register</a>
       <a href="#how">How it works</a>
-      <a href="judge/">For the judges</a>
-      <a href="order/" class="nav-cta">Order a review</a>
     </nav>
+    <div class="cabinets">
+      <a class="btn btn-line" href="app/#auditor">Auditor dashboard</a>
+      <a class="btn btn-line" href="app/#customer">Customer dashboard</a>
+    </div>
     <div class="langs" role="navigation" aria-label="Language"><a href="" hreflang="en" lang="en" aria-current="page">EN</a><a href="ru/" hreflang="ru" lang="ru">RU</a><a href="cnr/" hreflang="sr-Latn-ME" lang="sr-Latn-ME">CNR</a></div>
   </div>
 </header>
@@ -39,10 +41,26 @@
     <p class="lede">Independent audits of Onym components. Each verdict is a signed document that says who checked, which exact bytes, by what method and who paid — and anyone can verify it in the browser.</p>
     <div class="cta">
       <a class="btn btn-ink" href="order/">Order a review</a>
-      <a class="btn btn-line" href="app/">Become an auditor</a>
-      <a class="btn btn-line" href="judge/">For the judges</a>
+      <a class="btn btn-line" href="app/#auditor">Become an auditor</a>
+      <a class="btn btn-line" href="#connect" data-open="connect">Connect to Onym</a>
     </div>
   </section>
+
+  <dialog id="connect" class="dialog" aria-labelledby="connect-h">
+    <form method="dialog"><button class="dialog-close" aria-label="Close">×</button></form>
+    <p class="kicker">Your source in the app</p>
+    <h2 id="connect-h">Connect onym audit to Onym</h2>
+    <p class="muted">Add our Discovery catalog as an extra source: the app then shows the audit status of the services we examined, and the list of auditors. Adding a catalog turns nothing on by itself.</p>
+    <div class="copy-box"><code id="connect-url">https://foldy.io/audit/discovery/manifest.json</code><button type="button" class="btn btn-line" data-copy="connect-url" data-done="Copied">Copy</button></div>
+    <ol class="connect-steps">
+      <li>In Onym, open <b>Settings → Discovery Providers → Add Discovery Provider</b>.</li>
+      <li>Paste the address above and tap <b>Fetch Provider</b>.</li>
+      <li>Check the key fingerprint: <b class="mono">4074 4514 be2a 1414</b>.</li>
+      <li>Confirm with <b>Pin Key &amp; Add Provider</b>. Then choose a service and confirm its terms separately.</li>
+    </ol>
+    <p class="small muted">The path is taken from the Onym iOS and Android sources; your version of the app may not have this screen yet. The fingerprint is the first 16 characters of the operator key, as the app shows it.</p>
+    <p><a href="discovery/manifest.json" target="_blank" rel="noopener">View the manifest ↗</a></p>
+  </dialog>
 
   <section class="register-sec wrap" id="register" aria-labelledby="register-h">
     <header class="sec-head">
@@ -68,9 +86,9 @@
 
 <footer class="colophon">
   <div class="wrap">
-    <p class="small muted">onym audit · <a href="https://github.com/Dubieroj/onym-audit">GitHub</a> · <a href="profile/Audit-Static-Ed25519.md">Implementation profile</a> · <a href="hub/terms.md">Hub terms</a> · <a href="discovery/manifest.json">Discovery</a> · served from foldy.io without cookies, access logs, or third-party requests.</p>
+    <p class="small muted">onym audit · <a href="https://github.com/Dubieroj/onym-audit">GitHub</a> · <a href="profile/Audit-Static-Ed25519.md">Implementation profile</a> · <a href="hub/terms.md">Hub terms</a> · <a href="api/">API</a> · <a href="discovery/manifest.json">Discovery</a> · served from foldy.io without cookies, access logs, or third-party requests.</p>
   </div>
 </footer>
-<script type="application/json" id="strings">{"verified":"VERIFIED","unverified":"UNVERIFIED","epoch":"epoch {n}","signed":"epoch {n} · signed {ago}","cap_ok":"Verified in your browser just now: the manifest is signed by operator key {print}, and the status list — signed {ago} — by the delegated status key the manifest names. Nothing on this page is trusted because this server says so.","cap_fail":"Not verified: {why}. Treat every entry below as unconfirmed.","why_manifest":"the manifest signature did not verify","why_nostatus":"no status list was served","why_badsig":"the status list signature did not verify","why_stale":"the status list is stale","no_manifest":"The auditor manifest could not be loaded: {err}","reg_no_manifest":"The register cannot be read without the auditor manifest.","reg_no_status":"No status list is being served, so no entry can be confirmed as current.","reg_empty_b":"No entries yet. ","reg_empty":"The first examination is in its notice period: under the unsolicited policy, findings are published no sooner than 12 hours after the subject has been notified.","fetch_fail":"{id}: could not be fetched ({err})","issued":"issued {ago}","expires":"expires {date}","k_scope":"Scope","k_notexam":"Not examined","k_findings":"Findings","k_paid":"Paid by","k_rel":"Relationships","k_notice":"Notice","k_applies":"Applies only to","notice_v":"unsolicited; subject notified {at} via {via}","applies_v":"{src} — manifest {rev}","applies_pin":", pinned document {pin}","none":"none","floor":"floor: {f}","l_att":"attestation","l_report":"findings report","l_method":"methodology","l_scope":"scope","replied":"The subject replied: ","ago_lt1h":"less than an hour ago","ago_h":"{n} h ago","ago_d":"{n} days ago","d_attested":"attested","d_uncredited":"uncredited issuer","d_status-unknown":"status unknown","d_expired":"expired","d_superseded":"superseded","d_revoked":"revoked","d_no-attestation":"does not apply","l_verdict":"attestation page"}</script>
+<script type="application/json" id="strings">{"verified":"VERIFIED","unverified":"UNVERIFIED","epoch":"epoch {n}","signed":"epoch {n} · signed {ago}","cap_ok":"Verified in your browser just now: the manifest is signed by operator key {print}, and the status list — signed {ago} — by the delegated status key the manifest names. Nothing on this page is trusted because this server says so.","cap_fail":"Not verified: {why}. Treat every entry below as unconfirmed.","why_manifest":"the manifest signature did not verify","why_nostatus":"no status list was served","why_badsig":"the status list signature did not verify","why_stale":"the status list is stale","no_manifest":"The auditor manifest could not be loaded: {err}","reg_no_manifest":"The register cannot be read without the auditor manifest.","reg_no_status":"No status list is being served, so no entry can be confirmed as current.","reg_empty_b":"No entries yet. ","reg_empty":"This auditor has not issued an attestation yet.","fetch_fail":"{id}: could not be fetched ({err})","issued":"issued {ago}","expires":"expires {date}","k_scope":"Scope","k_notexam":"Not examined","k_findings":"Findings","k_paid":"Paid by","k_rel":"Relationships","k_notice":"Notice","k_applies":"Applies only to","notice_v":"unsolicited; subject notified {at} via {via}","applies_v":"{src} @ {rev}","applies_pin":", pinned document {pin}","none":"none","floor":"floor: {f}","l_att":"attestation","l_report":"findings report","l_method":"methodology","l_scope":"scope","replied":"The subject replied: ","ago_lt1h":"less than an hour ago","ago_h":"{n} h ago","ago_d":"{n} days ago","d_attested":"attested","d_uncredited":"uncredited issuer","d_status-unknown":"status unknown","d_expired":"expired","d_superseded":"superseded","d_revoked":"revoked","d_no-attestation":"does not apply","l_verdict":"attestation page","m_security-review":"Security review","m_conformance-run":"Conformance run","sev_critical":"critical","sev_high":"high","sev_medium":"medium","sev_low":"low","sev_informational":"informational","note_unlisted":"The status list does not list this attestation."}</script>
 </body>
 </html>

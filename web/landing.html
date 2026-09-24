@@ -14,7 +14,7 @@
 <div class="grain" aria-hidden="true"></div>
 
 <header class="masthead">
-  <div class="wrap masthead-row">
+  <div class="wrap masthead-row with-cabinets">
     <a class="brand" href="./">
       <span class="brand-mark" aria-hidden="true"></span>
       <span class="brand-text"><b id="brand-name">onym audit</b> <span class="muted">· {{brand_seat}}</span></span>
@@ -22,9 +22,11 @@
     <nav aria-label="{{nav_label}}">
       <a href="#register">{{nav_register}}</a>
       <a href="#how">{{nav_how}}</a>
-      <a href="judge/">{{nav_judge}}</a>
-      <a href="order/" class="nav-cta">{{nav_order}}</a>
     </nav>
+    <div class="cabinets">
+      <a class="btn btn-line" href="app/#auditor">{{nav_cab_auditor}}</a>
+      <a class="btn btn-line" href="app/#customer">{{nav_cab_customer}}</a>
+    </div>
     <div class="langs" role="navigation" aria-label="{{lang_label}}">{{switcher}}</div>
   </div>
 </header>
@@ -36,10 +38,26 @@
     <p class="lede">{{lede_short}}</p>
     <div class="cta">
       <a class="btn btn-ink" href="order/">{{nav_order}}</a>
-      <a class="btn btn-line" href="app/">{{cta_auditor}}</a>
-      <a class="btn btn-line" href="judge/">{{nav_judge}}</a>
+      <a class="btn btn-line" href="app/#auditor">{{cta_auditor}}</a>
+      <a class="btn btn-line" href="#connect" data-open="connect">{{conn_btn}}</a>
     </div>
   </section>
+
+  <dialog id="connect" class="dialog" aria-labelledby="connect-h">
+    <form method="dialog"><button class="dialog-close" aria-label="{{conn_close}}">×</button></form>
+    <p class="kicker">{{conn_kicker}}</p>
+    <h2 id="connect-h">{{conn_h}}</h2>
+    <p class="muted">{{conn_lede}}</p>
+    <div class="copy-box"><code id="connect-url">{{disc_url}}</code><button type="button" class="btn btn-line" data-copy="connect-url" data-done="{{conn_copied}}">{{conn_copy}}</button></div>
+    <ol class="connect-steps">
+      <li>{{conn_s1}}</li>
+      <li>{{conn_s2}}</li>
+      <li>{{conn_s3}} <b class="mono">{{disc_fp}}</b>.</li>
+      <li>{{conn_s4}}</li>
+    </ol>
+    <p class="small muted">{{conn_note}}</p>
+    <p><a href="discovery/manifest.json" target="_blank" rel="noopener">{{conn_view}}</a></p>
+  </dialog>
 
   <section class="register-sec wrap" id="register" aria-labelledby="register-h">
     <header class="sec-head">
@@ -65,7 +83,7 @@
 
 <footer class="colophon">
   <div class="wrap">
-    <p class="small muted">onym audit · <a href="https://github.com/Dubieroj/onym-audit">GitHub</a> · <a href="{{root}}profile/Audit-Static-Ed25519.md">{{d_profile}}</a> · <a href="{{root}}hub/terms.md">{{foot_terms}}</a> · <a href="{{root}}discovery/manifest.json">Discovery</a> · {{served}}</p>
+    <p class="small muted">onym audit · <a href="https://github.com/Dubieroj/onym-audit">GitHub</a> · <a href="{{root}}profile/Audit-Static-Ed25519.md">{{d_profile}}</a> · <a href="{{root}}hub/terms.md">{{foot_terms}}</a> · <a href="api/">API</a> · <a href="{{root}}discovery/manifest.json">Discovery</a> · {{served}}</p>
   </div>
 </footer>
 <script type="application/json" id="strings">{{js}}</script>

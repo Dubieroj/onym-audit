@@ -60,7 +60,7 @@
       <div data-kind="source build">
         <label>{{o_f_repo}}<input id="repo" name="repo" type="url" placeholder="https://github.com/org/repo" autocomplete="off" spellcheck="false"></label>
         <p class="hint">{{o_f_repo_h}}</p>
-        <label>{{o_f_commit}}<input id="commit" name="commit" pattern="[0-9a-f]{40}" placeholder="40 hex characters" autocomplete="off" spellcheck="false" class="mono"></label>
+        <label>{{o_f_commit}}<input id="commit" name="commit" pattern="[0-9a-f]{40}" placeholder="{{ph_commit}}" autocomplete="off" spellcheck="false" class="mono"></label>
         <p class="hint">{{o_f_commit_h}} <code>git rev-parse HEAD</code></p>
       </div>
       <div data-kind="build">
@@ -87,7 +87,7 @@
         <p><b>{{o_f_key}}</b> {{o_f_key_h}}</p>
         <label class="radio"><input type="radio" name="keymode" value="new" checked> {{o_f_key_new}}</label>
         <label class="radio"><input type="radio" name="keymode" value="existing"> {{o_f_key_existing}}</label>
-        <label id="seed-wrap" hidden>{{o_f_seed}}<input id="seed" type="password" autocomplete="off" spellcheck="false" class="mono" placeholder="64 hex characters"></label>
+        <label id="seed-wrap" hidden>{{o_f_seed}}<input id="seed" type="password" autocomplete="off" spellcheck="false" class="mono" placeholder="{{ph_seed}}"></label>
       </div>
     </fieldset>
     <label class="check"><input id="authority" type="checkbox" required> <span>{{o_f_authority}}</span></label>

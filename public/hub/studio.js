@@ -15,6 +15,8 @@ const ROOT = new URL("../", import.meta.url); // …/audit/
 const HUB = new URL("hub/api/", ROOT);
 const T = JSON.parse($("strings")?.textContent || "{}");
 const t = (k, v = {}) => (T[k] ?? k).replace(/\{(\w+)\}/g, (_, x) => v[x] ?? "");
+// A label for a value from a signed document: its translation, or the value itself.
+const tr = (prefix, v) => T[prefix + v] ?? v;
 const enc = new TextEncoder();
 const b64 = (b) => btoa(String.fromCharCode(...new Uint8Array(b)));
 const nowISO = (d = new Date()) => d.toISOString().slice(0, 19) + "Z";
@@ -48,8 +50,9 @@ async function api(path, body) {
   const r = await fetch(new URL(path, HUB), body === undefined ? { credentials: "omit" } : { method: "POST", credentials: "omit", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
   const text = await r.text();
   let data;
-  try { data = JSON.parse(text); } catch { data = { error: text || "HTTP " + r.status }; }
-  if (!r.ok) throw new Error(data.error || "HTTP " + r.status);
+  try { data = JSON.parse(text); } catch { data = {}; }
+  // A proxy's error page is never shown; a busy hub is said in the reader's language.
+  if (!r.ok) throw Object.assign(new Error(r.status === 429 ? t("e_rate") : data.error || "HTTP " + r.status), { status: r.status });
   return data;
 }
 // Documents are named by the hub's public URIs (the base the hub assigns) and
@@ -176,10 +179,13 @@ function feeFields(box, prefix) {
   const amount = el("input", { inputmode: "decimal", placeholder: "150.00", class: "mono", "aria-label": t("fee_amount") });
   const currency = el("input", { value: "EUR", maxlength: 3, class: "mono", "aria-label": t("fee_currency") });
   const days = el("input", { type: "number", min: 1, max: 365, value: 14 });
+  const price = el("div", { class: "row-inline", hidden: true }, amount, currency);
   box.replaceChildren(radio("pro-bono", t("fee_probono")), radio("fixed-verdict-independent", t("fee_fixed_l")),
-    el("div", { class: "row-inline" }, amount, currency),
+    price,
     el("label", {}, t("fee_days"), days),
     el("p", { class: "hint", text: t("fee_h") }));
+  // The price is asked only for a fixed fee.
+  box.addEventListener("change", () => (price.hidden = box.querySelector(`input[name="${prefix}-fee"]:checked`).value === "pro-bono"));
   return {
     read() {
       const model = box.querySelector(`input[name="${prefix}-fee"]:checked`).value;
@@ -218,13 +224,18 @@ let wantTab = "auditor";
 function show(v) {
   if (["onboard", "dash", "audit", "customer"].includes(v) && !me) v = "login";
   for (const x of views) $("v-" + x).hidden = x !== v;
+  // One sign-in serves both dashboards; it speaks to the one asked for.
+  $("v-login").dataset.for = wantTab;
   const tab = v === "library" || v === "customer" ? v : v === "login" || v === "newphrase" ? wantTab : "auditor";
-  for (const b of document.querySelectorAll("[data-tab]")) b.classList.toggle("on", b.dataset.tab === tab);
+  for (const b of document.querySelectorAll("[data-tab]")) {
+    b.classList.toggle("on", b.dataset.tab === tab);
+    if (b.dataset.tab === tab) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
+  }
   window.scrollTo(0, 0);
   if (v === "dash") dash();
   if (v === "audit") startAudit();
   if (v === "login") listAuditors();
-  if (v === "library") library();
+  if (v === "library") library().catch((e) => $("lib-list").replaceChildren(el("p", { class: "bad", text: e.message })));
   if (v === "customer") customer();
   if (v === "onboard") {
     $("ob-account").textContent = me.account;
@@ -237,6 +248,8 @@ function show(v) {
 }
 const home = () => show(!me ? "login" : wantTab === "customer" ? "customer" : me.slug ? "dash" : "onboard");
 for (const b of document.querySelectorAll("[data-tab]")) b.addEventListener("click", () => {
+  // The tab is kept in the address, so a link or a reload opens the same one.
+  history.replaceState(null, "", "#" + b.dataset.tab);
   if (b.dataset.tab === "library") return show("library");
   wantTab = b.dataset.tab;
   home();
@@ -244,6 +257,8 @@ for (const b of document.querySelectorAll("[data-tab]")) b.addEventListener("cli
 async function whoChip() {
   $("who").hidden = !me;
   if (me) $("who").textContent = (me.name ? me.name + " · " : "") + me.account.slice(0, 4) + "…" + me.account.slice(-4);
+  // The chip signs out: say so to screen readers, not only in the tooltip.
+  if (me) $("who").setAttribute("aria-label", `${$("who").title} — ${$("who").textContent}`);
 }
 document.addEventListener("click", (e) => {
   const g = e.target.closest("[data-go]");
@@ -361,7 +376,11 @@ $("ob-form").addEventListener("submit", guard(async (ev) => {
   btn.disabled = true;
   btn.textContent = t("working");
   try {
-    const claim = await api("claim", { slug });
+    let claim;
+    try { claim = await api("claim", { slug }); } catch (e) {
+      if (e.status === 409) return bad(t("e_slug_taken"));
+      throw e;
+    }
     const { priv, key } = me;
     const base = claim.base;
     setPub(base);
@@ -424,13 +443,13 @@ async function dash() {
     for (const e of st.entries) {
       const a = plain(parseStrict(await getText(e.attestation.uri)));
       const row = el("article", { class: "entry" },
-        el("div", { class: "entry-side" }, el("span", { class: `stamp r-${a.result}`, text: a.result.toUpperCase() }), el("span", { class: "state", text: e.state })),
+        el("div", { class: "entry-side" }, el("span", { class: `stamp r-${a.result}`, text: a.result.toUpperCase() }), el("span", { class: "state", text: tr("state_", e.state) })),
         el("div", {}, el("h3", {}, el("a", { href: verdictPage(a.attestationId, me.slug), text: a.subject })),
-          el("p", { class: "who", text: `${a.methodologyClass} · ${a.artifact.kind} · ${a.issuedAt.slice(0, 10)}` }),
+          el("p", { class: "who", text: `${tr("m_", a.methodologyClass)} · ${tr("kind_", a.artifact.kind)} · ${a.issuedAt.slice(0, 10)}` }),
           el("p", { class: "small mono", text: a.artifact.source }),
           el("p", { class: "links" }, el("a", { href: verdictPage(a.attestationId, me.slug), text: t("l_verdict") }), el("a", { href: e.attestation.uri, text: t("l_att") }), a.findingsReport ? el("a", { href: a.findingsReport.uri, text: t("l_report") }) : null)));
       if (e.state === "active") {
-        const reason = el("select", {}, ["withdrawal", "new-information", "methodology-error", "compromise-of-auditor-key"].map((r) => el("option", { value: r, text: r })));
+        const reason = el("select", {}, ["withdrawal", "new-information", "methodology-error", "compromise-of-auditor-key"].map((r) => el("option", { value: r, text: tr("rv_", r) })));
         row.lastChild.append(el("div", { class: "row-inline" }, reason, el("button", { class: "btn btn-line small-btn", text: t("revoke"), onclick: guard(() => revoke(a.attestationId, reason.value)) })));
       }
       rows.push(row);
@@ -473,7 +492,7 @@ async function loadOrders() {
     rows.push(el("article", { class: "entry" },
       el("div", { class: "entry-side" }, el("span", { class: "stamp", text: t("order_stamp") }), el("span", { class: "state", text: t("due", { date: o.timeline.reportDue }) })),
       el("div", {}, el("h3", { text: o.subject }),
-        el("p", { class: "who", text: `${t("m_" + o.methodologyClass)} · ${o.artifact.kind} · ${o.fee.model} · ${o.fee.offerId}` }),
+        el("p", { class: "who", text: `${t("m_" + o.methodologyClass)} · ${tr("kind_", o.artifact.kind)} · ${feeText(o, t)} · ${o.fee.offerId}` }),
         el("p", { class: "small mono", text: `${o.artifact.source} @ ${o.artifact.revision}` }),
         el("pre", { class: "quote", text: q.scopeText }),
         termsBox(o),
@@ -659,14 +678,14 @@ function targetForm() {
   const parts = { scope };
   if (A.kind === "source") {
     parts.repo = field(t("f_repo"), { placeholder: "https://github.com/org/repo", class: "mono" }, t("f_repo_h"));
-    parts.commit = field(t("f_commit"), { placeholder: "40 hex", class: "mono" });
+    parts.commit = field(t("f_commit"), { placeholder: t("ph_commit"), class: "mono" });
     parts.owner = field(t("f_owner"), { placeholder: "https://…/manifest.json", class: "mono" }, t("f_owner_h"));
   } else if (A.kind === "deployment" || A.kind === "discovery") {
     parts.url = field(A.kind === "discovery" ? t("f_provider") : t("f_manifest"), { placeholder: "https://…/manifest.json", class: "mono" }, A.kind === "discovery" ? t("f_provider_h") : t("f_manifest_h"));
   } else {
     parts.file = field(t("f_file"), { placeholder: "https://github.com/org/repo/releases/download/v1/app.apk", class: "mono" });
     parts.repo = field(t("f_repo"), { placeholder: "https://github.com/org/repo", class: "mono" });
-    parts.commit = field(t("f_commit"), { placeholder: "40 hex", class: "mono" });
+    parts.commit = field(t("f_commit"), { placeholder: t("ph_commit"), class: "mono" });
     parts.owner = field(t("f_owner"), { placeholder: "https://…/manifest.json", class: "mono" }, t("f_owner_h"));
   }
   if (A.order) {
@@ -838,7 +857,7 @@ function codeBrowser(out, files, single) {
 
 function manualFindingForm(ev) {
   const f = $("a-finding-form");
-  const sev = el("select", {}, ["critical", "high", "medium", "low", "informational"].map((s) => el("option", { value: s, text: s })));
+  const sev = el("select", {}, ["critical", "high", "medium", "low", "informational"].map((s) => el("option", { value: s, text: tr("sev_", s) })));
   sev.value = "medium";
   const title = el("input", { placeholder: t("ff_title") });
   const desc = el("textarea", { rows: 3, placeholder: t("ff_desc") });
@@ -865,7 +884,7 @@ function renderFindings() {
   const box = $("a-findings");
   if (!A.findings.length) return box.replaceChildren(el("p", { class: "empty", text: A.method === "conformance" ? t("no_fail_checks") : t("no_findings") }));
   box.replaceChildren(...A.findings.map((f, i) => el("article", { class: "entry" },
-    el("div", { class: "entry-side" }, el("span", { class: `stamp sev-${f.severity}`, text: f.severity.toUpperCase() })),
+    el("div", { class: "entry-side" }, el("span", { class: `stamp sev-${f.severity}`, text: tr("sev_", f.severity).toUpperCase() })),
     el("div", {}, el("h3", { text: f.title }),
       f.quote ? el("pre", { class: "quote", text: f.quote }) : null,
       el("p", { text: f.description }),
@@ -986,7 +1005,11 @@ $("a-publish").addEventListener("click", guard(async () => {
   };
   const signed = await signDoc(att, me.priv);
   $("a-publish").disabled = true;
-  const res = await api(`a/${me.slug}/publish`, { attestation: JSON.parse(signed), docs });
+  let res;
+  try { res = await api(`a/${me.slug}/publish`, { attestation: JSON.parse(signed), docs }); } catch (e) {
+    $("a-publish").disabled = false;
+    throw e;
+  }
   const done = $("a-done");
   done.replaceChildren(
     el("p", { class: "kicker", text: res.held ? t("held_kicker") : t("published_kicker") }),
@@ -1229,7 +1252,7 @@ async function renderRequests() {
     return el("article", { class: "entry" },
       el("div", { class: "entry-side" }, el("span", { class: "stamp", text: t("r_stamp") }), el("span", { class: "state", text: q.to ? t("r_to", { who: accountOfKey(q.to).slice(0, 6) + "…" }) : t("r_public") })),
       el("div", {}, el("h3", { text: q.subject }),
-        el("p", { class: "who", text: `${t("m_" + q.methodologyClass)} · ${q.artifact.kind} · ${t("r_until", { date: q.expiresAt.slice(0, 10) })}` }),
+        el("p", { class: "who", text: `${t("m_" + q.methodologyClass)} · ${tr("kind_", q.artifact.kind)} · ${t("r_until", { date: q.expiresAt.slice(0, 10) })}` }),
         el("p", { class: "small mono", text: `${q.requestId} · ${q.artifact.source} @ ${q.artifact.revision}` }), list));
   }));
 }
@@ -1293,7 +1316,7 @@ async function loadRequests() {
     return el("article", { class: "entry" },
       el("div", { class: "entry-side" }, el("span", { class: "stamp", text: q.to ? t("rq_to_you") : t("r_public") }), el("span", { class: "state", text: t("rq_responses", { n: q.responses }) })),
       el("div", {}, el("h3", { text: q.subject }),
-        el("p", { class: "who", text: `${t("m_" + q.methodologyClass)} · ${q.artifact.kind} · ${t("r_until", { date: q.expiresAt.slice(0, 10) })}` }),
+        el("p", { class: "who", text: `${t("m_" + q.methodologyClass)} · ${tr("kind_", q.artifact.kind)} · ${t("r_until", { date: q.expiresAt.slice(0, 10) })}` }),
         el("p", { class: "small mono", text: `${q.artifact.source} @ ${q.artifact.revision}${q.artifact.artifactHash ? " · " + q.artifact.artifactHash : ""}` }),
         el("pre", { class: "quote", text: q.scopeText }), action));
   })));
@@ -1319,7 +1342,7 @@ function respondForm(q, box) {
 // ---------------------------------------------------------------- library
 
 let LIB = null, libFilter = "all";
-const libPage = (e) => (e.auditorSlug ? e.auditorBase : new URL("./", ROOT).href);
+const libPage = (e) => (e.auditorSlug ? e.auditorBase : new URL(LANG_PATH, ROOT).href);
 
 async function library() {
   const q = decodeURIComponent((location.hash.match(/^#att=(.+)$/) || [])[1] || "");
@@ -1338,9 +1361,9 @@ function renderLibrary() {
   $("lib-list").replaceChildren(...rows.slice(0, 200).map((e) => {
     const verdict = el("p", { class: "small muted", text: t("lib_checking") });
     const row = el("article", { class: "entry", id: "att-" + e.attestationId },
-      el("div", { class: "entry-side" }, el("span", { class: `stamp r-${e.result}`, text: e.result.toUpperCase() }), el("span", { class: "state", text: e.state })),
+      el("div", { class: "entry-side" }, el("span", { class: `stamp r-${e.result}`, text: e.result.toUpperCase() }), el("span", { class: "state", text: tr("state_", e.state) })),
       el("div", {}, el("h3", {}, el("a", { href: verdictPage(e.attestationId, e.auditorSlug), text: e.subject })),
-        el("p", { class: "who" }, el("a", { href: libPage(e), text: e.auditor }), ` · ${e.fingerprint} · ${e.methodologyClass} · ${e.engagement} · ${e.issuedAt.slice(0, 10)}`),
+        el("p", { class: "who" }, el("a", { href: libPage(e), text: e.auditor }), ` · ${e.fingerprint} · ${tr("m_", e.methodologyClass)} · ${tr("eng_", e.engagement)} · ${e.issuedAt.slice(0, 10)}`),
         el("p", { class: "small mono", text: `${e.attestationId} · ${e.kind} · ${e.source}` }),
         verdict,
         el("p", { class: "links" }, el("a", { href: verdictPage(e.attestationId, e.auditorSlug), text: t("l_verdict") }), el("a", { href: e.uri, text: t("l_att") }))));
@@ -1359,14 +1382,14 @@ async function verifyEntry(e, out) {
     const d = await verifyAttestation({ manifestText, attText, statusText, target: null, credited: false });
     const good = d.display === "uncredited" || d.display === "attested";
     out.className = "small " + (good ? "ok-line" : "bad");
-    out.textContent = good ? t("lib_ok") : t("lib_state", { state: d.display, err: d.error || "" });
+    out.textContent = good ? t("lib_ok") : t("lib_state", { state: tr("d_", d.display) });
     // The register's anchor, asked of a public Stellar node, once per auditor.
     if (!anchors.has(e.auditorBase)) anchors.set(e.auditorBase, anchorState(accountOfKey(plain(parseStrict(manifestText)).operator), statusText).catch(() => ({ state: "unknown" })));
     const a = await anchors.get(e.auditorBase);
     if (a.state === "match" || a.state === "stale") out.append(" · ", el("span", { text: t("lib_anchor_" + a.state, { at: (a.at || "").slice(0, 10) }) }));
   } catch (err) {
     out.className = "small bad";
-    out.textContent = t("lib_state", { state: "unavailable", err: err.message });
+    out.textContent = t("lib_state", { state: t("lib_unavailable") });
   }
 }
 
@@ -1376,7 +1399,13 @@ for (const b of document.querySelectorAll("#lib-filters .chip")) b.addEventListe
   for (const x of document.querySelectorAll("#lib-filters .chip")) x.classList.toggle("on", x === b);
   renderLibrary();
 });
-window.addEventListener("hashchange", () => /^#(library|att=)/.test(location.hash) && show("library"));
+window.addEventListener("hashchange", () => {
+  if (/^#(library|att=)/.test(location.hash)) return show("library");
+  if (/^#(auditor|customer)$/.test(location.hash)) {
+    wantTab = location.hash.slice(1);
+    home();
+  }
+});
 
 // ---------------------------------------------------------------- start
 
@@ -1393,5 +1422,6 @@ window.addEventListener("hashchange", () => /^#(library|att=)/.test(location.has
     if (me.base) setPub(me.base);
   }
   if (/^#(library|att=)/.test(location.hash)) return show("library");
+  if (location.hash === "#customer") wantTab = "customer";
   home();
 })().catch((e) => toast(e.message, true));

@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="{{lang_tag}}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{api_title}}</title>
+<meta name="description" content="{{api_description}}">
+<meta name="color-scheme" content="light dark">
+{{alternates}}
+<link rel="stylesheet" href="{{root}}style.css?v={{v}}">
+</head>
+<body class="api-page">
+<div class="grain" aria-hidden="true"></div>
+<header class="masthead">
+  <div class="wrap masthead-row with-cabinets">
+    <a class="brand" href="{{home}}">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span class="brand-text"><b>onym audit</b> <span class="muted">· {{brand_seat}}</span></span>
+    </a>
+    <div class="cabinets">
+      <a class="btn btn-line" href="{{home}}app/#auditor">{{nav_cab_auditor}}</a>
+      <a class="btn btn-line" href="{{home}}app/#customer">{{nav_cab_customer}}</a>
+    </div>
+    <div class="langs" role="navigation" aria-label="{{lang_label}}">{{switcher}}</div>
+  </div>
+</header>
+
+<main class="wrap">
+  <header class="api-head">
+    <p class="kicker">{{api_kicker}}</p>
+    <h1>{{api_h1}}</h1>
+    <p class="lede">{{api_lede}}</p>
+  </header>
+  <div class="api-layout">
+{{api_body}}
+  </div>
+</main>
+
+<footer class="colophon">
+  <div class="wrap">
+    <p class="small muted">onym audit · <a href="https://github.com/Dubieroj/onym-audit">GitHub</a> · <a href="{{root}}profile/Audit-Static-Ed25519.md">{{d_profile}}</a> · <a href="{{root}}hub/terms.md">{{foot_terms}}</a> · <a href="{{root}}discovery/manifest.json">Discovery</a></p>
+  </div>
+</footer>
+</body>
+</html>

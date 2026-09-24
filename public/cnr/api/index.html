@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="sr-Latn-ME">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>API · onym audit</title>
+<meta name="description" content="Detaljan opis HTTP API-ja mjesta revizije onym audit: potpisani dokumenti, hub revizora, narudžbe, zahtjevi, Discovery provajder i sidro u Stellaru.">
+<meta name="color-scheme" content="light dark">
+<link rel="alternate" hreflang="en" href="https://foldy.io/audit/api/">
+<link rel="alternate" hreflang="ru" href="https://foldy.io/audit/ru/api/">
+<link rel="alternate" hreflang="sr-Latn-ME" href="https://foldy.io/audit/cnr/api/">
+<link rel="alternate" hreflang="x-default" href="https://foldy.io/audit/api/">
+<link rel="stylesheet" href="../../style.css?v=2bf4be7d30">
+</head>
+<body class="api-page">
+<div class="grain" aria-hidden="true"></div>
+<header class="masthead">
+  <div class="wrap masthead-row with-cabinets">
+    <a class="brand" href="../">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span class="brand-text"><b>onym audit</b> <span class="muted">· revizor mreže Onym</span></span>
+    </a>
+    <div class="cabinets">
+      <a class="btn btn-line" href="../app/#auditor">Kabinet revizora</a>
+      <a class="btn btn-line" href="../app/#customer">Kabinet naručioca</a>
+    </div>
+    <div class="langs" role="navigation" aria-label="Jezik"><a href="../../api/" hreflang="en" lang="en">EN</a><a href="../../ru/api/" hreflang="ru" lang="ru">RU</a><a href="../../cnr/api/" hreflang="sr-Latn-ME" lang="sr-Latn-ME" aria-current="page">CNR</a></div>
+  </div>
+</header>
+
+<main class="wrap">
+  <header class="api-head">
+    <p class="kicker">Za programere</p>
+    <h1>HTTP API</h1>
+    <p class="lede">Sve što možete pročitati, provjeriti i poslati: adrese, tijela zahtjeva, provjere na serveru, odgovori i ograničenja. Svaka promjena je potpisan dokument; server čuva bajtove, ali ih ne može krivotvoriti.</p>
+  </header>
+  <div class="api-layout">
+<nav class="api-toc" aria-label="Sadržaj">
+  <p class="kicker">Sadržaj</p>
+  <ol>
+    <li><a href="#overview">Pregled</a></li>
+    <li><a href="#rules">Opšta pravila</a></li>
+    <li><a href="#read">Čitanje i provjera</a></li>
+    <li><a href="#seat">Glavno mjesto</a></li>
+    <li><a href="#hub">Hub: registracija i objavljivanje</a></li>
+    <li><a href="#orders">Narudžbe</a></li>
+    <li><a href="#requests">Zahtjevi</a></li>
+    <li><a href="#vault">Trezor</a></li>
+    <li><a href="#tools">Alati za provjeru</a></li>
+    <li><a href="#lists">Liste</a></li>
+    <li><a href="#discovery">Discovery provajder</a></li>
+    <li><a href="#stellar">Sidro na Stellar mreži</a></li>
+  </ol>
+</nav>
+
+<div class="api-body">
+
+<section id="overview">
+  <h2>Pregled</h2>
+  <p>Osnova svih adresa je <code>https://foldy.io/audit/</code>; putanje ispod navedene su u odnosu na nju. Server se sastoji od tri dijela:</p>
+  <ul>
+    <li><b>glavno mjesto</b> „onym audit“ — stablo potpisanih dokumenata u korijenu i dvije adrese za upis (<code>orders</code>, <code>responses</code>);</li>
+    <li><b>hub</b> — svako može postati revizor (<code>hub/api/…</code>), a njegovi dokumenti nalaze se u <code>a/&lt;ime&gt;/</code>;</li>
+    <li><b>Discovery provajder</b> — potpisani katalozi u <code>discovery/</code> koje čitaju Onym aplikacije.</li>
+  </ul>
+  <p>Nema naloga, lozinki ni kolačića. Sve što mijenja stanje potpisano je Ed25519 ključem onoga ko djeluje: revizora, naručioca ili subjekta. Server provjerava potpis i čuva bajtove tačno onakve kakvi su potpisani. Dokument ne može falsifikovati, jer ne drži nijedan ključ revizora. Sve što server vraća može se provjeriti bez povjerenja u njega; u pregledaču to radi <a href="../../verify.js"><code>verify.js</code></a>.</p>
+  <p>Formate samih dokumenata (manifest, atestacija, lista statusa, narudžba, ponuda, odgovor, opoziv) određuje <a href="../../profile/Audit-Static-Ed25519.md">profil implementacije</a>. Ova stranica opisuje transport: adrese, tijela zahtjeva, provjere, odgovore i ograničenja. Izvorni kod: <a href="https://github.com/Dubieroj/onym-audit">github.com/Dubieroj/onym-audit</a> (<code>hub/</code>, <code>server/</code>).</p>
+</section>
+
+<section id="rules">
+  <h2>Opšta pravila</h2>
+
+  <h3 id="canon">Kanonski JSON</h3>
+  <p>Isti kao u Discovery-Static-Ed25519 §3:</p>
+  <ul>
+    <li>najviši nivo je objekat; ključevi su sortirani po UTF-8 bajtovima na svakoj dubini; zapis je kompaktan, bez razmaka;</li>
+    <li>escape sekvencom zapisuju se samo <code>"</code>, <code>\</code> i U+0000–U+001F (dvoznakovni oblici gdje postoje, inače <code>\u00xx</code> malim slovima);</li>
+    <li>brojevi mogu biti samo nenegativni cijeli brojevi do 2<sup>53</sup>−1;</li>
+    <li>duplirani ključevi, nevalidan UTF-8 i usamljeni surogati se odbijaju, a ne ispravljaju.</li>
+  </ul>
+  <p>Server kanonizuje sve što prima i čuva kanonske bajtove.</p>
+
+  <h3 id="sig">Potpisi, ključevi, sažeci, vrijeme</h3>
+  <table class="api-table">
+    <tr><th>Potpis</th><td>Ed25519 nad kanonskim bajtovima dokumenta bez polja <code>signature</code> (uklanja se samo na najvišem nivou); vrijednost je standardni base64 s dopunom (padding). Pored svakog potpisanog fajla nalazi se <code>.sig</code>: isti string i prelazak u novi red.</td></tr>
+    <tr><th>Ključ</th><td><code>onym:key:&lt;64 hex znaka malim slovima&gt;</code> — javni Ed25519 ključ. Otisak na stranicama je prvih 8 bajtova SHA-256 ključa, razdvojenih dvotačkom.</td></tr>
+    <tr><th>Sažetak</th><td><code>sha256:&lt;64 hex&gt;</code> od tačnih bajtova fajla.</td></tr>
+    <tr><th>Vrijeme</th><td>RFC 3339 u UTC, s tačnošću do sekunde: <code>2026-09-25T10:00:00Z</code>. Drugi oblici se odbijaju.</td></tr>
+  </table>
+
+  <h3 id="signed">Potpisani zahtjev</h3>
+  <p>Adrese označene sa <span class="tag">🔏 potpis</span> primaju <code>{"request": {…}}</code>. Unutrašnji objekat je potpisan navedenim ključem, sadrži <code>issuedAt</code> koji od sata servera odstupa najviše <b>±10 minuta</b> i nema suvišnih polja. Tako pregledač dokazuje da posjeduje ključ, bez sesija i lozinki:</p>
+<pre><code>import { canonical, parseStrict } from "https://foldy.io/audit/verify.js";
+
+const now = new Date().toISOString().replace(/\.\d+Z$/, "Z");
+const req = parseStrict(JSON.stringify({ action: "order-status", orderId, sponsor: key, issuedAt: now }));
+const sig = await crypto.subtle.sign("Ed25519", privateKey, new TextEncoder().encode(canonical(req)));
+req.set("signature", btoa(String.fromCharCode(...new Uint8Array(sig))));
+
+await fetch("https://foldy.io/audit/hub/api/a/alice/order-status", {
+  method: "POST", headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ request: JSON.parse(canonical(req)) }),
+});</code></pre>
+
+  <h3 id="errors">Odgovori i greške</h3>
+  <p>Odgovori su JSON sa <code>Cache-Control: no-store</code>. Greška huba je <code>{"error": "&lt;tekst&gt;"}</code>; greška glavnog mjesta je <code>{"error": "&lt;kod&gt;", "detail": "&lt;tekst&gt;"}</code>.</p>
+  <table class="api-table">
+    <tr><th>400</th><td>tijelo se ne može parsirati ili sadrži nepoznato polje</td></tr>
+    <tr><th>403</th><td>potpis pogrešnog ključa ili zastario <code>issuedAt</code></td></tr>
+    <tr><th>404</th><td>nema takvog revizora, atestacije ili otvorenog zahtjeva</td></tr>
+    <tr><th>409</th><td>sukob s već objavljenim: nepromjenljiv dokument, vraćanje verzije unazad, zauzeto ime</td></tr>
+    <tr><th>413</th><td>tijelo prelazi ograničenje</td></tr>
+    <tr><th>415</th><td><code>fetch</code>: odgovor nije ni JSON ni tekst</td></tr>
+    <tr><th>422</th><td>dokument nije prošao provjeru; razlog je u tekstu greške</td></tr>
+    <tr><th>429</th><td>prekoračeno je ograničenje broja zahtjeva</td></tr>
+    <tr><th>502</th><td>spoljna adresa je nedostupna ili ne odgovara kako treba</td></tr>
+    <tr><th>503</th><td>red je pun ili je hub zauzet teškim provjerama</td></tr>
+    <tr><th>507</th><td>prostor revizora na hubu je popunjen (20 MiB)</td></tr>
+  </table>
+
+  <h3 id="limits">Ograničenja</h3>
+  <ul>
+    <li>Tijelo zahtjeva hubu ima najviše 4 MiB; svaki dokument najviše 1 MiB; stablo jednog revizora najviše 20 MiB.</li>
+    <li>Brzina: „kanta tokena“ po IP adresi (za IPv6 po cijeloj /64): kapacitet 60, dopuna 1 token u sekundi. Cijena poziva navedena je uz svaku adresu. GET zahtjevi za liste nisu ograničeni.</li>
+    <li>„Teški“ pozivi (<code>digest</code>, <code>conformance</code>) izvršavaju se najviše dva istovremeno na cijelom hubu.</li>
+    <li>Glavno mjesto: narudžba najviše 64 KiB, odgovor najviše 16 KiB, ukupno ograničenje od 20 zahtjeva uz dopunu od 1 u sekundi.</li>
+  </ul>
+
+  <h3 id="static">Statički fajlovi</h3>
+  <p>Dokumenti se isporučuju onakvi kakvi jesu, bajt po bajt, sa <code>Access-Control-Allow-Origin: *</code>, <code>X-Content-Type-Options: nosniff</code> i <code>Cache-Control: no-cache</code>; bez kolačića i bez dnevnika pristupa. Stranice rade uz CSP <code>script-src 'self'</code>.</p>
+</section>
+
+<section id="read">
+  <h2>Čitanje i provjera</h2>
+  <p>Glavno mjesto (korijen <code>/audit/</code>) i svaki revizor huba (<code>a/&lt;ime&gt;/</code>) imaju isto stablo:</p>
+  <table class="api-table">
+    <tr><th><code>manifest.json</code> + <code>.sig</code></th><td>potpisani manifest revizora: ključ operatora, delegirani ključ statusa, politike, metodologije, ponude</td></tr>
+    <tr><th><code>status.json</code> + <code>.sig</code></th><td>lista statusa, potpisana delegiranim ključem; ponovo se potpisuje svakih 6 sati, <code>nextUpdate</code> je 48 sati unaprijed</td></tr>
+    <tr><th><code>attestations/&lt;id&gt;.json</code></th><td>atestacije, nepromjenljive</td></tr>
+    <tr><th><code>revocations/&lt;id&gt;.json</code></th><td>potpisani opozivi</td></tr>
+    <tr><th><code>responses/&lt;atestacija&gt;/&lt;id&gt;.json</code></th><td>potpisani odgovori subjekata</td></tr>
+    <tr><th><code>offers/&lt;id&gt;.json</code></th><td>ponude: metodologija, cijena, rok, uslovi objave</td></tr>
+    <tr><th><code>orders/&lt;id&gt;.json</code></th><td>narudžbe s tri potpisa, objavljuju se zajedno s atestacijom</td></tr>
+    <tr><th><code>scopes/</code>, <code>reports/</code>, <code>methodology/</code>, <code>policies/</code></th><td>dokumenti fiksirani sažecima</td></tr>
+  </table>
+  <p>Zapis u listi statusa:</p>
+<pre><code>{"attestationId": "onym-discovery-2026-09-24",
+ "attestation": {"uri": "https://foldy.io/audit/attestations/onym-discovery-2026-09-24.json",
+                 "digest": "sha256:…"},
+ "state": "active" | "revoked" | "superseded" | "expired",
+ "supersededBy": null, "revocation": null,
+ "responses": [{"uri": "…", "digest": "…"}]}</code></pre>
+  <p>Kako provjeriti atestaciju bez povjerenja u bilo šta:</p>
+  <ol>
+    <li>potpis manifesta odgovara njegovom <code>operator</code>;</li>
+    <li>lista statusa je potpisana ključem <code>statusKey</code> iz manifesta, <code>auditorKey</code> se poklapa sa <code>operator</code>, a <code>nextUpdate</code> još nije nastupio;</li>
+    <li>sažetak fajla atestacije poklapa se sa zapisom u listi, i zapis je u stanju <code>active</code>;</li>
+    <li>atestacija je potpisana ključem operatora i nije istekla; fiksirani dokumenti (obim, metodologija, izvještaj) poklapaju se sa svojim sažecima.</li>
+  </ol>
+<pre><code>import { verifyAttestation } from "https://foldy.io/audit/verify.js";
+const get = (p) => fetch("https://foldy.io/audit/" + p).then((r) => r.text());
+const d = await verifyAttestation({
+  manifestText: await get("manifest.json"),
+  statusText: await get("status.json"),
+  attText: await get("attestations/onym-discovery-2026-09-24.json"),
+  target: null, credited: true,
+});
+// d.display: "attested" | "revoked" | "superseded" | "expired" | "status-unknown" | …</code></pre>
+  <p>Stranica svake atestacije (<code>verdict/?id=&lt;id&gt;</code> za glavno mjesto i <code>verdict/?a=&lt;ime&gt;&amp;id=&lt;id&gt;</code> za revizora huba) izvršava ove provjere u pregledaču i prikazuje svaku od njih.</p>
+</section>
+
+<section id="seat">
+  <h2>Glavno mjesto „onym audit“</h2>
+
+  <article class="ep" id="ep-seat-orders">
+    <h3><span class="verb">POST</span> <code>orders</code></h3>
+    <p>Prihvatanje narudžbe (Audit.md §6). Tijelo je ili gola narudžba koju su potpisali subjekt i sponzor, ili omotnica:</p>
+<pre><code>{"order": {…}, "scopeText": "šta pregledati", "contact": "bilo koji tekst, neobavezno"}</code></pre>
+    <p>U omotnici je <code>order.scope.uri</code> = <code>&lt;osnova&gt;scopes/order-&lt;orderId&gt;.md</code>, a SHA-256 od <code>scopeText</code> (1–8192 bajta) jednak je <code>order.scope.digest</code>. Kontakt ima najviše 256 bajtova, bez kontrolnih znakova; ne objavljuje se.</p>
+    <p class="resp"><b>202</b> <code>{"orderId", "state": "queued-for-review", "digest"}</code> — narudžba je u redu čekanja. To još nije saglasnost revizora.</p>
+    <p class="small muted">Greške: 422 <code>order_invalid</code>, 409 <code>order_conflict</code> (pod ovim id-jem je već druga narudžba), 503 <code>inbox_full</code> (1000 narudžbi), 413 <code>oversize</code>, 429 <code>rate_limited</code>.</p>
+  </article>
+
+  <article class="ep" id="ep-seat-responses">
+    <h3><span class="verb">POST</span> <code>responses</code></h3>
+    <p>Odgovor subjekta na atestaciju (Audit.md §5.7.5). Tijelo je goli potpisani odgovor, najviše 16 KiB; <code>attestationId</code> i <code>responseId</code> imaju 16–128 znakova iz <code>[A-Za-z0-9_-]</code>. Nakon upisa lista statusa se ponovo potpisuje, a odgovor se pojavljuje pored atestacije.</p>
+    <p class="resp"><b>201</b> <code>{"uri", "digest"}</code></p>
+    <p class="small muted">Greške: 404 <code>attestation_unknown</code>, 422 <code>subject_response_invalid</code>, 409 <code>response_conflict</code> (odgovori su nepromjenljivi).</p>
+  </article>
+</section>
+
+<section id="hub">
+  <h2>Hub: registracija i objavljivanje</h2>
+  <p>Revizor huba drži svoj ključ u pregledaču (kabinet revizora); hub vidi samo potpisane dokumente. Put revizora: <b>claim</b> → potpisivanje manifesta → <b>register</b> → <b>publish</b> atestacija → po potrebi <b>revoke</b>.</p>
+
+  <article class="ep" id="ep-claim">
+    <h3><span class="verb">POST</span> <code>hub/api/claim</code> <span class="cost">5 tokena</span></h3>
+    <p>Rezervacija imena i dobijanje delegiranog ključa statusa koji manifest mora navesti.</p>
+<pre><code>{"slug": "my-auditor"}</code></pre>
+    <p>Ime: <code>^[a-z][a-z0-9-]{2,31}$</code>, ne smije biti među rezervisanim imenima (admin, api, hub, audit, onym, onym-audit, foundation, sobor, root, status, www). Rezervacija traje 30 minuta; ponovljeni poziv u tom roku vraća istu rezervaciju.</p>
+    <p class="resp"><b>200</b> <code>{"slug", "statusKey", "base", "componentId", "expires"}</code></p>
+    <p class="small muted">Greške: 409 — ime je zauzeto; 422 — ime nije dozvoljeno.</p>
+  </article>
+
+  <article class="ep" id="ep-register">
+    <h3><span class="verb">POST</span> <code>hub/api/register</code> <span class="cost">10 tokena</span></h3>
+    <p>Objavljivanje ili zamjena manifesta zajedno s dokumentima na koje upućuje.</p>
+<pre><code>{"slug": "my-auditor",
+ "manifest": {…potpisani manifest…},
+ "docs": {"policies/independence.md": "tekst", "offers/manual-review.json": "{…}", …}}</code></pre>
+    <ul>
+      <li><code>componentId</code> = <code>onym:component:&lt;ime&gt;</code>; <code>statusEndpoint</code> = <code>&lt;osnova&gt;status.json</code>; <code>statusKey</code> je onaj izdat pri claim;</li>
+      <li><code>contact</code> je bilo koji tekst od najviše 256 bajtova, bez kontrolnih znakova (na stranicama postaje link samo ako počinje sa <code>mailto:</code> ili <code>https://</code>);</li>
+      <li>ponovna registracija moguća je samo istim ključem operatora (inače 403) i ne smije biti starija od trenutne: <code>validUntil</code> nije raniji, a kad je jednak, bajtovi su isti (inače 409);</li>
+      <li>putanje dokumenata: <code>(policies|methodology|scopes|reports|offers|notes)/&lt;ime&gt;.(md|json)</code>; prihvataju se samo dokumenti na koje upućuje manifest;</li>
+      <li>svaka referenca u manifestu upućuje ili na fajl ovog revizora ili na zajednički dokument glavnog mjesta, i sažetak se poklapa;</li>
+      <li>ponude su potpisane ključem revizora, odnose se na metodologiju iz manifesta, nisu istekle i ne vraćaju objavljenu verziju unazad.</li>
+    </ul>
+    <p class="resp"><b>201</b> <code>{"page", "manifest", "digest"}</code></p>
+  </article>
+
+  <article class="ep" id="ep-publish">
+    <h3><span class="verb">POST</span> <code>hub/api/a/{slug}/publish</code> <span class="cost">5 tokena</span></h3>
+    <p>Objavljivanje atestacije s njenim dokumentima.</p>
+<pre><code>{"attestation": {…},
+ "docs": {"scopes/….md": "…", "reports/….json": "…", "orders/&lt;orderId&gt;.json": "…"}}</code></pre>
+    <ul>
+      <li>potpisana ključem revizora, <code>status</code> = <code>statusEndpoint</code>, <code>unsolicited.policy</code> = sažetak objavljene politike;</li>
+      <li>id je nov: atestacije su nepromjenljive, a ispravka je nova atestacija koja zamjenjuje staru (supersede);</li>
+      <li>metodologija, obim, skala i izvještaj fiksirani su isto kao pri registraciji;</li>
+      <li>za <code>engagement: "commissioned"</code> prilaže se tačno jedna narudžba s tri potpisa (subjekt, sponzor, revizor); <code>orderRef</code> je njen sažetak; subjekt, sponzor, artefakt, metodologija i obim se poklapaju.</li>
+    </ul>
+    <p class="resp"><b>201</b> <code>{"uri", "digest"}</code> — objavljeno.<br><b>202</b> <code>{"uri", "digest", "held": true, "releaseAt"}</code> — neuspjeh po narudžbi s embargom: hub zadržava atestaciju, izvještaj, narudžbu i obim, i objavljuje ih automatski kad embargo istekne.</p>
+  </article>
+
+  <article class="ep" id="ep-revoke">
+    <h3><span class="verb">POST</span> <code>hub/api/a/{slug}/revoke</code> <span class="cost">5 tokena</span></h3>
+<pre><code>{"revocation": {…potpisani opoziv…}}</code></pre>
+    <p>Opoziv se uvijek prihvata, čak i kad je prostor popunjen.</p>
+    <p class="resp"><b>201</b> <code>{"uri"}</code></p>
+    <p class="small muted">Greške: 404 — nema takve atestacije; 409 — već je opozvana.</p>
+  </article>
+
+  <article class="ep" id="ep-hub-responses">
+    <h3><span class="verb">POST</span> <code>a/{slug}/responses</code> <span class="cost">5 tokena</span></h3>
+    <p>Odgovor subjekta na atestaciju revizora huba. Tijelo je goli potpisani odgovor. Najviše 10 odgovora po atestaciji; odgovori su nepromjenljivi (409).</p>
+    <p class="resp"><b>201</b> <code>{"uri"}</code></p>
+  </article>
+
+  <article class="ep" id="ep-export">
+    <h3><span class="verb get">GET</span> <code>hub/api/a/{slug}/export</code></h3>
+    <p>Lista svih fajlova u stablu revizora, da biste ga prenijeli na svoj server: hub je zamjenjiva podrazumijevana opcija.</p>
+    <p class="resp"><b>200</b> <code>{"base", "files": ["manifest.json", …]}</code></p>
+  </article>
+</section>
+
+<section id="orders">
+  <h2>Narudžbe</h2>
+  <p>Pregled može naručiti bilo ko, kod bilo kog revizora koji ima ponude. Pregledač pravi ključ za narudžbu i njime potpisuje narudžbu i kao subjekt i kao sponzor. Revizor je supotpisuje kad objavi atestaciju.</p>
+
+  <article class="ep" id="ep-orders">
+    <h3><span class="verb">POST</span> <code>a/{slug}/orders</code> <span class="cost">10 tokena</span></h3>
+<pre><code>{"order": {…}, "scopeText": "šta pregledati", "contact": "neobavezno"}</code></pre>
+    <ul>
+      <li>narudžbu su potpisali subjekt i sponzor, i ona tačno odgovara ponudi revizora: metodologija, model cijene, uslovi objave;</li>
+      <li><code>fee.offerId</code> je ponuda iz manifesta ili <code>rsp-…</code>, odgovor na zahtjev koji je još otvoren (tada je sponzor autor zahtjeva, a subjekt, metodologija i artefakt se poklapaju sa zahtjevom);</li>
+      <li><code>scope.uri</code> = <code>&lt;osnova&gt;scopes/order-&lt;orderId&gt;.md</code>, a <code>scopeText</code> (1–8000 bajtova) hešira se u <code>scope.digest</code>;</li>
+      <li>kontakt nije obavezan: bilo koji tekst od najviše 256 bajtova; vidi ga samo revizor.</li>
+    </ul>
+    <p class="resp"><b>202</b> <code>{"orderId", "state": "queued-for-review", "digest"}</code>. Zahtjev na koji je odgovoreno tom ponudom se zatvara.</p>
+    <p class="small muted">Greške: 409 — narudžba je već izvršena ili je pod ovim id-jem druga narudžba; 503 — u redu je 100 narudžbi.</p>
+  </article>
+
+  <article class="ep" id="ep-order-status">
+    <h3><span class="verb">POST</span> <code>hub/api/a/{slug}/order-status</code> <span class="cost">1 token</span> <span class="tag">🔏 ključ sponzora</span></h3>
+<pre><code>{"request": {"action": "order-status", "orderId": "…", "sponsor": "onym:key:…",
+             "issuedAt": "…", "signature": "…"}}</code></pre>
+    <p class="resp"><b>200</b> <code>{"queued": bool, "held": bool}</code> — da li narudžba čeka u redu i da li je njen rezultat zadržan pod embargom. To može saznati samo vlasnik ključa narudžbe.</p>
+  </article>
+
+  <article class="ep" id="ep-inbox">
+    <h3><span class="verb">POST</span> <code>hub/api/a/{slug}/inbox</code> <span class="cost">2 tokena</span> <span class="tag">🔏 ključ revizora</span></h3>
+<pre><code>{"request": {"action": "list" | "decline", "auditor": "onym:component:&lt;ime&gt;",
+             "orderId": "…samo za decline", "issuedAt": "…", "signature": "…"}}</code></pre>
+    <p class="resp"><b>list</b> → <code>{"orders": [{"order", "scopeText", "contact", "receivedAt"}], "held": [{"attestationId", "releaseAt"}]}</code><br><b>decline</b> → <code>{"declined": "&lt;orderId&gt;"}</code></p>
+  </article>
+</section>
+
+<section id="requests">
+  <h2>Zahtjevi</h2>
+  <p>Naručilac koji ne zna kome da se obrati objavljuje zahtjev: tačne bajtove, komponentu subjekta, metodologiju i obim, upućen svim revizorima ili jednoj Stellar adresi. Revizori odgovaraju potpisanim ponudama; naručilac bira jednu i naručuje po njoj.</p>
+
+  <article class="ep" id="ep-post-request">
+    <h3><span class="verb">POST</span> <code>hub/api/requests</code> <span class="cost">5 tokena</span></h3>
+<pre><code>{"request": {
+  "requestVersion": 1,
+  "requestId": "req-&lt;20 znakova [a-z0-9]&gt;",
+  "to": null | "onym:key:…",
+  "subject": "onym:component:&lt;ime&gt;",
+  "methodologyClass": "security-review" | "conformance-run",
+  "artifact": {"kind": "source" | "build" | "deployment", "source": "…", "revision": "…", "artifactHash": null},
+  "scopeText": "1–8000 bajtova",
+  "requester": "onym:key:…",
+  "issuedAt": "…", "expiresAt": "… (najkasnije za 30 dana)",
+  "signature": "…ključem requester"
+}}</code></pre>
+    <p><code>to: null</code> — zahtjev je vidljiv svima; inače samo adresatu. <code>conformance-run</code> se prihvata samo za <code>kind: "deployment"</code>.</p>
+    <p class="resp"><b>201</b> <code>{"requestId", "digest"}</code></p>
+    <p class="small muted">Greške: 409 — ovaj id već postoji; 503 — otvoreno je 500 zahtjeva.</p>
+  </article>
+
+  <article class="ep" id="ep-get-requests">
+    <h3><span class="verb get">GET</span> <code>hub/api/requests</code></h3>
+    <p class="resp"><b>200</b> — otvoreni javni zahtjevi, od najnovijih ka najstarijim: <code>[{…zahtjev, "responses": N}]</code>.</p>
+  </article>
+
+  <article class="ep" id="ep-requests-for">
+    <h3><span class="verb">POST</span> <code>hub/api/requests/for</code> <span class="cost">2 tokena</span> <span class="tag">🔏 ključ adresata</span></h3>
+<pre><code>{"request": {"action": "requests-for", "key": "onym:key:…", "issuedAt": "…", "signature": "…"}}</code></pre>
+    <p class="resp"><b>200</b> — zahtjevi upućeni ovom ključu.</p>
+  </article>
+
+  <article class="ep" id="ep-respond">
+    <h3><span class="verb">POST</span> <code>hub/api/requests/{id}/responses</code> <span class="cost">5 tokena</span></h3>
+    <p>Revizor odgovara ponudom.</p>
+<pre><code>{"slug": "my-auditor", "offer": {…}}</code></pre>
+    <p><code>offerId</code> = <code>rsp-&lt;sufiks requestId&gt;</code>; ponuda je potpisana ključem revizora, a metodologija je ona iz zahtjeva; na adresirani zahtjev odgovara samo adresat; obim je fiksiran; ponuda nije istekla i ne vraća prethodnu unazad.</p>
+    <p class="resp"><b>201</b> <code>{"offer": "&lt;uri&gt;"}</code></p>
+    <p class="small muted">Greške: 404 — zahtjev je zatvoren ili je istekao.</p>
+  </article>
+
+  <article class="ep" id="ep-mine">
+    <h3><span class="verb">POST</span> <code>hub/api/requests/{id}/mine</code> <span class="cost">2 tokena</span> <span class="tag">🔏 ključ autora zahtjeva</span></h3>
+<pre><code>{"request": {"action": "responses", "requestId": "…", "issuedAt": "…", "signature": "…"}}</code></pre>
+    <p class="resp"><b>200</b> <code>{"open": bool, "responses": [{"slug", "name", "operator", "fingerprint", "page", "completedOrders", "customers", "offer"}]}</code></p>
+  </article>
+</section>
+
+<section id="vault">
+  <h2>Trezor</h2>
+  <article class="ep" id="ep-vault">
+    <h3><span class="verb">POST</span> <code>hub/api/vault</code> <span class="cost">2 tokena</span> <span class="tag">🔏 ključ trezora</span></h3>
+    <p>Da bi naručilac vidio svoje narudžbe i zahtjeve na bilo kom uređaju, aplikacija čuva njihovu listu šifrovanu (AES-256-GCM, ključ se izvodi iz fraze) pod posebnim ključem za potpis, izvedenim iz iste fraze. Hub čuva šifrovani tekst koji ne može pročitati, pod ključem koji se nigdje drugdje ne pojavljuje.</p>
+<pre><code>{"request": {"action": "get" | "put", "key": "onym:key:…", "data": "base64, samo za put",
+             "issuedAt": "…", "signature": "…"}}</code></pre>
+    <p class="resp"><b>get</b> → <code>{"data", "updatedAt"}</code> ili <code>{"data": null}</code><br><b>put</b> → <code>{"updatedAt"}</code>; podaci najviše 256 KiB; ukupno na hubu najviše 20.000 trezora.</p>
+  </article>
+</section>
+
+<section id="tools">
+  <h2>Alati za provjeru</h2>
+  <p>Pregledač sam ne može pročitati većinu spoljnih adresa (CORS), pa to hub radi umjesto njega: samo javni HTTPS, bez kolačića, nikad u internu mrežu, najviše tri preusmjeravanja.</p>
+
+  <article class="ep" id="ep-fetch">
+    <h3><span class="verb">POST</span> <code>hub/api/fetch</code> <span class="cost">2 tokena</span></h3>
+<pre><code>{"url": "https://…"}</code></pre>
+    <p>Samo JSON i tekst, najviše 1 MiB (inače 415).</p>
+    <p class="resp"><b>200</b> <code>{"url", "status", "contentType", "setsCookie", "digest", "size", "body"}</code></p>
+  </article>
+
+  <article class="ep" id="ep-digest">
+    <h3><span class="verb">POST</span> <code>hub/api/digest</code> <span class="cost">20 tokena</span></h3>
+<pre><code>{"url": "https://…/app.apk"}</code></pre>
+    <p>Hešira fajl kao tok, do 300 MiB, bez vraćanja sadržaja, da bi se fiksirali tačni bajtovi build-a.</p>
+    <p class="resp"><b>200</b> <code>{"url", "status", "digest", "size"}</code></p>
+  </article>
+
+  <article class="ep" id="ep-conformance">
+    <h3><span class="verb">POST</span> <code>hub/api/conformance/discovery</code> <span class="cost">20 tokena</span></h3>
+<pre><code>{"manifestUrl": "https://…/manifest.json"}</code></pre>
+    <p>Pokreće skup provjera usklađenosti za Discovery provajdere (42 provjere) nad manifestom sa <code>"seat": "discovery"</code>. Na druge servise skup se ne primjenjuje (422). Vremensko ograničenje: 3 minuta.</p>
+    <p class="resp"><b>200</b> — kanonski izvještaj: <code>{suite, suiteVersion, runAt, manifestUri, result, documents: [{role, uri, digest, size}], checks: [{id, clause, level, title, outcome, detail}]}</code></p>
+  </article>
+</section>
+
+<section id="lists">
+  <h2>Liste</h2>
+  <article class="ep" id="ep-auditors">
+    <h3><span class="verb get">GET</span> <code>hub/api/auditors</code></h3>
+    <p class="resp"><code>[{"slug", "name", "operator", "fingerprint", "page", "attestations", "offers", "completedOrders", "customers"}]</code></p>
+  </article>
+  <article class="ep" id="ep-seat">
+    <h3><span class="verb get">GET</span> <code>hub/api/seat</code></h3>
+    <p class="resp">Isto za glavno mjesto (<code>"slug": ""</code>).</p>
+  </article>
+  <article class="ep" id="ep-library">
+    <h3><span class="verb get">GET</span> <code>hub/api/library</code></h3>
+    <p>Sve atestacije svih revizora, od najnovijih ka najstarijim. Ovo je indeks, a ne autoritet: pregledač svaki zapis provjerava prema potpisanim fajlovima.</p>
+    <p class="resp"><code>[{"attestationId", "auditor", "auditorSlug", "auditorBase", "fingerprint", "subject", "result", "state", "methodologyClass", "kind", "source", "engagement", "issuedAt", "expiresAt", "orderRef", "uri"}]</code></p>
+<pre><code>curl -s https://foldy.io/audit/hub/api/library | jq '.[0]'</code></pre>
+  </article>
+</section>
+
+<section id="discovery">
+  <h2>Discovery provajder</h2>
+  <p>Provajder <code>onym:component:onym-audit-discovery</code> objavljuje potpisane kataloge koje Onym aplikacije dodaju u <b>Settings → Discovery Providers</b>. Sve su to statički fajlovi:</p>
+  <table class="api-table">
+    <tr><th><code>discovery/manifest.json</code> + <code>.sig</code></th><td><code>seat: "discovery"</code>, profil <code>static-ed25519-v1</code>, mogućnosti <code>signed-snapshot-v1</code> i <code>local-filtering-v1</code></td></tr>
+    <tr><th><code>discovery/catalogs/onym-auditors.json</code></th><td>revizori (<code>seatTypes: ["audit"]</code>), najviše 512 zapisa</td></tr>
+    <tr><th><code>discovery/catalogs/onym-audited-services.json</code></th><td>Onym servisi koji imaju važeću reviziju, sa statusom</td></tr>
+    <tr><th><code>discovery/policies/*.md</code>, <code>discovery/privacy.md</code></th><td>politike fiksirane sažecima u manifestu</td></tr>
+    <tr><th><code>discovery/status/&lt;komponenta&gt;/</code></th><td>stranica statusa na koju upućuje zapis kataloga</td></tr>
+  </table>
+  <p>Snimci se ponovo potpisuju pri svakoj promjeni na hubu, ali ne češće od jednom u 2 minuta, i isporučuju se sa <code>Cache-Control: no-cache</code>. Polja snimka: <code>{version, catalogId, providerId, implementationProfileId, policyDigest, sequence, previousDigest, generatedAt, expiresAt, entries, signature}</code>. Zapis u <code>onym-audited-services</code>:</p>
+<pre><code>{"componentId": "onym:component:onym-relayer", "seatType": "notary",
+ "operator": "onym:key:…", "manifest": {"uri": "…", "digest": "sha256:…"},
+ "profiles": […], "relationship": "other-disclosed", "placement": "policy-ranked",
+ "listedAt": "…", "evidence": [],
+ "status": {"state": "review" | "warning", "uri": "https://foldy.io/audit/discovery/status/onym-relayer/"}}</code></pre>
+  <p>Aplikacija prikazuje <code>status</code> kao oznaku pored servisa i kao link u prozoru za saglasnost. Otisak ključa provajdera u aplikaciji je prvih 16 hex znakova ključa operatora: <b class="mono">4074 4514 be2a 1414</b>.</p>
+</section>
+
+<section id="stellar">
+  <h2>Sidro na Stellar mreži</h2>
+  <p>Registar revizora učvršćuje se na Stellar test mreži: zapis podataka <code>onym-audit-status</code> na nalogu revizora (to je isti ključ kao ključ operatora) čuva SHA-256 kanonskog JSON-a</p>
+<pre><code>{"anchorVersion": 1, "auditor": "onym:component:…",
+ "entries": [{"attestationId", "attestation": "sha256:…", "state", "supersededBy", "revocation"}, …]}</code></pre>
+  <p>sa zapisima sortiranim po <code>attestationId</code>. Ponovno potpisivanje radi svježine ne mijenja sidro; izdavanje i opoziv ga mijenjaju. Mreža čuva svaki zapis s vremenom ledgera, pa se registar ne može naknadno prepisati niti različitim čitaocima prikazati na različit način. Za provjeru služi <a href="../../stellar.js"><code>stellar.js</code></a>: <code>anchorState(account, statusText)</code> šalje upit javnom Horizon čvoru i poredi rezultat.</p>
+</section>
+
+</div>
+
+  </div>
+</main>
+
+<footer class="colophon">
+  <div class="wrap">
+    <p class="small muted">onym audit · <a href="https://github.com/Dubieroj/onym-audit">GitHub</a> · <a href="../../profile/Audit-Static-Ed25519.md">Profil implementacije</a> · <a href="../../hub/terms.md">Uslovi huba</a> · <a href="../../discovery/manifest.json">Discovery</a></p>
+  </div>
+</footer>
+</body>
+</html>

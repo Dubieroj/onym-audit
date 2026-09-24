@@ -8,6 +8,8 @@ import { RE, auditors, load, kindsOf, feeText, pin, subjectOf, newOrderID, sign,
 const $ = (id) => document.getElementById(id);
 const ROOT = new URL(".", import.meta.url);
 const T = JSON.parse($("strings")?.textContent || "{}");
+// The language links keep the auditor chosen in the address.
+for (const l of document.querySelectorAll(".langs a")) l.search = location.search;
 const t = (k, v = {}) => (T[k] ?? k).replace(/\{(\w+)\}/g, (_, x) => v[x] ?? "");
 const hex = (b) => [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, "0")).join("");
 const unhex = (h) => Uint8Array.from(h.match(/../g).map((b) => parseInt(b, 16)));
@@ -44,6 +46,7 @@ async function listAuditors() {
   const list = await auditors(ROOT);
   const box = $("auditors");
   box.replaceChildren();
+  if (!list.length) return box.replaceChildren(el("p", { class: "muted", text: t("no_auditors") }));
   const wanted = new URLSearchParams(location.search).get("auditor") || "";
   for (const a of list) {
     const card = el("button", { type: "button", class: "choice", role: "radio", "aria-checked": "false", onclick: () => pickAuditor(a, card) }, el("b", { text: a.name }), el("span", { text: t("loading") }));

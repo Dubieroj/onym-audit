@@ -3,15 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Naruči reviziju · Onym revizori</title>
+<title>Naruči reviziju · onym audit</title>
 <meta name="description" content="Naručite potpisani pregled bilo koje Onym komponente — repozitorijuma, servisa u radu, Discovery kataloga ili build-a — od revizora kojeg sami izaberete.">
 <meta name="color-scheme" content="light dark">
 <link rel="alternate" hreflang="en" href="https://foldy.io/audit/order/">
 <link rel="alternate" hreflang="ru" href="https://foldy.io/audit/ru/order/">
 <link rel="alternate" hreflang="sr-Latn-ME" href="https://foldy.io/audit/cnr/order/">
 <link rel="alternate" hreflang="x-default" href="https://foldy.io/audit/order/">
-<link rel="stylesheet" href="../../style.css?v=cee39269ad">
-<script type="module" src="../../order.js?v=cee39269ad"></script>
+<link rel="stylesheet" href="../../style.css?v=2bf4be7d30">
+<script type="module" src="../../order.js?v=2bf4be7d30"></script>
 </head>
 <body class="order-page">
 <div class="grain" aria-hidden="true"></div>
@@ -20,7 +20,7 @@
   <div class="wrap masthead-row">
     <a class="brand" href="../">
       <span class="brand-mark" aria-hidden="true"></span>
-      <span class="brand-text"><b>Onym revizori</b> <span class="muted">· naruči reviziju</span></span>
+      <span class="brand-text"><b>onym audit</b> <span class="muted">· naruči reviziju</span></span>
     </a>
     <div class="langs" role="navigation" aria-label="Jezik"><a href="../../order/" hreflang="en" lang="en">EN</a><a href="../../ru/order/" hreflang="ru" lang="ru">RU</a><a href="../../cnr/order/" hreflang="sr-Latn-ME" lang="sr-Latn-ME" aria-current="page">CNR</a></div>
   </div>
@@ -63,7 +63,7 @@
       <div data-kind="source build">
         <label>Repozitorijum (HTTPS)<input id="repo" name="repo" type="url" placeholder="https://github.com/org/repo" autocomplete="off" spellcheck="false"></label>
         <p class="hint">Samo javni repozitorijumi: pregled čita javne bajtove.</p>
-        <label>Komit<input id="commit" name="commit" pattern="[0-9a-f]{40}" placeholder="40 hex characters" autocomplete="off" spellcheck="false" class="mono"></label>
+        <label>Komit<input id="commit" name="commit" pattern="[0-9a-f]{40}" placeholder="40 heksadecimalnih znakova" autocomplete="off" spellcheck="false" class="mono"></label>
         <p class="hint">Puni identifikator od 40 znakova. Atestacija će pokrivati tačno te bajtove i ništa drugo: <code>git rev-parse HEAD</code></p>
       </div>
       <div data-kind="build">
@@ -90,7 +90,7 @@
         <p><b>Vaš ključ za potpis.</b> Dokazuje da je narudžba vaša, a kasnije vam omogućava da potpišete odgovor na atestaciju.</p>
         <label class="radio"><input type="radio" name="keymode" value="new" checked> Napravi novi ključ u ovom pregledaču</label>
         <label class="radio"><input type="radio" name="keymode" value="existing"> Koristi ključ koji već imam</label>
-        <label id="seed-wrap" hidden>Ed25519 seed (hex) — ne napušta ovu stranicu<input id="seed" type="password" autocomplete="off" spellcheck="false" class="mono" placeholder="64 hex characters"></label>
+        <label id="seed-wrap" hidden>Ed25519 seed (hex) — ne napušta ovu stranicu<input id="seed" type="password" autocomplete="off" spellcheck="false" class="mono" placeholder="64 heksadecimalna znaka"></label>
       </div>
     </fieldset>
     <label class="check"><input id="authority" type="checkbox" required> <span>Vlasnik sam ove komponente ili sam ovlašćen da naručim njen pregled.</span></label>
@@ -122,6 +122,6 @@
     <p class="small muted">onym audit · <a href="https://github.com/Dubieroj/onym-audit">github.com/Dubieroj/onym-audit</a> · narudžbe se čuvaju bez kolačića i praćenja; vidi profil privatnosti.</p>
   </div>
 </footer>
-<script type="application/json" id="strings">{"err_repo":"Unesite adresu repozitorijuma s https:// — bez porta, parametara i #fragmenta.","err_commit":"Komit je puni identifikator od 40 heksadecimalnih znakova, malim slovima.","err_component":"Identifikator izgleda ovako: onym:component:my-relay (mala slova, cifre, crtice).","err_scope":"Opišite obim pregleda (do 8000 znakova).","err_seed":"Ključ je 64 heksadecimalna znaka (Ed25519 seed).","err_checks":"Označite obje potvrde.","err_crypto":"Ovaj pregledač ne može da napravi Ed25519 ključeve. Koristite noviji Chrome, Safari ili Firefox.","err_server":"Revizor nije prihvatio narudžbu: {err}","signing":"Potpisujem…","sending":"Šaljem…","submit":"Potpiši i pošalji narudžbu","loading":"učitavam…","auditor_line":"{fp} · ponuda: {n}","err_auditor":"manifest ne prolazi provjeru — nije prikazan","m_security-review":"Bezbjednosna revizija","m_conformance-run":"Provjera usklađenosti","due_days":"izvještaj za {n} dana","fee_probono":"besplatno","fee_same":"isto bez obzira na rezultat","first_yes":"šalju se vama prije bilo kakve objave","first_no":"objavljuju se bez prethodne kopije","embargo_days":"neuspjeh se zadržava do {n} dana","embargo_none":"nema","publish_embargo":"atestacija javna odmah; neuspjeh nakon embarga","publish_now":"atestacija javna odmah","links":"Obavezujući uslovi:","l_method":"metodologija","l_indep":"nezavisnost","l_liab":"odgovornost","l_priv":"privatnost","k_source":"repozitorijum","k_deployment":"servis u radu","k_discovery":"Discovery katalog","k_build":"build aplikacije","err_url":"Unesite https:// adresu manifesta bez porta, parametara i #fragmenta.","err_pin":"Nije moguće pročitati {url}: {err}","err_offer":"Izaberite revizora i ponudu.","hashing":"Računam heš build-a…","pinning":"Čitam manifest…","err_github":"Ovaj revizor čita repozitorijume u studiju huba, koji otvara GitHub repozitorijume: unesite https://github.com/org/repo.","err_not_manifest":"Na adresi {url} nema manifesta komponente (JSON dokumenta s poljem seat). Servis se naručuje po URL-u manifesta.","err_not_discovery":"Ovo nije Discovery provajder (seat „{seat}“): Discovery skup provjera se na njega ne primjenjuje. Da biste ga pregledali, izaberite „servis u radu“."}</script>
+<script type="application/json" id="strings">{"err_repo":"Unesite adresu repozitorijuma s https:// — bez porta, parametara i #fragmenta.","err_commit":"Komit je puni identifikator od 40 heksadecimalnih znakova, malim slovima.","err_component":"Identifikator izgleda ovako: onym:component:my-relay (mala slova, cifre, crtice).","err_scope":"Opišite obim pregleda (do 8000 znakova).","err_seed":"Ključ je 64 heksadecimalna znaka (Ed25519 seed).","err_checks":"Označite obje potvrde.","err_crypto":"Ovaj pregledač ne može da napravi Ed25519 ključeve. Koristite noviji Chrome, Safari ili Firefox.","err_server":"Revizor nije prihvatio narudžbu: {err}","signing":"Potpisujem…","sending":"Šaljem…","submit":"Potpiši i pošalji narudžbu","loading":"učitavam…","auditor_line":"{fp} · ponuda: {n}","err_auditor":"manifest ne prolazi provjeru — nije prikazan","m_security-review":"Bezbjednosna revizija","m_conformance-run":"Provjera usklađenosti","due_days":"izvještaj za {n} dana","fee_probono":"besplatno","fee_same":"isto bez obzira na rezultat","first_yes":"šalju se vama prije bilo kakve objave","first_no":"objavljuju se bez prethodne kopije","embargo_days":"neuspjeh se zadržava do {n} dana","embargo_none":"nema","publish_embargo":"atestacija javna odmah; neuspjeh nakon embarga","publish_now":"atestacija javna odmah","links":"Obavezujući uslovi:","l_method":"metodologija","l_indep":"nezavisnost","l_liab":"odgovornost","l_priv":"privatnost","k_source":"repozitorijum","k_deployment":"servis u radu","k_discovery":"Discovery katalog","k_build":"build aplikacije","err_url":"Unesite https:// adresu manifesta bez porta, parametara i #fragmenta.","err_pin":"Nije moguće pročitati {url}: {err}","err_offer":"Izaberite revizora i ponudu.","hashing":"Računam heš build-a…","pinning":"Čitam manifest…","err_github":"Ovaj revizor čita repozitorijume u studiju huba, koji otvara GitHub repozitorijume: unesite https://github.com/org/repo.","err_not_manifest":"Na adresi {url} nema manifesta komponente (JSON dokumenta s poljem seat). Servis se naručuje po URL-u manifesta.","err_not_discovery":"Ovo nije Discovery provajder (seat „{seat}“): Discovery skup provjera se na njega ne primjenjuje. Da biste ga pregledali, izaberite „servis u radu“.","no_auditors":"Još nijedan revizor ne objavljuje ponude."}</script>
 </body>
 </html>

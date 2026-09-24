@@ -22,12 +22,12 @@ PAGES = [  # template, page path under the language, the JS strings key
     ("landing.html", "", "js"),
     ("order.html", "order/", "order_js"),
     ("app.html", "app/", "studio_js"),
-    ("judge.html", "judge/", "js"),
+    ("api.html", "api/", "js"),
     ("verdict.html", "verdict/", "verdict_js"),
 ]
 # Old addresses that now live elsewhere: a small page per language that
 # sends the reader on (relative, so it works under any prefix).
-REDIRECTS = [("hub/", "../app/")]
+REDIRECTS = [("hub/", "../app/"), ("judge/", "../api/")]
 # Pages rendered once, in English, at a fixed path. The hosted auditor page is
 # served as a/<name>/, two levels below the shared tree.
 SINGLE = [  # template, output path under public/, the JS strings key, root
@@ -38,6 +38,8 @@ JS_KEYS = {js for _, _, js in PAGES}
 # script>, so a browser holding an old copy fetches the new one with the page.
 ASSETS = sorted((ROOT / "public").glob("*.css")) + sorted((ROOT / "public").glob("*.js")) + sorted((ROOT / "public/hub").glob("*.js"))
 VERSION = hashlib.sha256(b"".join(f.read_bytes() for f in ASSETS)).hexdigest()[:10]
+_op = json.loads((ROOT / "public/discovery/manifest.json").read_text())["operator"].removeprefix("onym:key:")
+DISC = {"url": BASE + "discovery/manifest.json", "fp": " ".join(_op[i:i + 4] for i in range(0, 16, 4))}
 
 def render(template, strings, code, lpath, tag, ppath, jskey, root=None):
     here = lpath + ppath
@@ -48,6 +50,15 @@ def render(template, strings, code, lpath, tag, ppath, jskey, root=None):
     s["lang_tag"] = tag
     s["root"] = root
     s["v"] = VERSION
+    # The Discovery provider's address and key fingerprint as the Onym apps
+    # show it: the operator key's first 16 hex characters, in fours.
+    s["disc_url"] = DISC["url"]
+    s["disc_fp"] = DISC["fp"]
+    # The API page's body is written per language in web/api/<code>.html;
+    # its relative links point into the shared tree.
+    if "{{api_body}}" in template:
+        body = (ROOT / "web/api" / f"{code}.html").read_text().replace("{{disc_fp}}", DISC["fp"])
+        s["api_body"] = re.sub(r'href="(?!https?:|#)([^"]+)"', lambda m: f'href="{root}{m.group(1)}"', body)
     s["home"] = "../" * ppath.count("/") or "./"
     s["js"] = json.dumps(strings[code][jskey], ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
     s["alternates"] = "\n".join(

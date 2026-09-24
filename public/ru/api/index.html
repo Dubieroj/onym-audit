@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>API · onym audit</title>
+<meta name="description" content="Подробное описание HTTP API места аудита onym audit: подписанные документы, хаб аудиторов, заказы, заявки, Discovery-провайдер и якорь в Stellar.">
+<meta name="color-scheme" content="light dark">
+<link rel="alternate" hreflang="en" href="https://foldy.io/audit/api/">
+<link rel="alternate" hreflang="ru" href="https://foldy.io/audit/ru/api/">
+<link rel="alternate" hreflang="sr-Latn-ME" href="https://foldy.io/audit/cnr/api/">
+<link rel="alternate" hreflang="x-default" href="https://foldy.io/audit/api/">
+<link rel="stylesheet" href="../../style.css?v=2bf4be7d30">
+</head>
+<body class="api-page">
+<div class="grain" aria-hidden="true"></div>
+<header class="masthead">
+  <div class="wrap masthead-row with-cabinets">
+    <a class="brand" href="../">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span class="brand-text"><b>onym audit</b> <span class="muted">· аудитор сети Onym</span></span>
+    </a>
+    <div class="cabinets">
+      <a class="btn btn-line" href="../app/#auditor">Кабинет аудитора</a>
+      <a class="btn btn-line" href="../app/#customer">Кабинет заказчика</a>
+    </div>
+    <div class="langs" role="navigation" aria-label="Язык"><a href="../../api/" hreflang="en" lang="en">EN</a><a href="../../ru/api/" hreflang="ru" lang="ru" aria-current="page">RU</a><a href="../../cnr/api/" hreflang="sr-Latn-ME" lang="sr-Latn-ME">CNR</a></div>
+  </div>
+</header>
+
+<main class="wrap">
+  <header class="api-head">
+    <p class="kicker">Для разработчиков</p>
+    <h1>HTTP API</h1>
+    <p class="lede">Всё, что можно прочитать, проверить и отправить: адреса, тела запросов, проверки на стороне сервера, ответы и лимиты. Каждое изменение — подписанный документ; сервер хранит байты, но подделать их не может.</p>
+  </header>
+  <div class="api-layout">
+<nav class="api-toc" aria-label="Содержание">
+  <p class="kicker">Содержание</p>
+  <ol>
+    <li><a href="#overview">Обзор</a></li>
+    <li><a href="#rules">Общие правила</a></li>
+    <li><a href="#read">Чтение и проверка</a></li>
+    <li><a href="#seat">Основное место</a></li>
+    <li><a href="#hub">Хаб: регистрация и публикация</a></li>
+    <li><a href="#orders">Заказы</a></li>
+    <li><a href="#requests">Заявки</a></li>
+    <li><a href="#vault">Хранилище</a></li>
+    <li><a href="#tools">Инструменты проверки</a></li>
+    <li><a href="#lists">Списки</a></li>
+    <li><a href="#discovery">Discovery-провайдер</a></li>
+    <li><a href="#stellar">Якорь в Stellar</a></li>
+  </ol>
+</nav>
+
+<div class="api-body">
+
+<section id="overview">
+  <h2>Обзор</h2>
+  <p>База всех адресов — <code>https://foldy.io/audit/</code>; пути ниже указаны относительно неё. Сервер состоит из трёх частей:</p>
+  <ul>
+    <li><b>основное место</b> «onym audit» — дерево подписанных документов в корне и два адреса для записи (<code>orders</code>, <code>responses</code>);</li>
+    <li><b>хаб</b> — любой может стать аудитором (<code>hub/api/…</code>), его документы лежат в <code>a/&lt;имя&gt;/</code>;</li>
+    <li><b>Discovery-провайдер</b> — подписанные каталоги в <code>discovery/</code>, которые читают приложения Onym.</li>
+  </ul>
+  <p>Учётных записей, паролей и cookies нет. Всё, что меняет состояние, подписано ключом Ed25519 того, кто действует: аудитора, заказчика или проверяемого. Сервер проверяет подпись и хранит байты ровно такими, какими их подписали; подделать документ он не может, потому что не держит ни одного ключа аудитора. Всё, что сервер отдаёт, можно проверить без доверия к нему — в браузере это делает <a href="../../verify.js"><code>verify.js</code></a>.</p>
+  <p>Форматы самих документов (манифест, аттестация, список статусов, заказ, оферта, ответ, отзыв) задаёт <a href="../../profile/Audit-Static-Ed25519.md">профиль реализации</a>. Эта страница описывает транспорт: адреса, тела запросов, проверки, ответы и лимиты. Исходный код — <a href="https://github.com/Dubieroj/onym-audit">github.com/Dubieroj/onym-audit</a> (<code>hub/</code>, <code>server/</code>).</p>
+</section>
+
+<section id="rules">
+  <h2>Общие правила</h2>
+
+  <h3 id="canon">Канонический JSON</h3>
+  <p>Тот же, что в Discovery-Static-Ed25519 §3:</p>
+  <ul>
+    <li>верхний уровень — объект; ключи отсортированы по байтам UTF-8 на любой глубине; запись компактная, без пробелов;</li>
+    <li>экранируются только <code>"</code>, <code>\</code> и U+0000–U+001F (двухсимвольные формы, где они есть, иначе <code>\u00xx</code> в нижнем регистре);</li>
+    <li>числа — только неотрицательные целые до 2<sup>53</sup>−1;</li>
+    <li>дубликаты ключей, невалидный UTF-8 и одиночные суррогаты отклоняются, а не исправляются.</li>
+  </ul>
+  <p>Сервер канонизирует всё, что принимает, и хранит канонические байты.</p>
+
+  <h3 id="sig">Подписи, ключи, дайджесты, время</h3>
+  <table class="api-table">
+    <tr><th>Подпись</th><td>Ed25519 над каноническими байтами документа без поля <code>signature</code> (удаляется только на верхнем уровне); значение — стандартный base64 с паддингом. Рядом с каждым подписанным файлом лежит <code>.sig</code>: та же строка и перевод строки.</td></tr>
+    <tr><th>Ключ</th><td><code>onym:key:&lt;64 hex в нижнем регистре&gt;</code> — открытый ключ Ed25519. Отпечаток на страницах — первые 8 байт SHA-256 ключа через двоеточие.</td></tr>
+    <tr><th>Дайджест</th><td><code>sha256:&lt;64 hex&gt;</code> от точных байтов файла.</td></tr>
+    <tr><th>Время</th><td>RFC 3339 в UTC с точностью до секунды: <code>2026-09-25T10:00:00Z</code>. Другие формы отклоняются.</td></tr>
+  </table>
+
+  <h3 id="signed">Подписанный запрос</h3>
+  <p>Адреса с пометкой <span class="tag">🔏 подпись</span> принимают <code>{"request": {…}}</code>. Внутренний объект подписан названным ключом, содержит <code>issuedAt</code>, который отличается от часов сервера не больше чем на <b>±10 минут</b>, и не содержит лишних полей. Так браузер доказывает владение ключом без сессий и паролей:</p>
+<pre><code>import { canonical, parseStrict } from "https://foldy.io/audit/verify.js";
+
+const now = new Date().toISOString().replace(/\.\d+Z$/, "Z");
+const req = parseStrict(JSON.stringify({ action: "order-status", orderId, sponsor: key, issuedAt: now }));
+const sig = await crypto.subtle.sign("Ed25519", privateKey, new TextEncoder().encode(canonical(req)));
+req.set("signature", btoa(String.fromCharCode(...new Uint8Array(sig))));
+
+await fetch("https://foldy.io/audit/hub/api/a/alice/order-status", {
+  method: "POST", headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ request: JSON.parse(canonical(req)) }),
+});</code></pre>
+
+  <h3 id="errors">Ответы и ошибки</h3>
+  <p>Ответы — JSON с <code>Cache-Control: no-store</code>. Ошибка хаба — <code>{"error": "&lt;текст&gt;"}</code>; ошибка основного места — <code>{"error": "&lt;код&gt;", "detail": "&lt;текст&gt;"}</code>.</p>
+  <table class="api-table">
+    <tr><th>400</th><td>тело не разбирается или содержит неизвестное поле</td></tr>
+    <tr><th>403</th><td>подпись не того ключа или несвежий <code>issuedAt</code></td></tr>
+    <tr><th>404</th><td>нет такого аудитора, аттестации или открытой заявки</td></tr>
+    <tr><th>409</th><td>конфликт с уже опубликованным: неизменяемый документ, откат версии, занятое имя</td></tr>
+    <tr><th>413</th><td>тело больше лимита</td></tr>
+    <tr><th>415</th><td><code>fetch</code>: ответ не JSON и не текст</td></tr>
+    <tr><th>422</th><td>документ не прошёл проверку — причина в тексте ошибки</td></tr>
+    <tr><th>429</th><td>превышен лимит запросов</td></tr>
+    <tr><th>502</th><td>внешний адрес недоступен или отвечает не так</td></tr>
+    <tr><th>503</th><td>очередь заполнена или хаб занят тяжёлыми проверками</td></tr>
+    <tr><th>507</th><td>хранилище аудитора на хабе заполнено (20 МиБ)</td></tr>
+  </table>
+
+  <h3 id="limits">Лимиты</h3>
+  <ul>
+    <li>Тело запроса к хабу — до 4 МиБ; каждый документ — до 1 МиБ; дерево одного аудитора — до 20 МиБ.</li>
+    <li>Скорость — «ведро токенов» на IP-адрес (для IPv6 — на всю /64): ёмкость 60, пополнение 1 токен в секунду. Цена вызова указана у каждого адреса. GET-запросы списков не ограничены.</li>
+    <li>«Тяжёлые» вызовы (<code>digest</code>, <code>conformance</code>) — не больше двух одновременно на весь хаб.</li>
+    <li>Основное место: заказ — до 64 КиБ, ответ — до 16 КиБ, общий лимит 20 запросов с пополнением 1 в секунду.</li>
+  </ul>
+
+  <h3 id="static">Статические файлы</h3>
+  <p>Документы отдаются как есть, побайтно, с <code>Access-Control-Allow-Origin: *</code>, <code>X-Content-Type-Options: nosniff</code> и <code>Cache-Control: no-cache</code>; без cookies и журналов доступа. Страницы работают с CSP <code>script-src 'self'</code>.</p>
+</section>
+
+<section id="read">
+  <h2>Чтение и проверка</h2>
+  <p>У основного места (корень <code>/audit/</code>) и у каждого аудитора хаба (<code>a/&lt;имя&gt;/</code>) одинаковое дерево:</p>
+  <table class="api-table">
+    <tr><th><code>manifest.json</code> + <code>.sig</code></th><td>подписанный манифест аудитора: ключ оператора, делегированный ключ статусов, политики, методики, оферты</td></tr>
+    <tr><th><code>status.json</code> + <code>.sig</code></th><td>список статусов, подписанный делегированным ключом; переподписывается каждые 6 часов, <code>nextUpdate</code> — через 48 часов</td></tr>
+    <tr><th><code>attestations/&lt;id&gt;.json</code></th><td>аттестации — неизменяемые</td></tr>
+    <tr><th><code>revocations/&lt;id&gt;.json</code></th><td>подписанные отзывы</td></tr>
+    <tr><th><code>responses/&lt;аттестация&gt;/&lt;id&gt;.json</code></th><td>подписанные ответы проверяемых</td></tr>
+    <tr><th><code>offers/&lt;id&gt;.json</code></th><td>оферты: методика, цена, срок, условия раскрытия</td></tr>
+    <tr><th><code>orders/&lt;id&gt;.json</code></th><td>заказы с тремя подписями, публикуются вместе с аттестацией</td></tr>
+    <tr><th><code>scopes/</code>, <code>reports/</code>, <code>methodology/</code>, <code>policies/</code></th><td>документы, закреплённые дайджестами</td></tr>
+  </table>
+  <p>Запись списка статусов:</p>
+<pre><code>{"attestationId": "onym-discovery-2026-09-24",
+ "attestation": {"uri": "https://foldy.io/audit/attestations/onym-discovery-2026-09-24.json",
+                 "digest": "sha256:…"},
+ "state": "active" | "revoked" | "superseded" | "expired",
+ "supersededBy": null, "revocation": null,
+ "responses": [{"uri": "…", "digest": "…"}]}</code></pre>
+  <p>Как проверить аттестацию, ничему не доверяя:</p>
+  <ol>
+    <li>подпись манифеста сходится с его <code>operator</code>;</li>
+    <li>список статусов подписан <code>statusKey</code> из манифеста, <code>auditorKey</code> совпадает с <code>operator</code>, а <code>nextUpdate</code> ещё не наступил;</li>
+    <li>дайджест файла аттестации совпадает с записью в списке, и запись в состоянии <code>active</code>;</li>
+    <li>аттестация подписана ключом оператора и не истекла; закреплённые документы (область, методика, отчёт) совпадают со своими дайджестами.</li>
+  </ol>
+<pre><code>import { verifyAttestation } from "https://foldy.io/audit/verify.js";
+const get = (p) => fetch("https://foldy.io/audit/" + p).then((r) => r.text());
+const d = await verifyAttestation({
+  manifestText: await get("manifest.json"),
+  statusText: await get("status.json"),
+  attText: await get("attestations/onym-discovery-2026-09-24.json"),
+  target: null, credited: true,
+});
+// d.display: "attested" | "revoked" | "superseded" | "expired" | "status-unknown" | …</code></pre>
+  <p>Страница каждой аттестации — <code>verdict/?id=&lt;id&gt;</code> для основного места и <code>verdict/?a=&lt;имя&gt;&amp;id=&lt;id&gt;</code> для аудитора хаба — делает эти проверки в браузере и показывает каждую.</p>
+</section>
+
+<section id="seat">
+  <h2>Основное место «onym audit»</h2>
+
+  <article class="ep" id="ep-seat-orders">
+    <h3><span class="verb">POST</span> <code>orders</code></h3>
+    <p>Принять заказ (Audit.md §6). Тело — либо голый заказ, подписанный проверяемым и спонсором, либо конверт:</p>
+<pre><code>{"order": {…}, "scopeText": "что проверить", "contact": "любой текст, необязательно"}</code></pre>
+    <p>В конверте <code>order.scope.uri</code> = <code>&lt;база&gt;scopes/order-&lt;orderId&gt;.md</code>, а SHA-256 от <code>scopeText</code> (1–8192 байт) равен <code>order.scope.digest</code>. Контакт — до 256 байт без управляющих символов; он не публикуется.</p>
+    <p class="resp"><b>202</b> <code>{"orderId", "state": "queued-for-review", "digest"}</code> — заказ в очереди; это ещё не согласие аудитора.</p>
+    <p class="small muted">Ошибки: 422 <code>order_invalid</code>, 409 <code>order_conflict</code> (под этим id уже другой заказ), 503 <code>inbox_full</code> (1000 заказов), 413 <code>oversize</code>, 429 <code>rate_limited</code>.</p>
+  </article>
+
+  <article class="ep" id="ep-seat-responses">
+    <h3><span class="verb">POST</span> <code>responses</code></h3>
+    <p>Ответ проверяемого на аттестацию (Audit.md §5.7.5). Тело — голый подписанный ответ, до 16 КиБ; <code>attestationId</code> и <code>responseId</code> — 16–128 символов <code>[A-Za-z0-9_-]</code>. После записи список статусов переподписывается, и ответ появляется рядом с аттестацией.</p>
+    <p class="resp"><b>201</b> <code>{"uri", "digest"}</code></p>
+    <p class="small muted">Ошибки: 404 <code>attestation_unknown</code>, 422 <code>subject_response_invalid</code>, 409 <code>response_conflict</code> — ответы неизменяемы.</p>
+  </article>
+</section>
+
+<section id="hub">
+  <h2>Хаб: регистрация и публикация</h2>
+  <p>Аудитор хаба держит свой ключ в браузере (кабинет аудитора) — хаб видит только подписанные документы. Путь аудитора: <b>claim</b> → подписать манифест → <b>register</b> → <b>publish</b> аттестаций → при необходимости <b>revoke</b>.</p>
+
+  <article class="ep" id="ep-claim">
+    <h3><span class="verb">POST</span> <code>hub/api/claim</code> <span class="cost">5 токенов</span></h3>
+    <p>Забронировать имя и получить делегированный ключ статусов, который манифест должен назвать.</p>
+<pre><code>{"slug": "my-auditor"}</code></pre>
+    <p>Имя: <code>^[a-z][a-z0-9-]{2,31}$</code>, не из зарезервированных (admin, api, hub, audit, onym, onym-audit, foundation, sobor, root, status, www). Бронь живёт 30 минут; повторный вызов в этот срок возвращает ту же бронь.</p>
+    <p class="resp"><b>200</b> <code>{"slug", "statusKey", "base", "componentId", "expires"}</code></p>
+    <p class="small muted">Ошибки: 409 — имя занято; 422 — имя недопустимо.</p>
+  </article>
+
+  <article class="ep" id="ep-register">
+    <h3><span class="verb">POST</span> <code>hub/api/register</code> <span class="cost">10 токенов</span></h3>
+    <p>Опубликовать или заменить манифест вместе с документами, на которые он ссылается.</p>
+<pre><code>{"slug": "my-auditor",
+ "manifest": {…подписанный манифест…},
+ "docs": {"policies/independence.md": "текст", "offers/manual-review.json": "{…}", …}}</code></pre>
+    <ul>
+      <li><code>componentId</code> = <code>onym:component:&lt;имя&gt;</code>; <code>statusEndpoint</code> = <code>&lt;база&gt;status.json</code>; <code>statusKey</code> — выданный при claim;</li>
+      <li><code>contact</code> — любой текст до 256 байт без управляющих символов (ссылкой на страницах он становится, только если начинается с <code>mailto:</code> или <code>https://</code>);</li>
+      <li>повторная регистрация — только тем же ключом оператора (иначе 403) и не старее текущей: <code>validUntil</code> не раньше, а при равном — те же байты (иначе 409);</li>
+      <li>пути документов: <code>(policies|methodology|scopes|reports|offers|notes)/&lt;имя&gt;.(md|json)</code>; принимаются только документы, на которые ссылается манифест;</li>
+      <li>каждая ссылка манифеста указывает либо на файл этого аудитора, либо на общий документ основного места, и дайджест совпадает;</li>
+      <li>оферты подписаны ключом аудитора, относятся к методике из манифеста, не истекли и не откатывают опубликованную версию.</li>
+    </ul>
+    <p class="resp"><b>201</b> <code>{"page", "manifest", "digest"}</code></p>
+  </article>
+
+  <article class="ep" id="ep-publish">
+    <h3><span class="verb">POST</span> <code>hub/api/a/{slug}/publish</code> <span class="cost">5 токенов</span></h3>
+    <p>Опубликовать аттестацию с её документами.</p>
+<pre><code>{"attestation": {…},
+ "docs": {"scopes/….md": "…", "reports/….json": "…", "orders/&lt;orderId&gt;.json": "…"}}</code></pre>
+    <ul>
+      <li>подписана ключом аудитора, <code>status</code> = <code>statusEndpoint</code>, <code>unsolicited.policy</code> = дайджест опубликованной политики;</li>
+      <li>id новый: аттестации неизменяемы, исправление — новая аттестация, которая заменяет старую (supersede);</li>
+      <li>методика, область, шкала и отчёт закреплены так же, как при регистрации;</li>
+      <li>для <code>engagement: "commissioned"</code> прикладывается ровно один заказ с тремя подписями (проверяемый, спонсор, аудитор); <code>orderRef</code> — его дайджест; проверяемый, спонсор, артефакт, методика и область совпадают.</li>
+    </ul>
+    <p class="resp"><b>201</b> <code>{"uri", "digest"}</code> — опубликовано.<br><b>202</b> <code>{"uri", "digest", "held": true, "releaseAt"}</code> — провал по заказу с эмбарго: аттестация, отчёт, заказ и область удерживаются хабом и выходят сами, когда эмбарго кончится.</p>
+  </article>
+
+  <article class="ep" id="ep-revoke">
+    <h3><span class="verb">POST</span> <code>hub/api/a/{slug}/revoke</code> <span class="cost">5 токенов</span></h3>
+<pre><code>{"revocation": {…подписанный отзыв…}}</code></pre>
+    <p>Отзыв принимается всегда, даже когда хранилище заполнено.</p>
+    <p class="resp"><b>201</b> <code>{"uri"}</code></p>
+    <p class="small muted">Ошибки: 404 — нет аттестации; 409 — уже отозвана.</p>
+  </article>
+
+  <article class="ep" id="ep-hub-responses">
+    <h3><span class="verb">POST</span> <code>a/{slug}/responses</code> <span class="cost">5 токенов</span></h3>
+    <p>Ответ проверяемого на аттестацию аудитора хаба. Тело — голый подписанный ответ. Не больше 10 ответов на аттестацию; ответы неизменяемы (409).</p>
+    <p class="resp"><b>201</b> <code>{"uri"}</code></p>
+  </article>
+
+  <article class="ep" id="ep-export">
+    <h3><span class="verb get">GET</span> <code>hub/api/a/{slug}/export</code></h3>
+    <p>Список всех файлов дерева аудитора — чтобы перенести его на свой сервер: хаб — заменяемый вариант по умолчанию.</p>
+    <p class="resp"><b>200</b> <code>{"base", "files": ["manifest.json", …]}</code></p>
+  </article>
+</section>
+
+<section id="orders">
+  <h2>Заказы</h2>
+  <p>Заказать проверку может кто угодно, у любого аудитора с офертами. Браузер создаёт ключ для заказа и подписывает им заказ как проверяемый и как спонсор; аудитор контрподписывает его, когда публикует аттестацию.</p>
+
+  <article class="ep" id="ep-orders">
+    <h3><span class="verb">POST</span> <code>a/{slug}/orders</code> <span class="cost">10 токенов</span></h3>
+<pre><code>{"order": {…}, "scopeText": "что проверить", "contact": "необязательно"}</code></pre>
+    <ul>
+      <li>заказ подписан проверяемым и спонсором и точно соответствует оферте аудитора: методика, модель цены, условия раскрытия;</li>
+      <li><code>fee.offerId</code> — оферта из манифеста или <code>rsp-…</code>, ответ на ещё открытую заявку (тогда спонсор — автор заявки, а проверяемый, методика и артефакт совпадают с заявкой);</li>
+      <li><code>scope.uri</code> = <code>&lt;база&gt;scopes/order-&lt;orderId&gt;.md</code>, <code>scopeText</code> (1–8000 байт) хешируется в <code>scope.digest</code>;</li>
+      <li>контакт необязателен: любой текст до 256 байт; его видит только аудитор.</li>
+    </ul>
+    <p class="resp"><b>202</b> <code>{"orderId", "state": "queued-for-review", "digest"}</code>. Заявка, на которую ответили офертой, закрывается.</p>
+    <p class="small muted">Ошибки: 409 — заказ уже выполнен или под этим id другой; 503 — в очереди 100 заказов.</p>
+  </article>
+
+  <article class="ep" id="ep-order-status">
+    <h3><span class="verb">POST</span> <code>hub/api/a/{slug}/order-status</code> <span class="cost">1 токен</span> <span class="tag">🔏 ключ спонсора</span></h3>
+<pre><code>{"request": {"action": "order-status", "orderId": "…", "sponsor": "onym:key:…",
+             "issuedAt": "…", "signature": "…"}}</code></pre>
+    <p class="resp"><b>200</b> <code>{"queued": bool, "held": bool}</code> — ждёт ли заказ в очереди и не удерживается ли его результат под эмбарго. Никто, кроме владельца ключа заказа, этого не узнает.</p>
+  </article>
+
+  <article class="ep" id="ep-inbox">
+    <h3><span class="verb">POST</span> <code>hub/api/a/{slug}/inbox</code> <span class="cost">2 токена</span> <span class="tag">🔏 ключ аудитора</span></h3>
+<pre><code>{"request": {"action": "list" | "decline", "auditor": "onym:component:&lt;имя&gt;",
+             "orderId": "…только для decline", "issuedAt": "…", "signature": "…"}}</code></pre>
+    <p class="resp"><b>list</b> → <code>{"orders": [{"order", "scopeText", "contact", "receivedAt"}], "held": [{"attestationId", "releaseAt"}]}</code><br><b>decline</b> → <code>{"declined": "&lt;orderId&gt;"}</code></p>
+  </article>
+</section>
+
+<section id="requests">
+  <h2>Заявки</h2>
+  <p>Если заказчик не знает, к кому обратиться, он публикует заявку: точные байты, проверяемый компонент, методику и область — всем аудиторам или одному Stellar-адресу. Аудиторы отвечают подписанными офертами, заказчик выбирает одну и заказывает по ней.</p>
+
+  <article class="ep" id="ep-post-request">
+    <h3><span class="verb">POST</span> <code>hub/api/requests</code> <span class="cost">5 токенов</span></h3>
+<pre><code>{"request": {
+  "requestVersion": 1,
+  "requestId": "req-&lt;20 символов [a-z0-9]&gt;",
+  "to": null | "onym:key:…",
+  "subject": "onym:component:&lt;имя&gt;",
+  "methodologyClass": "security-review" | "conformance-run",
+  "artifact": {"kind": "source" | "build" | "deployment", "source": "…", "revision": "…", "artifactHash": null},
+  "scopeText": "1–8000 байт",
+  "requester": "onym:key:…",
+  "issuedAt": "…", "expiresAt": "… (не позже чем через 30 дней)",
+  "signature": "…ключом requester"
+}}</code></pre>
+    <p><code>to: null</code> — заявка видна всем; иначе только адресату. <code>conformance-run</code> принимается только для <code>kind: "deployment"</code>.</p>
+    <p class="resp"><b>201</b> <code>{"requestId", "digest"}</code></p>
+    <p class="small muted">Ошибки: 409 — такой id уже есть; 503 — открыто 500 заявок.</p>
+  </article>
+
+  <article class="ep" id="ep-get-requests">
+    <h3><span class="verb get">GET</span> <code>hub/api/requests</code></h3>
+    <p class="resp"><b>200</b> — открытые публичные заявки, от новых к старым: <code>[{…заявка, "responses": N}]</code>.</p>
+  </article>
+
+  <article class="ep" id="ep-requests-for">
+    <h3><span class="verb">POST</span> <code>hub/api/requests/for</code> <span class="cost">2 токена</span> <span class="tag">🔏 ключ адресата</span></h3>
+<pre><code>{"request": {"action": "requests-for", "key": "onym:key:…", "issuedAt": "…", "signature": "…"}}</code></pre>
+    <p class="resp"><b>200</b> — заявки, адресованные этому ключу.</p>
+  </article>
+
+  <article class="ep" id="ep-respond">
+    <h3><span class="verb">POST</span> <code>hub/api/requests/{id}/responses</code> <span class="cost">5 токенов</span></h3>
+    <p>Аудитор отвечает офертой.</p>
+<pre><code>{"slug": "my-auditor", "offer": {…}}</code></pre>
+    <p><code>offerId</code> = <code>rsp-&lt;суффикс requestId&gt;</code>; оферта подписана ключом аудитора, методика — из заявки; на адресную заявку отвечает только адресат; область закреплена; оферта не истекла и не откатывает прежнюю.</p>
+    <p class="resp"><b>201</b> <code>{"offer": "&lt;uri&gt;"}</code></p>
+    <p class="small muted">Ошибки: 404 — заявка закрыта или истекла.</p>
+  </article>
+
+  <article class="ep" id="ep-mine">
+    <h3><span class="verb">POST</span> <code>hub/api/requests/{id}/mine</code> <span class="cost">2 токена</span> <span class="tag">🔏 ключ автора заявки</span></h3>
+<pre><code>{"request": {"action": "responses", "requestId": "…", "issuedAt": "…", "signature": "…"}}</code></pre>
+    <p class="resp"><b>200</b> <code>{"open": bool, "responses": [{"slug", "name", "operator", "fingerprint", "page", "completedOrders", "customers", "offer"}]}</code></p>
+  </article>
+</section>
+
+<section id="vault">
+  <h2>Хранилище</h2>
+  <article class="ep" id="ep-vault">
+    <h3><span class="verb">POST</span> <code>hub/api/vault</code> <span class="cost">2 токена</span> <span class="tag">🔏 ключ хранилища</span></h3>
+    <p>Чтобы один и тот же заказчик видел свои заказы и заявки на любом устройстве, приложение хранит их список зашифрованным (AES-256-GCM, ключ выводится из фразы) под отдельным ключом подписи, выведенным из той же фразы. Хаб хранит шифртекст, который не может прочитать, под ключом, который больше нигде не встречается.</p>
+<pre><code>{"request": {"action": "get" | "put", "key": "onym:key:…", "data": "base64, только для put",
+             "issuedAt": "…", "signature": "…"}}</code></pre>
+    <p class="resp"><b>get</b> → <code>{"data", "updatedAt"}</code> или <code>{"data": null}</code><br><b>put</b> → <code>{"updatedAt"}</code>; данные — до 256 КиБ; всего на хабе — до 20 000 хранилищ.</p>
+  </article>
+</section>
+
+<section id="tools">
+  <h2>Инструменты проверки</h2>
+  <p>Браузер не может сам прочитать большинство внешних адресов (CORS), поэтому хаб делает это за него — только публичный HTTPS, без cookies, никогда не во внутреннюю сеть, не больше трёх перенаправлений.</p>
+
+  <article class="ep" id="ep-fetch">
+    <h3><span class="verb">POST</span> <code>hub/api/fetch</code> <span class="cost">2 токена</span></h3>
+<pre><code>{"url": "https://…"}</code></pre>
+    <p>Только JSON и текст, до 1 МиБ (иначе 415).</p>
+    <p class="resp"><b>200</b> <code>{"url", "status", "contentType", "setsCookie", "digest", "size", "body"}</code></p>
+  </article>
+
+  <article class="ep" id="ep-digest">
+    <h3><span class="verb">POST</span> <code>hub/api/digest</code> <span class="cost">20 токенов</span></h3>
+<pre><code>{"url": "https://…/app.apk"}</code></pre>
+    <p>Хеширует файл потоком, до 300 МиБ, не возвращая его, — чтобы закрепить точные байты сборки.</p>
+    <p class="resp"><b>200</b> <code>{"url", "status", "digest", "size"}</code></p>
+  </article>
+
+  <article class="ep" id="ep-conformance">
+    <h3><span class="verb">POST</span> <code>hub/api/conformance/discovery</code> <span class="cost">20 токенов</span></h3>
+<pre><code>{"manifestUrl": "https://…/manifest.json"}</code></pre>
+    <p>Запускает набор проверок соответствия Discovery-провайдера (42 проверки) против манифеста с <code>"seat": "discovery"</code>; к другим сервисам набор не применяется (422). Таймаут — 3 минуты.</p>
+    <p class="resp"><b>200</b> — канонический отчёт: <code>{suite, suiteVersion, runAt, manifestUri, result, documents: [{role, uri, digest, size}], checks: [{id, clause, level, title, outcome, detail}]}</code></p>
+  </article>
+</section>
+
+<section id="lists">
+  <h2>Списки</h2>
+  <article class="ep" id="ep-auditors">
+    <h3><span class="verb get">GET</span> <code>hub/api/auditors</code></h3>
+    <p class="resp"><code>[{"slug", "name", "operator", "fingerprint", "page", "attestations", "offers", "completedOrders", "customers"}]</code></p>
+  </article>
+  <article class="ep" id="ep-seat">
+    <h3><span class="verb get">GET</span> <code>hub/api/seat</code></h3>
+    <p class="resp">То же для основного места (<code>"slug": ""</code>).</p>
+  </article>
+  <article class="ep" id="ep-library">
+    <h3><span class="verb get">GET</span> <code>hub/api/library</code></h3>
+    <p>Все аттестации всех аудиторов, от новых к старым. Это указатель, а не авторитет: каждую запись браузер проверяет по подписанным файлам.</p>
+    <p class="resp"><code>[{"attestationId", "auditor", "auditorSlug", "auditorBase", "fingerprint", "subject", "result", "state", "methodologyClass", "kind", "source", "engagement", "issuedAt", "expiresAt", "orderRef", "uri"}]</code></p>
+<pre><code>curl -s https://foldy.io/audit/hub/api/library | jq '.[0]'</code></pre>
+  </article>
+</section>
+
+<section id="discovery">
+  <h2>Discovery-провайдер</h2>
+  <p>Провайдер <code>onym:component:onym-audit-discovery</code> публикует подписанные каталоги, которые приложения Onym подключают в <b>Settings → Discovery Providers</b>. Всё — статические файлы:</p>
+  <table class="api-table">
+    <tr><th><code>discovery/manifest.json</code> + <code>.sig</code></th><td><code>seat: "discovery"</code>, профиль <code>static-ed25519-v1</code>, возможности <code>signed-snapshot-v1</code> и <code>local-filtering-v1</code></td></tr>
+    <tr><th><code>discovery/catalogs/onym-auditors.json</code></th><td>аудиторы (<code>seatTypes: ["audit"]</code>), до 512 записей</td></tr>
+    <tr><th><code>discovery/catalogs/onym-audited-services.json</code></th><td>сервисы Onym, по которым есть действующий аудит, со статусом</td></tr>
+    <tr><th><code>discovery/policies/*.md</code>, <code>discovery/privacy.md</code></th><td>политики, закреплённые дайджестами в манифесте</td></tr>
+    <tr><th><code>discovery/status/&lt;компонент&gt;/</code></th><td>страница статуса, на которую ссылается запись каталога</td></tr>
+  </table>
+  <p>Снимки переподписываются при каждом изменении на хабе, но не чаще раза в 2 минуты, и отдаются с <code>Cache-Control: no-cache</code>. Поля снимка: <code>{version, catalogId, providerId, implementationProfileId, policyDigest, sequence, previousDigest, generatedAt, expiresAt, entries, signature}</code>. Запись в <code>onym-audited-services</code>:</p>
+<pre><code>{"componentId": "onym:component:onym-relayer", "seatType": "notary",
+ "operator": "onym:key:…", "manifest": {"uri": "…", "digest": "sha256:…"},
+ "profiles": […], "relationship": "other-disclosed", "placement": "policy-ranked",
+ "listedAt": "…", "evidence": [],
+ "status": {"state": "review" | "warning", "uri": "https://foldy.io/audit/discovery/status/onym-relayer/"}}</code></pre>
+  <p>Приложение показывает <code>status</code> плашкой у сервиса и ссылкой в окне согласия. Отпечаток ключа провайдера в приложении — первые 16 hex-символов ключа оператора: <b class="mono">4074 4514 be2a 1414</b>.</p>
+</section>
+
+<section id="stellar">
+  <h2>Якорь в Stellar</h2>
+  <p>Реестр аудитора закрепляется в тестовой сети Stellar: запись данных <code>onym-audit-status</code> на аккаунте аудитора (это тот же ключ оператора) хранит SHA-256 от канонического JSON</p>
+<pre><code>{"anchorVersion": 1, "auditor": "onym:component:…",
+ "entries": [{"attestationId", "attestation": "sha256:…", "state", "supersededBy", "revocation"}, …]}</code></pre>
+  <p>с записями, отсортированными по <code>attestationId</code>. Переподписание ради свежести якорь не меняет; выпуск и отзыв — меняют. Сеть хранит каждую запись со временем леджера, поэтому реестр нельзя задним числом переписать или показать разным читателям по-разному. Проверка — <a href="../../stellar.js"><code>stellar.js</code></a>: <code>anchorState(account, statusText)</code> спрашивает публичный узел Horizon и сравнивает.</p>
+</section>
+
+</div>
+
+  </div>
+</main>
+
+<footer class="colophon">
+  <div class="wrap">
+    <p class="small muted">onym audit · <a href="https://github.com/Dubieroj/onym-audit">GitHub</a> · <a href="../../profile/Audit-Static-Ed25519.md">Профиль реализации</a> · <a href="../../hub/terms.md">Условия хаба</a> · <a href="../../discovery/manifest.json">Discovery</a></p>
+  </div>
+</footer>
+</body>
+</html>

@@ -14,6 +14,8 @@ const $ = (id) => document.getElementById(id);
 const ROOT = new URL(".", import.meta.url);
 const T = JSON.parse($("strings")?.textContent || "{}");
 const t = (k, v = {}) => (T[k] ?? k).replace(/\{(\w+)\}/g, (_, x) => v[x] ?? "");
+// A label for a value from a signed document: its translation, or the value itself.
+const tr = (prefix, v) => T[prefix + v] ?? v;
 const enc = new TextEncoder();
 const LANG_PATH = { ru: "ru/", "sr-Latn-ME": "cnr/" }[document.documentElement.lang] || "";
 
@@ -87,7 +89,7 @@ async function main() {
   const state = entry ? entry.state : "unknown";
   out.append(el("header", { class: "verdict-head" },
     el("div", { class: "entry-side" }, el("span", { class: `stamp r-${a.result}`, text: a.result.toUpperCase() }), el("span", { class: `state s-${state}`, text: t("state_" + state) })),
-    el("div", {}, el("p", { class: "kicker", text: t("kicker", { cls: a.methodologyClass }) }),
+    el("div", {}, el("p", { class: "kicker", text: t("kicker", { cls: tr("m_", a.methodologyClass) }) }),
       el("h1", { class: "verdict-h1", text: a.subject }),
       el("p", { class: "lede" }, t("by"), " ", link(slug ? publicBase : new URL(LANG_PATH, ROOT).href, m.displayName), ` · ${print} · ${t("issued", { at: when(a.issuedAt) })} · ${t("expires", { at: when(a.expiresAt) })}`),
       el("p", { class: "mono small", text: id }))));
@@ -101,7 +103,7 @@ async function main() {
     ok(d.display !== "expired", t("c_expiry", { at: when(a.expiresAt) })));
   const anchorLine = el("li", { class: "muted", text: t("c_anchor_checking") });
   checks.append(anchorLine);
-  out.append(section(t("h_verify"), el("p", { class: good ? "ok-line" : "bad", text: good ? t("verdict_ok") : t("verdict_bad", { state: d.display, err: d.error || "" }) }), checks));
+  out.append(section(t("h_verify"), el("p", { class: good ? "ok-line" : "bad", text: good ? t("verdict_ok") : t("verdict_bad", { state: tr("d_", d.display) }) }), checks));
   if (statusText) {
     anchorState(account, statusText).then((s) => {
       anchorLine.className = s.state === "match" ? "ok" : "";
@@ -123,12 +125,12 @@ async function main() {
       [t("k_scope_summary"), a.scopeSummary],
       [t("k_not_examined"), el("ul", { class: "judge-list" }, a.exclusions.map((e) => el("li", { text: e })))],
     ]), el("details", { class: "verdict-doc" }, el("summary", { text: t("h_scope") }), scopeBox)));
-  pinned(a.methodology).then((p) => methodBox.replaceChildren(link(a.methodology.uri, a.methodologyClass), " ", el("span", { class: p.good ? "ok-line" : "bad", text: p.good ? t("pinned_ok") : t("pinned_bad") })), () => methodBox.replaceChildren(link(a.methodology.uri, a.methodologyClass)));
+  pinned(a.methodology).then((p) => methodBox.replaceChildren(link(a.methodology.uri, tr("m_", a.methodologyClass)), " ", el("span", { class: p.good ? "ok-line" : "bad", text: p.good ? t("pinned_ok") : t("pinned_bad") })), () => methodBox.replaceChildren(link(a.methodology.uri, tr("m_", a.methodologyClass))));
   pinned(a.scope).then((p) => scopeBox.replaceChildren(el("p", { class: "small " + (p.good ? "ok-line" : "bad"), text: p.good ? t("pinned_ok") : t("pinned_bad") }), el("pre", { class: "quote", text: p.text })), (e) => scopeBox.replaceChildren(el("p", { class: "bad", text: e.message })));
 
   // Findings.
-  const counts = Object.entries(a.findingsSummary).map(([k, v]) => `${v} ${k}`).join(", ") || t("none");
-  const findings = el("div", {}, el("p", {}, el("b", { text: t("summary") }), " ", counts, " ", el("span", { class: "muted", text: t("floor", { floor: a.severityFloor || "—" }) })));
+  const counts = Object.entries(a.findingsSummary).map(([k, v]) => `${tr("sev_", k)}: ${v}`).join(", ") || t("none");
+  const findings = el("div", {}, el("p", {}, el("b", { text: t("summary") }), " ", counts, " ", el("span", { class: "muted", text: t("floor", { floor: a.severityFloor ? tr("sev_", a.severityFloor) : "—" }) })));
   out.append(section(t("h_findings"), findings));
   let report = Promise.resolve(null);
   if (!a.findingsReport) findings.append(el("p", { class: "note", text: t("report_withheld") }));

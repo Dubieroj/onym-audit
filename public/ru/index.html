@@ -3,21 +3,21 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Onym Auditor · onym audit</title>
+<title>onym audit · аудитор сети Onym</title>
 <meta name="description" content="Независимый аудитор сети Onym: подписанные, истекающие и отзываемые заключения о конкретных байтах — с указанием, кто что проверил, как и за чей счёт.">
 <meta name="color-scheme" content="light dark">
 <link rel="alternate" hreflang="en" href="https://foldy.io/audit/">
 <link rel="alternate" hreflang="ru" href="https://foldy.io/audit/ru/">
 <link rel="alternate" hreflang="sr-Latn-ME" href="https://foldy.io/audit/cnr/">
 <link rel="alternate" hreflang="x-default" href="https://foldy.io/audit/">
-<link rel="stylesheet" href="../style.css?v=cee39269ad">
-<script type="module" src="../app.js?v=cee39269ad"></script>
+<link rel="stylesheet" href="../style.css?v=2bf4be7d30">
+<script type="module" src="../app.js?v=2bf4be7d30"></script>
 </head>
 <body>
 <div class="grain" aria-hidden="true"></div>
 
 <header class="masthead">
-  <div class="wrap masthead-row">
+  <div class="wrap masthead-row with-cabinets">
     <a class="brand" href="./">
       <span class="brand-mark" aria-hidden="true"></span>
       <span class="brand-text"><b id="brand-name">onym audit</b> <span class="muted">· аудитор сети Onym</span></span>
@@ -25,9 +25,11 @@
     <nav aria-label="Разделы">
       <a href="#register">Реестр</a>
       <a href="#how">Как это работает</a>
-      <a href="judge/">Для судей</a>
-      <a href="order/" class="nav-cta">Заказать аудит</a>
     </nav>
+    <div class="cabinets">
+      <a class="btn btn-line" href="app/#auditor">Кабинет аудитора</a>
+      <a class="btn btn-line" href="app/#customer">Кабинет заказчика</a>
+    </div>
     <div class="langs" role="navigation" aria-label="Язык"><a href="../" hreflang="en" lang="en">EN</a><a href="../ru/" hreflang="ru" lang="ru" aria-current="page">RU</a><a href="../cnr/" hreflang="sr-Latn-ME" lang="sr-Latn-ME">CNR</a></div>
   </div>
 </header>
@@ -39,15 +41,31 @@
     <p class="lede">Независимые аудиты компонентов Onym. Каждое заключение — подписанный документ: кто проверял, какие именно байты, каким методом и за чей счёт. Проверить его может любой — прямо в браузере.</p>
     <div class="cta">
       <a class="btn btn-ink" href="order/">Заказать аудит</a>
-      <a class="btn btn-line" href="app/">Стать аудитором</a>
-      <a class="btn btn-line" href="judge/">Для судей</a>
+      <a class="btn btn-line" href="app/#auditor">Стать аудитором</a>
+      <a class="btn btn-line" href="#connect" data-open="connect">Подключить к Onym</a>
     </div>
   </section>
+
+  <dialog id="connect" class="dialog" aria-labelledby="connect-h">
+    <form method="dialog"><button class="dialog-close" aria-label="Закрыть">×</button></form>
+    <p class="kicker">Ваш источник в приложении</p>
+    <h2 id="connect-h">Подключить onym audit к Onym</h2>
+    <p class="muted">Добавьте наш Discovery-каталог как дополнительный источник: приложение покажет статус аудита у проверенных нами сервисов и список аудиторов. Подключение каталога само ничего не включает.</p>
+    <div class="copy-box"><code id="connect-url">https://foldy.io/audit/discovery/manifest.json</code><button type="button" class="btn btn-line" data-copy="connect-url" data-done="Скопировано">Копировать</button></div>
+    <ol class="connect-steps">
+      <li>В Onym откройте <b>Settings → Discovery Providers → Add Discovery Provider</b>.</li>
+      <li>Вставьте адрес выше и нажмите <b>Fetch Provider</b>.</li>
+      <li>Сверьте отпечаток ключа: <b class="mono">4074 4514 be2a 1414</b>.</li>
+      <li>Подтвердите <b>Pin Key &amp; Add Provider</b>. Затем выберите нужный сервис и отдельно подтвердите его условия.</li>
+    </ol>
+    <p class="small muted">Путь взят из исходников приложений Onym для iOS и Android; в вашей версии раздел может ещё отсутствовать. Отпечаток — первые 16 символов ключа оператора: так его показывает приложение.</p>
+    <p><a href="discovery/manifest.json" target="_blank" rel="noopener">Посмотреть манифест ↗</a></p>
+  </dialog>
 
   <section class="register-sec wrap" id="register" aria-labelledby="register-h">
     <header class="sec-head">
       <h2 id="register-h">Реестр</h2>
-      <p class="sec-lede">Все аттестации этого аудитора — прочитаны из подписанного списка статусов и проверены в вашем браузере. Неблагоприятные результаты показываются ровно там же, где благоприятные.</p>
+      <p class="sec-lede">Все аттестации этого аудитора — прочитаны из подписанного списка статусов и проверены в вашем браузере. Неблагоприятные результаты показываются ровно там же, где благоприятные. Поля аттестации приводятся так, как подписаны, — на английском.</p>
     </header>
     <label class="credit"><input type="checkbox" id="credit"><span>Я доверяю этому аудитору <span class="muted">— иначе записи помечены как от аудитора, которому вы не доверяете; обязательного аудитора нет.</span></span></label>
     <div id="atts" class="entries"><p class="empty">Читаю реестр…</p></div>
@@ -68,9 +86,9 @@
 
 <footer class="colophon">
   <div class="wrap">
-    <p class="small muted">onym audit · <a href="https://github.com/Dubieroj/onym-audit">GitHub</a> · <a href="../profile/Audit-Static-Ed25519.md">Профиль реализации</a> · <a href="../hub/terms.md">Условия хаба</a> · <a href="../discovery/manifest.json">Discovery</a> · отдаётся с foldy.io без cookies, журналов доступа и сторонних запросов.</p>
+    <p class="small muted">onym audit · <a href="https://github.com/Dubieroj/onym-audit">GitHub</a> · <a href="../profile/Audit-Static-Ed25519.md">Профиль реализации</a> · <a href="../hub/terms.md">Условия хаба</a> · <a href="api/">API</a> · <a href="../discovery/manifest.json">Discovery</a> · отдаётся с foldy.io без cookies, журналов доступа и сторонних запросов.</p>
   </div>
 </footer>
-<script type="application/json" id="strings">{"verified":"ПРОВЕРЕНО","unverified":"НЕ ПРОВЕРЕНО","epoch":"эпоха {n}","signed":"эпоха {n} · подписан {ago}","cap_ok":"Только что проверено в вашем браузере: манифест подписан ключом оператора {print}, а список статусов, подписанный {ago}, — делегированным ключом, который назван в манифесте. Ничему на этой странице не нужно верить на слово сервера.","cap_fail":"Не проверено: {why}. Считайте все записи ниже неподтверждёнными.","why_manifest":"подпись манифеста не сошлась","why_nostatus":"список статусов не отдаётся","why_badsig":"подпись списка статусов не сошлась","why_stale":"список статусов устарел","no_manifest":"Не удалось загрузить манифест аудитора: {err}","reg_no_manifest":"Без манифеста аудитора реестр прочитать нельзя.","reg_no_status":"Список статусов не отдаётся, поэтому ни одну запись нельзя подтвердить как действующую.","reg_empty_b":"Записей пока нет. ","reg_empty":"Первая проверка — в периоде уведомления: по политике непрошеных проверок находки публикуются не раньше чем через 12 часов после уведомления проверяемого.","fetch_fail":"{id}: не удалось загрузить ({err})","issued":"выдана {ago}","expires":"истекает {date}","k_scope":"Область","k_notexam":"Не проверялось","k_findings":"Находки","k_paid":"Кто платил","k_rel":"Связи","k_notice":"Уведомление","k_applies":"Действует только для","notice_v":"непрошеная; проверяемый уведомлён {at} через {via}","applies_v":"{src} — манифест {rev}","applies_pin":", закреплённый документ {pin}","none":"нет","floor":"порог: {f}","l_att":"аттестация","l_report":"отчёт о находках","l_method":"методика","l_scope":"область","replied":"Ответ проверяемого: ","ago_lt1h":"меньше часа назад","ago_h":"{n} ч назад","ago_d":"{n} дн. назад","d_attested":"действует","d_uncredited":"аудитор вне вашего доверия","d_status-unknown":"статус неизвестен","d_expired":"истекла","d_superseded":"заменена","d_revoked":"отозвана","d_no-attestation":"не применяется","l_verdict":"страница проверки"}</script>
+<script type="application/json" id="strings">{"verified":"ПРОВЕРЕНО","unverified":"НЕ ПРОВЕРЕНО","epoch":"эпоха {n}","signed":"эпоха {n} · подписан {ago}","cap_ok":"Только что проверено в вашем браузере: манифест подписан ключом оператора {print}, а список статусов, подписанный {ago}, — делегированным ключом, который назван в манифесте. Ничему на этой странице не нужно верить на слово сервера.","cap_fail":"Не проверено: {why}. Считайте все записи ниже неподтверждёнными.","why_manifest":"подпись манифеста не сошлась","why_nostatus":"список статусов не отдаётся","why_badsig":"подпись списка статусов не сошлась","why_stale":"список статусов устарел","no_manifest":"Не удалось загрузить манифест аудитора: {err}","reg_no_manifest":"Без манифеста аудитора реестр прочитать нельзя.","reg_no_status":"Список статусов не отдаётся, поэтому ни одну запись нельзя подтвердить как действующую.","reg_empty_b":"Записей пока нет. ","reg_empty":"Этот аудитор ещё не выпустил ни одной аттестации.","fetch_fail":"{id}: не удалось загрузить ({err})","issued":"выдана {ago}","expires":"истекает {date}","k_scope":"Область","k_notexam":"Не проверялось","k_findings":"Находки","k_paid":"Кто платил","k_rel":"Связи","k_notice":"Уведомление","k_applies":"Действует только для","notice_v":"непрошеная; проверяемый уведомлён {at} через {via}","applies_v":"{src} @ {rev}","applies_pin":", закреплённый документ {pin}","none":"нет","floor":"порог: {f}","l_att":"аттестация","l_report":"отчёт о находках","l_method":"методика","l_scope":"область","replied":"Ответ проверяемого: ","ago_lt1h":"меньше часа назад","ago_h":"{n} ч назад","ago_d":"{n} дн. назад","d_attested":"действует","d_uncredited":"аудитор вне вашего доверия","d_status-unknown":"статус неизвестен","d_expired":"истекла","d_superseded":"заменена","d_revoked":"отозвана","d_no-attestation":"не применяется","l_verdict":"страница аттестации","m_security-review":"Проверка безопасности","m_conformance-run":"Проверка соответствия","sev_critical":"критическая","sev_high":"высокая","sev_medium":"средняя","sev_low":"низкая","sev_informational":"информационная","note_unlisted":"Этой аттестации нет в списке статусов."}</script>
 </body>
 </html>

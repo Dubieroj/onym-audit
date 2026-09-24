@@ -7,6 +7,8 @@ const rootMeta = document.querySelector('meta[name="auditor-root"]');
 const ROOT = rootMeta ? new URL(rootMeta.content, document.baseURI) : new URL(".", import.meta.url);
 const T = JSON.parse(document.getElementById("strings")?.textContent || "{}");
 const t = (k, vars = {}) => (T[k] ?? k).replace(/\{(\w+)\}/g, (_, v) => vars[v] ?? "");
+// A label for a value from a signed document: its translation, or the value itself.
+const tr = (prefix, v) => T[prefix + v] ?? v;
 const at = (p) => new URL(p, ROOT).href;
 // Each attestation's own page lives in the shared tree, in this page's language.
 const LANG_PATH = { ru: "ru/", "sr-Latn-ME": "cnr/" }[document.documentElement.lang] || "";
@@ -135,13 +137,13 @@ async function entry(e) {
   const h3 = el("h3");
   h3.append(title);
   body.append(h3);
-  body.append(el("p", "who", `${a.methodologyClass} · ${t("issued", { ago: ago(a.issuedAt) })}` + (a.expiresAt ? ` · ${t("expires", { date: a.expiresAt.slice(0, 10) })}` : "")));
+  body.append(el("p", "who", `${tr("m_", a.methodologyClass)} · ${t("issued", { ago: ago(a.issuedAt) })}` + (a.expiresAt ? ` · ${t("expires", { date: a.expiresAt.slice(0, 10) })}` : "")));
 
   const dl = el("dl", "kv");
   const kv = (k, v) => { const w = el("div"); w.append(el("dt", "", k), el("dd", "", v)); dl.append(w); };
   kv(t("k_scope"), a.scopeSummary);
   kv(t("k_notexam"), a.exclusions.join("; ") || "—");
-  kv(t("k_findings"), (Object.entries(a.findingsSummary).map(([k, v]) => `${v} ${k}`).join(", ") || t("none")) + (a.severityFloor ? ` (${t("floor", { f: a.severityFloor })})` : ""));
+  kv(t("k_findings"), (Object.entries(a.findingsSummary).map(([k, v]) => `${tr("sev_", k)}: ${v}`).join(", ") || t("none")) + (a.severityFloor ? ` (${t("floor", { f: tr("sev_", a.severityFloor) })})` : ""));
   kv(t("k_paid"), `${a.sponsorName} · ${await fingerprint(a.sponsor)}`);
   kv(t("k_rel"), a.relationships);
   if (a.unsolicited) kv(t("k_notice"), t("notice_v", { at: a.unsolicited.subjectNotifiedAt.replace("T", " ").replace("Z", " UTC"), via: a.unsolicited.subjectContact.replace(/^mailto:/, "") }));
@@ -167,10 +169,33 @@ async function entry(e) {
       body.append(q);
     } catch { /* a missing reply is shown as nothing, never as agreement */ }
   }
-  if (d.error && !["status-unknown", "uncredited"].includes(d.display)) body.append(el("p", "note", `verify: ${d.error}`));
-  for (const n of d.notes ?? []) body.append(el("p", "note", n));
+  // The state label already says what failed, and the row above already
+  // says the verdict applies only to these bytes; other notes are translated.
+  const NOTES = { "status list does not cover this attestation": "note_unlisted" };
+  for (const n of d.notes ?? []) if (!n.startsWith("component bytes")) body.append(el("p", "note", NOTES[n] ? t(NOTES[n]) : n));
   row.append(side, body);
   return row;
+}
+
+// The "Connect to Onym" dialog: opened by its button or by #connect.
+const dlg = $("connect");
+if (dlg) {
+  const open = () => { if (!dlg.open) dlg.showModal(); };
+  for (const b of document.querySelectorAll('[data-open="connect"]')) b.addEventListener("click", (e) => { e.preventDefault(); open(); });
+  if (location.hash === "#connect") open();
+  // A click on the backdrop closes it.
+  dlg.addEventListener("click", (e) => { if (e.target === dlg) dlg.close(); });
+  for (const b of dlg.querySelectorAll("[data-copy]")) b.addEventListener("click", async () => {
+    const text = $(b.dataset.copy).textContent;
+    try {
+      await navigator.clipboard.writeText(text);
+      const was = b.textContent;
+      b.textContent = b.dataset.done;
+      setTimeout(() => (b.textContent = was), 1600);
+    } catch {
+      getSelection().selectAllChildren($(b.dataset.copy));
+    }
+  });
 }
 
 main();

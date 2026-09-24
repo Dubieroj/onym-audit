@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>API · onym audit</title>
+<meta name="description" content="The HTTP API of the onym audit seat in detail: signed documents, the auditor hub, orders, requests, the Discovery provider and the Stellar anchor.">
+<meta name="color-scheme" content="light dark">
+<link rel="alternate" hreflang="en" href="https://foldy.io/audit/api/">
+<link rel="alternate" hreflang="ru" href="https://foldy.io/audit/ru/api/">
+<link rel="alternate" hreflang="sr-Latn-ME" href="https://foldy.io/audit/cnr/api/">
+<link rel="alternate" hreflang="x-default" href="https://foldy.io/audit/api/">
+<link rel="stylesheet" href="../style.css?v=2bf4be7d30">
+</head>
+<body class="api-page">
+<div class="grain" aria-hidden="true"></div>
+<header class="masthead">
+  <div class="wrap masthead-row with-cabinets">
+    <a class="brand" href="../">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span class="brand-text"><b>onym audit</b> <span class="muted">· Onym audit seat</span></span>
+    </a>
+    <div class="cabinets">
+      <a class="btn btn-line" href="../app/#auditor">Auditor dashboard</a>
+      <a class="btn btn-line" href="../app/#customer">Customer dashboard</a>
+    </div>
+    <div class="langs" role="navigation" aria-label="Language"><a href="../api/" hreflang="en" lang="en" aria-current="page">EN</a><a href="../ru/api/" hreflang="ru" lang="ru">RU</a><a href="../cnr/api/" hreflang="sr-Latn-ME" lang="sr-Latn-ME">CNR</a></div>
+  </div>
+</header>
+
+<main class="wrap">
+  <header class="api-head">
+    <p class="kicker">For developers</p>
+    <h1>HTTP API</h1>
+    <p class="lede">Everything you can read, verify and send: addresses, request bodies, the checks the server makes, replies and limits. Every change is a signed document; the server keeps the bytes but cannot forge them.</p>
+  </header>
+  <div class="api-layout">
+<nav class="api-toc" aria-label="Contents">
+  <p class="kicker">Contents</p>
+  <ol>
+    <li><a href="#overview">Overview</a></li>
+    <li><a href="#rules">General rules</a></li>
+    <li><a href="#read">Reading and verification</a></li>
+    <li><a href="#seat">The main seat</a></li>
+    <li><a href="#hub">Hub: registration and publishing</a></li>
+    <li><a href="#orders">Orders</a></li>
+    <li><a href="#requests">Requests</a></li>
+    <li><a href="#vault">Vault</a></li>
+    <li><a href="#tools">Verification tools</a></li>
+    <li><a href="#lists">Lists</a></li>
+    <li><a href="#discovery">Discovery provider</a></li>
+    <li><a href="#stellar">Stellar anchor</a></li>
+  </ol>
+</nav>
+
+<div class="api-body">
+
+<section id="overview">
+  <h2>Overview</h2>
+  <p>The base of every address is <code>https://foldy.io/audit/</code>; the paths below are relative to it. The server has three parts:</p>
+  <ul>
+    <li><b>the main seat</b> “onym audit” — a tree of signed documents at the root and two write addresses (<code>orders</code>, <code>responses</code>);</li>
+    <li><b>the hub</b> — anyone can become an auditor (<code>hub/api/…</code>); their documents live in <code>a/&lt;name&gt;/</code>;</li>
+    <li><b>the Discovery provider</b> — signed catalogs in <code>discovery/</code> that the Onym apps read.</li>
+  </ul>
+  <p>There are no accounts, passwords or cookies. Everything that changes state is signed with the Ed25519 key of whoever acts: the auditor, the customer or the subject. The server checks the signature and stores the bytes exactly as they were signed. It cannot forge a document, because it holds no auditor key. Everything the server returns can be verified without trusting it; in the browser, <a href="../verify.js"><code>verify.js</code></a> does this.</p>
+  <p>The formats of the documents themselves (manifest, attestation, status list, order, offer, response, revocation) are defined by the <a href="../profile/Audit-Static-Ed25519.md">implementation profile</a>. This page describes the transport: addresses, request bodies, checks, responses and limits. Source code: <a href="https://github.com/Dubieroj/onym-audit">github.com/Dubieroj/onym-audit</a> (<code>hub/</code>, <code>server/</code>).</p>
+</section>
+
+<section id="rules">
+  <h2>General rules</h2>
+
+  <h3 id="canon">Canonical JSON</h3>
+  <p>The same as in Discovery-Static-Ed25519 §3:</p>
+  <ul>
+    <li>the top level is an object; keys are sorted by their UTF-8 bytes at every depth; the output is compact, with no whitespace;</li>
+    <li>only <code>"</code>, <code>\</code> and U+0000–U+001F are escaped (two-character forms where they exist, otherwise lowercase <code>\u00xx</code>);</li>
+    <li>numbers are non-negative integers up to 2<sup>53</sup>−1 only;</li>
+    <li>duplicate keys, invalid UTF-8 and lone surrogates are rejected, not repaired.</li>
+  </ul>
+  <p>The server canonicalizes everything it accepts and stores the canonical bytes.</p>
+
+  <h3 id="sig">Signatures, keys, digests, time</h3>
+  <table class="api-table">
+    <tr><th>Signature</th><td>Ed25519 over the canonical bytes of the document without the <code>signature</code> field (removed at the top level only); the value is standard base64 with padding. Next to every signed file lies a <code>.sig</code>: the same string followed by a newline.</td></tr>
+    <tr><th>Key</th><td><code>onym:key:&lt;64 lowercase hex&gt;</code> — an Ed25519 public key. The fingerprint shown on pages is the first 8 bytes of the key's SHA-256, separated by colons.</td></tr>
+    <tr><th>Digest</th><td><code>sha256:&lt;64 hex&gt;</code> of the exact file bytes.</td></tr>
+    <tr><th>Time</th><td>RFC 3339 in UTC, to the second: <code>2026-09-25T10:00:00Z</code>. Other forms are rejected.</td></tr>
+  </table>
+
+  <h3 id="signed">Signed request</h3>
+  <p>Addresses marked <span class="tag">🔏 signed</span> accept <code>{"request": {…}}</code>. The inner object is signed by the named key, contains an <code>issuedAt</code> within <b>±10 minutes</b> of the server clock, and has no extra fields. This is how a browser proves it holds a key, without sessions or passwords:</p>
+<pre><code>import { canonical, parseStrict } from "https://foldy.io/audit/verify.js";
+
+const now = new Date().toISOString().replace(/\.\d+Z$/, "Z");
+const req = parseStrict(JSON.stringify({ action: "order-status", orderId, sponsor: key, issuedAt: now }));
+const sig = await crypto.subtle.sign("Ed25519", privateKey, new TextEncoder().encode(canonical(req)));
+req.set("signature", btoa(String.fromCharCode(...new Uint8Array(sig))));
+
+await fetch("https://foldy.io/audit/hub/api/a/alice/order-status", {
+  method: "POST", headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ request: JSON.parse(canonical(req)) }),
+});</code></pre>
+
+  <h3 id="errors">Responses and errors</h3>
+  <p>Responses are JSON with <code>Cache-Control: no-store</code>. A hub error is <code>{"error": "&lt;text&gt;"}</code>; a main seat error is <code>{"error": "&lt;code&gt;", "detail": "&lt;text&gt;"}</code>.</p>
+  <table class="api-table">
+    <tr><th>400</th><td>the body does not parse or contains an unknown field</td></tr>
+    <tr><th>403</th><td>signature by the wrong key, or a stale <code>issuedAt</code></td></tr>
+    <tr><th>404</th><td>no such auditor, attestation or open request</td></tr>
+    <tr><th>409</th><td>conflict with something already published: an immutable document, a version rollback, a taken name</td></tr>
+    <tr><th>413</th><td>the body exceeds the limit</td></tr>
+    <tr><th>415</th><td><code>fetch</code>: the response is neither JSON nor text</td></tr>
+    <tr><th>422</th><td>the document failed a check; the reason is in the error text</td></tr>
+    <tr><th>429</th><td>rate limit exceeded</td></tr>
+    <tr><th>502</th><td>the external address is unreachable or responds unexpectedly</td></tr>
+    <tr><th>503</th><td>the queue is full, or the hub is busy with heavy checks</td></tr>
+    <tr><th>507</th><td>the auditor's storage on the hub is full (20 MiB)</td></tr>
+  </table>
+
+  <h3 id="limits">Limits</h3>
+  <ul>
+    <li>A request body to the hub is at most 4 MiB; each document at most 1 MiB; one auditor's tree at most 20 MiB.</li>
+    <li>Rate: a token bucket per IP address (for IPv6, per whole /64): capacity 60, refill 1 token per second. The cost of a call is given for each address. GET requests for lists are not limited.</li>
+    <li>“Heavy” calls (<code>digest</code>, <code>conformance</code>) run at most two at a time across the whole hub.</li>
+    <li>The main seat: an order at most 64 KiB, a response at most 16 KiB, an overall limit of 20 requests refilled at 1 per second.</li>
+  </ul>
+
+  <h3 id="static">Static files</h3>
+  <p>Documents are served as is, byte for byte, with <code>Access-Control-Allow-Origin: *</code>, <code>X-Content-Type-Options: nosniff</code> and <code>Cache-Control: no-cache</code>; no cookies and no access logs. Pages run under the CSP <code>script-src 'self'</code>.</p>
+</section>
+
+<section id="read">
+  <h2>Reading and verification</h2>
+  <p>The main seat (root <code>/audit/</code>) and every hub auditor (<code>a/&lt;name&gt;/</code>) have the same tree:</p>
+  <table class="api-table">
+    <tr><th><code>manifest.json</code> + <code>.sig</code></th><td>the auditor's signed manifest: operator key, delegated status key, policies, methodologies, offers</td></tr>
+    <tr><th><code>status.json</code> + <code>.sig</code></th><td>the status list, signed by the delegated key; re-signed every 6 hours, <code>nextUpdate</code> is 48 hours ahead</td></tr>
+    <tr><th><code>attestations/&lt;id&gt;.json</code></th><td>attestations, immutable</td></tr>
+    <tr><th><code>revocations/&lt;id&gt;.json</code></th><td>signed revocations</td></tr>
+    <tr><th><code>responses/&lt;attestation&gt;/&lt;id&gt;.json</code></th><td>signed subject responses</td></tr>
+    <tr><th><code>offers/&lt;id&gt;.json</code></th><td>offers: methodology, price, term, disclosure terms</td></tr>
+    <tr><th><code>orders/&lt;id&gt;.json</code></th><td>orders with three signatures, published together with the attestation</td></tr>
+    <tr><th><code>scopes/</code>, <code>reports/</code>, <code>methodology/</code>, <code>policies/</code></th><td>documents pinned by digests</td></tr>
+  </table>
+  <p>A status list entry:</p>
+<pre><code>{"attestationId": "onym-discovery-2026-09-24",
+ "attestation": {"uri": "https://foldy.io/audit/attestations/onym-discovery-2026-09-24.json",
+                 "digest": "sha256:…"},
+ "state": "active" | "revoked" | "superseded" | "expired",
+ "supersededBy": null, "revocation": null,
+ "responses": [{"uri": "…", "digest": "…"}]}</code></pre>
+  <p>How to verify an attestation while trusting nothing:</p>
+  <ol>
+    <li>the manifest signature matches its <code>operator</code>;</li>
+    <li>the status list is signed by the <code>statusKey</code> from the manifest, its <code>auditorKey</code> equals <code>operator</code>, and its <code>nextUpdate</code> has not passed yet;</li>
+    <li>the digest of the attestation file matches the entry in the list, and the entry is in the <code>active</code> state;</li>
+    <li>the attestation is signed by the operator key and has not expired; the pinned documents (scope, methodology, report) match their digests.</li>
+  </ol>
+<pre><code>import { verifyAttestation } from "https://foldy.io/audit/verify.js";
+const get = (p) => fetch("https://foldy.io/audit/" + p).then((r) => r.text());
+const d = await verifyAttestation({
+  manifestText: await get("manifest.json"),
+  statusText: await get("status.json"),
+  attText: await get("attestations/onym-discovery-2026-09-24.json"),
+  target: null, credited: true,
+});
+// d.display: "attested" | "revoked" | "superseded" | "expired" | "status-unknown" | …</code></pre>
+  <p>The page of each attestation (<code>verdict/?id=&lt;id&gt;</code> for the main seat, <code>verdict/?a=&lt;name&gt;&amp;id=&lt;id&gt;</code> for a hub auditor) runs these checks in the browser and shows each one.</p>
+</section>
+
+<section id="seat">
+  <h2>The main seat “onym audit”</h2>
+
+  <article class="ep" id="ep-seat-orders">
+    <h3><span class="verb">POST</span> <code>orders</code></h3>
+    <p>Accept an order (Audit.md §6). The body is either a bare order signed by the subject and the sponsor, or an envelope:</p>
+<pre><code>{"order": {…}, "scopeText": "what to examine", "contact": "any text, optional"}</code></pre>
+    <p>In the envelope, <code>order.scope.uri</code> = <code>&lt;base&gt;scopes/order-&lt;orderId&gt;.md</code>, and the SHA-256 of <code>scopeText</code> (1–8192 bytes) equals <code>order.scope.digest</code>. The contact is at most 256 bytes with no control characters; it is not published.</p>
+    <p class="resp"><b>202</b> <code>{"orderId", "state": "queued-for-review", "digest"}</code> — the order is queued. This is not yet the auditor's acceptance.</p>
+    <p class="small muted">Errors: 422 <code>order_invalid</code>, 409 <code>order_conflict</code> (a different order already has this id), 503 <code>inbox_full</code> (1000 orders), 413 <code>oversize</code>, 429 <code>rate_limited</code>.</p>
+  </article>
+
+  <article class="ep" id="ep-seat-responses">
+    <h3><span class="verb">POST</span> <code>responses</code></h3>
+    <p>A subject's response to an attestation (Audit.md §5.7.5). The body is a bare signed response, at most 16 KiB; <code>attestationId</code> and <code>responseId</code> are 16–128 characters from <code>[A-Za-z0-9_-]</code>. After the write, the status list is re-signed and the response appears next to the attestation.</p>
+    <p class="resp"><b>201</b> <code>{"uri", "digest"}</code></p>
+    <p class="small muted">Errors: 404 <code>attestation_unknown</code>, 422 <code>subject_response_invalid</code>, 409 <code>response_conflict</code> (responses are immutable).</p>
+  </article>
+</section>
+
+<section id="hub">
+  <h2>Hub: registration and publishing</h2>
+  <p>A hub auditor keeps their key in the browser (the auditor dashboard); the hub sees only signed documents. The auditor's path: <b>claim</b> → sign the manifest → <b>register</b> → <b>publish</b> attestations → <b>revoke</b> if needed.</p>
+
+  <article class="ep" id="ep-claim">
+    <h3><span class="verb">POST</span> <code>hub/api/claim</code> <span class="cost">5 tokens</span></h3>
+    <p>Reserve a name and receive the delegated status key that the manifest must name.</p>
+<pre><code>{"slug": "my-auditor"}</code></pre>
+    <p>Name: <code>^[a-z][a-z0-9-]{2,31}$</code>, not one of the reserved names (admin, api, hub, audit, onym, onym-audit, foundation, sobor, root, status, www). A reservation lasts 30 minutes; a repeat call within that time returns the same reservation.</p>
+    <p class="resp"><b>200</b> <code>{"slug", "statusKey", "base", "componentId", "expires"}</code></p>
+    <p class="small muted">Errors: 409 — the name is taken; 422 — the name is not allowed.</p>
+  </article>
+
+  <article class="ep" id="ep-register">
+    <h3><span class="verb">POST</span> <code>hub/api/register</code> <span class="cost">10 tokens</span></h3>
+    <p>Publish or replace the manifest together with the documents it references.</p>
+<pre><code>{"slug": "my-auditor",
+ "manifest": {…signed manifest…},
+ "docs": {"policies/independence.md": "text", "offers/manual-review.json": "{…}", …}}</code></pre>
+    <ul>
+      <li><code>componentId</code> = <code>onym:component:&lt;name&gt;</code>; <code>statusEndpoint</code> = <code>&lt;base&gt;status.json</code>; <code>statusKey</code> is the one issued by claim;</li>
+      <li><code>contact</code> is any text of at most 256 bytes with no control characters (on pages it becomes a link only if it starts with <code>mailto:</code> or <code>https://</code>);</li>
+      <li>re-registration works only with the same operator key (otherwise 403) and must not be older than the current one: <code>validUntil</code> not earlier, and if equal, the same bytes (otherwise 409);</li>
+      <li>document paths: <code>(policies|methodology|scopes|reports|offers|notes)/&lt;name&gt;.(md|json)</code>; only documents that the manifest references are accepted;</li>
+      <li>every reference in the manifest points either to a file of this auditor or to a shared document of the main seat, and the digest matches;</li>
+      <li>offers are signed by the auditor key, belong to a methodology from the manifest, have not expired, and do not roll back a published version.</li>
+    </ul>
+    <p class="resp"><b>201</b> <code>{"page", "manifest", "digest"}</code></p>
+  </article>
+
+  <article class="ep" id="ep-publish">
+    <h3><span class="verb">POST</span> <code>hub/api/a/{slug}/publish</code> <span class="cost">5 tokens</span></h3>
+    <p>Publish an attestation with its documents.</p>
+<pre><code>{"attestation": {…},
+ "docs": {"scopes/….md": "…", "reports/….json": "…", "orders/&lt;orderId&gt;.json": "…"}}</code></pre>
+    <ul>
+      <li>signed by the auditor key, <code>status</code> = <code>statusEndpoint</code>, <code>unsolicited.policy</code> = the digest of the published policy;</li>
+      <li>the id is new: attestations are immutable, and a correction is a new attestation that replaces the old one (supersede);</li>
+      <li>methodology, scope, scale and report are pinned the same way as at registration;</li>
+      <li>for <code>engagement: "commissioned"</code>, exactly one order with three signatures (subject, sponsor, auditor) is attached; <code>orderRef</code> is its digest; the subject, sponsor, artifact, methodology and scope match.</li>
+    </ul>
+    <p class="resp"><b>201</b> <code>{"uri", "digest"}</code> — published.<br><b>202</b> <code>{"uri", "digest", "held": true, "releaseAt"}</code> — a fail on an order with an embargo: the hub holds the attestation, report, order and scope, and releases them automatically when the embargo ends.</p>
+  </article>
+
+  <article class="ep" id="ep-revoke">
+    <h3><span class="verb">POST</span> <code>hub/api/a/{slug}/revoke</code> <span class="cost">5 tokens</span></h3>
+<pre><code>{"revocation": {…signed revocation…}}</code></pre>
+    <p>A revocation is always accepted, even when storage is full.</p>
+    <p class="resp"><b>201</b> <code>{"uri"}</code></p>
+    <p class="small muted">Errors: 404 — no such attestation; 409 — already revoked.</p>
+  </article>
+
+  <article class="ep" id="ep-hub-responses">
+    <h3><span class="verb">POST</span> <code>a/{slug}/responses</code> <span class="cost">5 tokens</span></h3>
+    <p>A subject's response to a hub auditor's attestation. The body is a bare signed response. At most 10 responses per attestation; responses are immutable (409).</p>
+    <p class="resp"><b>201</b> <code>{"uri"}</code></p>
+  </article>
+
+  <article class="ep" id="ep-export">
+    <h3><span class="verb get">GET</span> <code>hub/api/a/{slug}/export</code></h3>
+    <p>A list of all files in the auditor's tree, for moving it to your own server: the hub is a replaceable default.</p>
+    <p class="resp"><b>200</b> <code>{"base", "files": ["manifest.json", …]}</code></p>
+  </article>
+</section>
+
+<section id="orders">
+  <h2>Orders</h2>
+  <p>Anyone can order an examination from any auditor that has offers. The browser creates a key for the order and signs the order with it as both subject and sponsor. The auditor countersigns it when publishing the attestation.</p>
+
+  <article class="ep" id="ep-orders">
+    <h3><span class="verb">POST</span> <code>a/{slug}/orders</code> <span class="cost">10 tokens</span></h3>
+<pre><code>{"order": {…}, "scopeText": "what to examine", "contact": "optional"}</code></pre>
+    <ul>
+      <li>the order is signed by the subject and the sponsor and matches the auditor's offer exactly: methodology, price model, disclosure terms;</li>
+      <li><code>fee.offerId</code> is an offer from the manifest, or <code>rsp-…</code>, a response to a request that is still open (then the sponsor is the author of the request, and the subject, methodology and artifact match the request);</li>
+      <li><code>scope.uri</code> = <code>&lt;base&gt;scopes/order-&lt;orderId&gt;.md</code>, and <code>scopeText</code> (1–8000 bytes) hashes to <code>scope.digest</code>;</li>
+      <li>the contact is optional: any text of at most 256 bytes; only the auditor sees it.</li>
+    </ul>
+    <p class="resp"><b>202</b> <code>{"orderId", "state": "queued-for-review", "digest"}</code>. The request answered by the offer is closed.</p>
+    <p class="small muted">Errors: 409 — the order is already fulfilled, or a different order has this id; 503 — 100 orders are in the queue.</p>
+  </article>
+
+  <article class="ep" id="ep-order-status">
+    <h3><span class="verb">POST</span> <code>hub/api/a/{slug}/order-status</code> <span class="cost">1 token</span> <span class="tag">🔏 sponsor key</span></h3>
+<pre><code>{"request": {"action": "order-status", "orderId": "…", "sponsor": "onym:key:…",
+             "issuedAt": "…", "signature": "…"}}</code></pre>
+    <p class="resp"><b>200</b> <code>{"queued": bool, "held": bool}</code> — whether the order is waiting in the queue, and whether its result is held under embargo. No one but the holder of the order key can learn this.</p>
+  </article>
+
+  <article class="ep" id="ep-inbox">
+    <h3><span class="verb">POST</span> <code>hub/api/a/{slug}/inbox</code> <span class="cost">2 tokens</span> <span class="tag">🔏 auditor key</span></h3>
+<pre><code>{"request": {"action": "list" | "decline", "auditor": "onym:component:&lt;name&gt;",
+             "orderId": "…decline only", "issuedAt": "…", "signature": "…"}}</code></pre>
+    <p class="resp"><b>list</b> → <code>{"orders": [{"order", "scopeText", "contact", "receivedAt"}], "held": [{"attestationId", "releaseAt"}]}</code><br><b>decline</b> → <code>{"declined": "&lt;orderId&gt;"}</code></p>
+  </article>
+</section>
+
+<section id="requests">
+  <h2>Requests</h2>
+  <p>A customer who does not know whom to ask publishes a request: the exact bytes, the subject component, the methodology and the scope, addressed to all auditors or to one Stellar address. Auditors answer with signed offers; the customer picks one and orders under it.</p>
+
+  <article class="ep" id="ep-post-request">
+    <h3><span class="verb">POST</span> <code>hub/api/requests</code> <span class="cost">5 tokens</span></h3>
+<pre><code>{"request": {
+  "requestVersion": 1,
+  "requestId": "req-&lt;20 characters [a-z0-9]&gt;",
+  "to": null | "onym:key:…",
+  "subject": "onym:component:&lt;name&gt;",
+  "methodologyClass": "security-review" | "conformance-run",
+  "artifact": {"kind": "source" | "build" | "deployment", "source": "…", "revision": "…", "artifactHash": null},
+  "scopeText": "1–8000 bytes",
+  "requester": "onym:key:…",
+  "issuedAt": "…", "expiresAt": "… (at most 30 days later)",
+  "signature": "…signed by requester"
+}}</code></pre>
+    <p><code>to: null</code> — the request is visible to everyone; otherwise only to the addressee. <code>conformance-run</code> is accepted only for <code>kind: "deployment"</code>.</p>
+    <p class="resp"><b>201</b> <code>{"requestId", "digest"}</code></p>
+    <p class="small muted">Errors: 409 — this id already exists; 503 — 500 requests are open.</p>
+  </article>
+
+  <article class="ep" id="ep-get-requests">
+    <h3><span class="verb get">GET</span> <code>hub/api/requests</code></h3>
+    <p class="resp"><b>200</b> — open public requests, newest first: <code>[{…request, "responses": N}]</code>.</p>
+  </article>
+
+  <article class="ep" id="ep-requests-for">
+    <h3><span class="verb">POST</span> <code>hub/api/requests/for</code> <span class="cost">2 tokens</span> <span class="tag">🔏 addressee key</span></h3>
+<pre><code>{"request": {"action": "requests-for", "key": "onym:key:…", "issuedAt": "…", "signature": "…"}}</code></pre>
+    <p class="resp"><b>200</b> — requests addressed to this key.</p>
+  </article>
+
+  <article class="ep" id="ep-respond">
+    <h3><span class="verb">POST</span> <code>hub/api/requests/{id}/responses</code> <span class="cost">5 tokens</span></h3>
+    <p>The auditor answers with an offer.</p>
+<pre><code>{"slug": "my-auditor", "offer": {…}}</code></pre>
+    <p><code>offerId</code> = <code>rsp-&lt;requestId suffix&gt;</code>; the offer is signed by the auditor key, and its methodology is the one from the request; only the addressee can answer an addressed request; the scope is pinned; the offer has not expired and does not roll back an earlier one.</p>
+    <p class="resp"><b>201</b> <code>{"offer": "&lt;uri&gt;"}</code></p>
+    <p class="small muted">Errors: 404 — the request is closed or has expired.</p>
+  </article>
+
+  <article class="ep" id="ep-mine">
+    <h3><span class="verb">POST</span> <code>hub/api/requests/{id}/mine</code> <span class="cost">2 tokens</span> <span class="tag">🔏 requester key</span></h3>
+<pre><code>{"request": {"action": "responses", "requestId": "…", "issuedAt": "…", "signature": "…"}}</code></pre>
+    <p class="resp"><b>200</b> <code>{"open": bool, "responses": [{"slug", "name", "operator", "fingerprint", "page", "completedOrders", "customers", "offer"}]}</code></p>
+  </article>
+</section>
+
+<section id="vault">
+  <h2>Vault</h2>
+  <article class="ep" id="ep-vault">
+    <h3><span class="verb">POST</span> <code>hub/api/vault</code> <span class="cost">2 tokens</span> <span class="tag">🔏 vault key</span></h3>
+    <p>So that a customer sees their orders and requests on any device, the app stores their list encrypted (AES-256-GCM, with a key derived from the phrase) under a separate signing key derived from the same phrase. The hub stores ciphertext it cannot read, under a key that appears nowhere else.</p>
+<pre><code>{"request": {"action": "get" | "put", "key": "onym:key:…", "data": "base64, put only",
+             "issuedAt": "…", "signature": "…"}}</code></pre>
+    <p class="resp"><b>get</b> → <code>{"data", "updatedAt"}</code> or <code>{"data": null}</code><br><b>put</b> → <code>{"updatedAt"}</code>; data at most 256 KiB; at most 20,000 vaults on the hub in total.</p>
+  </article>
+</section>
+
+<section id="tools">
+  <h2>Verification tools</h2>
+  <p>A browser cannot read most external addresses by itself (CORS), so the hub does it on the browser's behalf: public HTTPS only, no cookies, never into an internal network, at most three redirects.</p>
+
+  <article class="ep" id="ep-fetch">
+    <h3><span class="verb">POST</span> <code>hub/api/fetch</code> <span class="cost">2 tokens</span></h3>
+<pre><code>{"url": "https://…"}</code></pre>
+    <p>JSON and text only, at most 1 MiB (otherwise 415).</p>
+    <p class="resp"><b>200</b> <code>{"url", "status", "contentType", "setsCookie", "digest", "size", "body"}</code></p>
+  </article>
+
+  <article class="ep" id="ep-digest">
+    <h3><span class="verb">POST</span> <code>hub/api/digest</code> <span class="cost">20 tokens</span></h3>
+<pre><code>{"url": "https://…/app.apk"}</code></pre>
+    <p>Hashes the file as a stream, up to 300 MiB, without returning it, to pin the exact bytes of a build.</p>
+    <p class="resp"><b>200</b> <code>{"url", "status", "digest", "size"}</code></p>
+  </article>
+
+  <article class="ep" id="ep-conformance">
+    <h3><span class="verb">POST</span> <code>hub/api/conformance/discovery</code> <span class="cost">20 tokens</span></h3>
+<pre><code>{"manifestUrl": "https://…/manifest.json"}</code></pre>
+    <p>Runs the Discovery provider conformance suite (42 checks) against a manifest with <code>"seat": "discovery"</code>. The suite does not apply to other services (422). Timeout: 3 minutes.</p>
+    <p class="resp"><b>200</b> — a canonical report: <code>{suite, suiteVersion, runAt, manifestUri, result, documents: [{role, uri, digest, size}], checks: [{id, clause, level, title, outcome, detail}]}</code></p>
+  </article>
+</section>
+
+<section id="lists">
+  <h2>Lists</h2>
+  <article class="ep" id="ep-auditors">
+    <h3><span class="verb get">GET</span> <code>hub/api/auditors</code></h3>
+    <p class="resp"><code>[{"slug", "name", "operator", "fingerprint", "page", "attestations", "offers", "completedOrders", "customers"}]</code></p>
+  </article>
+  <article class="ep" id="ep-seat">
+    <h3><span class="verb get">GET</span> <code>hub/api/seat</code></h3>
+    <p class="resp">The same for the main seat (<code>"slug": ""</code>).</p>
+  </article>
+  <article class="ep" id="ep-library">
+    <h3><span class="verb get">GET</span> <code>hub/api/library</code></h3>
+    <p>All attestations of all auditors, newest first. This is an index, not an authority: the browser checks every entry against the signed files.</p>
+    <p class="resp"><code>[{"attestationId", "auditor", "auditorSlug", "auditorBase", "fingerprint", "subject", "result", "state", "methodologyClass", "kind", "source", "engagement", "issuedAt", "expiresAt", "orderRef", "uri"}]</code></p>
+<pre><code>curl -s https://foldy.io/audit/hub/api/library | jq '.[0]'</code></pre>
+  </article>
+</section>
+
+<section id="discovery">
+  <h2>Discovery provider</h2>
+  <p>The provider <code>onym:component:onym-audit-discovery</code> publishes signed catalogs that the Onym apps add under <b>Settings → Discovery Providers</b>. All of them are static files:</p>
+  <table class="api-table">
+    <tr><th><code>discovery/manifest.json</code> + <code>.sig</code></th><td><code>seat: "discovery"</code>, profile <code>static-ed25519-v1</code>, capabilities <code>signed-snapshot-v1</code> and <code>local-filtering-v1</code></td></tr>
+    <tr><th><code>discovery/catalogs/onym-auditors.json</code></th><td>auditors (<code>seatTypes: ["audit"]</code>), up to 512 entries</td></tr>
+    <tr><th><code>discovery/catalogs/onym-audited-services.json</code></th><td>Onym services that have a current audit, with their status</td></tr>
+    <tr><th><code>discovery/policies/*.md</code>, <code>discovery/privacy.md</code></th><td>policies pinned by digests in the manifest</td></tr>
+    <tr><th><code>discovery/status/&lt;component&gt;/</code></th><td>the status page that a catalog entry links to</td></tr>
+  </table>
+  <p>Snapshots are re-signed on every change on the hub, but at most once every 2 minutes, and are served with <code>Cache-Control: no-cache</code>. Snapshot fields: <code>{version, catalogId, providerId, implementationProfileId, policyDigest, sequence, previousDigest, generatedAt, expiresAt, entries, signature}</code>. An entry in <code>onym-audited-services</code>:</p>
+<pre><code>{"componentId": "onym:component:onym-relayer", "seatType": "notary",
+ "operator": "onym:key:…", "manifest": {"uri": "…", "digest": "sha256:…"},
+ "profiles": […], "relationship": "other-disclosed", "placement": "policy-ranked",
+ "listedAt": "…", "evidence": [],
+ "status": {"state": "review" | "warning", "uri": "https://foldy.io/audit/discovery/status/onym-relayer/"}}</code></pre>
+  <p>The app shows <code>status</code> as a badge next to the service and as a link in the consent dialog. In the app, the provider key fingerprint is the first 16 hex characters of the operator key: <b class="mono">4074 4514 be2a 1414</b>.</p>
+</section>
+
+<section id="stellar">
+  <h2>Stellar anchor</h2>
+  <p>An auditor's register is anchored on the Stellar test network: the data entry <code>onym-audit-status</code> on the auditor's account (the same key as the operator key) holds the SHA-256 of the canonical JSON</p>
+<pre><code>{"anchorVersion": 1, "auditor": "onym:component:…",
+ "entries": [{"attestationId", "attestation": "sha256:…", "state", "supersededBy", "revocation"}, …]}</code></pre>
+  <p>with entries sorted by <code>attestationId</code>. Re-signing for freshness does not change the anchor; issuing and revoking do. The network stores every entry with its ledger time, so the register cannot be rewritten after the fact or shown differently to different readers. To verify, use <a href="../stellar.js"><code>stellar.js</code></a>: <code>anchorState(account, statusText)</code> queries a public Horizon node and compares.</p>
+</section>
+
+</div>
+
+  </div>
+</main>
+
+<footer class="colophon">
+  <div class="wrap">
+    <p class="small muted">onym audit · <a href="https://github.com/Dubieroj/onym-audit">GitHub</a> · <a href="../profile/Audit-Static-Ed25519.md">Implementation profile</a> · <a href="../hub/terms.md">Hub terms</a> · <a href="../discovery/manifest.json">Discovery</a></p>
+  </div>
+</footer>
+</body>
+</html>
