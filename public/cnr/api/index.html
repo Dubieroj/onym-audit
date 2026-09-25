@@ -10,7 +10,7 @@
 <link rel="alternate" hreflang="ru" href="https://foldy.io/audit/ru/api/">
 <link rel="alternate" hreflang="sr-Latn-ME" href="https://foldy.io/audit/cnr/api/">
 <link rel="alternate" hreflang="x-default" href="https://foldy.io/audit/api/">
-<link rel="stylesheet" href="../../style.css?v=1f75bc98ea">
+<link rel="stylesheet" href="../../style.css?v=362f297d52">
 </head>
 <body class="api-page">
 <div class="grain" aria-hidden="true"></div>
@@ -251,6 +251,20 @@ const d = await verifyAttestation({
     <h3><span class="verb get">GET</span> <code>hub/api/a/{slug}/export</code></h3>
     <p>Lista svih fajlova u stablu revizora, da biste ga prenijeli na svoj server: hub je zamjenjiva podrazumijevana opcija.</p>
     <p class="resp"><b>200</b> <code>{"base", "files": ["manifest.json", …]}</code></p>
+  </article>
+  <article class="ep" id="ep-stellar-link">
+    <h3><span class="verb">POST</span> <code>hub/api/a/{slug}/stellar-link</code> <span class="cost">5 tokena</span> <span class="tag">🔏 ključ revizora</span></h3>
+    <p>Povežite revizora s nalogom koji već ima na glavnoj Stellar mreži. Prvo vlasnik naloga jednom transakcijom (u kabinetu — preko Freightera) upisuje na taj nalog dva unosa podataka:</p>
+    <table class="api-table">
+      <tr><th><code>onym-audit-auditor</code></th><td>javni ključ revizora, 32 bajta</td></tr>
+      <tr><th><code>onym-audit-proof</code></th><td>potpis ključa revizora, 64 bajta, nad <code>"onym-audit-link-v1\nPublic Global Stellar Network ; September 2015\n" + G adresa</code></td></tr>
+    </table>
+    <p>Saglasnost obje strane vidi se na mreži: nalog je potpisao transakciju, ključ revizora — dokaz. Revizoru ne treba nalog na glavnoj mreži. Zatim:</p>
+<pre><code>{"request": {"action": "stellar-link" | "stellar-unlink", "auditor": "onym:component:&lt;ime&gt;",
+             "account": "G…", "issuedAt": "…", "signature": "…"}}</code></pre>
+    <p>Hub čita nalog sa <code>horizon.stellar.org</code> i provjerava oba unosa. Ako se slažu, objavljuje sam potpisani zahtjev kao <code>a/&lt;ime&gt;/stellar-link.json</code>; stranica revizora ga isto tako ponovo provjerava u pregledaču.</p>
+    <p class="resp"><b>201</b> <code>{"account", "uri"}</code>; <b>stellar-unlink</b> → <code>{"unlinked": true}</code> (unose na nalogu uklanja njegov vlasnik).</p>
+    <p class="small muted">Greške: 403 — nije potpisano ključem revizora ili zahtjev nije svjež; 422 — unosa nema, navode drugi ključ ili se potpis ne slaže.</p>
   </article>
 </section>
 

@@ -7,7 +7,7 @@
 // document is built to the static-Ed25519 profile and signed here.
 import { parseStrict, canonical, plain, digest, fingerprint, verifySig, verifyAttestation } from "../verify.js";
 import { normalize, check, generate, derive, orderKey, accountOfKey, keyOfAccount, vaultKeys } from "../onym-id.js";
-import { NETWORK, anchorDigest, anchor, anchorState } from "../stellar.js";
+import { NETWORK, anchorDigest, anchor, anchorState, MAINNET, LINK_KEY, LINK_PROOF, linkMessage, linkTransaction, unsignedEnvelope, mainnetAccount, submitMainnet, linkState } from "../stellar.js";
 import { RE as ORE, auditors as orderAuditors, load as loadAuditor, kindsOf, feeText, pin, subjectOf, newOrderID, sign as signOrder, send as sendOrder, contactOf } from "../order-core.js";
 
 const $ = (id) => document.getElementById(id);
@@ -436,6 +436,7 @@ async function dash() {
     const st = plain(parseStrict(statusText));
     if (!(await verifySig(statusText, plain(parseStrict(manifestText)).statusKey))) throw new Error(t("e_status"));
     showAnchor(statusText);
+    showMainnet();
     $("pipe-published").textContent = st.entries.filter((e) => e.state === "active").length;
     $("pipe-revoked").textContent = st.entries.filter((e) => e.state !== "active").length;
     if (!st.entries.length) return box.replaceChildren(el("p", { class: "empty", text: t("no_atts") }));
@@ -554,6 +555,73 @@ async function anchorNow() {
   }
 }
 $("d-anchor-go").addEventListener("click", guard(anchorNow));
+
+// ---- The auditor's account on the Stellar public network
+
+// The Freighter wallet's page API, served from this site; loaded only here.
+let freighterLoad;
+const freighter = () => (window.freighterApi ? Promise.resolve(window.freighterApi) : (freighterLoad ??= new Promise((ok, bad) => {
+  const s = document.createElement("script");
+  s.src = new URL("vendor/freighter-api-6.0.1.min.js", ROOT).href;
+  s.onload = () => ok(window.freighterApi);
+  s.onerror = () => { freighterLoad = null; bad(new Error(t("mn_fr_load"))); };
+  document.head.append(s);
+})));
+const shortG = (g) => g.slice(0, 4) + "…" + g.slice(-4);
+
+// showMainnet reads the published link and checks it on the network.
+async function showMainnet() {
+  const line = $("d-mainnet"), view = $("d-mainnet-link");
+  view.hidden = true;
+  $("d-mainnet-off").hidden = true;
+  let text;
+  try { text = await getText(me.base + "stellar-link.json"); } catch {
+    line.textContent = t("mn_unlinked");
+    line.className = "muted";
+    $("d-mainnet-go").textContent = t("mn_go");
+    return;
+  }
+  const q = plain(parseStrict(text));
+  view.href = MAINNET.explorer + q.account;
+  view.hidden = false;
+  $("d-mainnet-off").hidden = false;
+  $("d-mainnet-go").textContent = t("mn_again");
+  const s = await linkState(q.account, me.key).catch(() => ({ state: "unknown" }));
+  line.textContent = t("mn_" + s.state, { g: shortG(q.account) });
+  line.className = s.state === "linked" ? "ok-line" : "bad";
+}
+
+// linkMainnet writes the two entries on the account chosen in Freighter,
+// signed there, then asks the hub to publish the link it checks.
+async function linkMainnet() {
+  const fr = await freighter();
+  if (!(await fr.isConnected()).isConnected) throw new Error(t("mn_fr_missing"));
+  const acc = await fr.requestAccess();
+  if (acc.error || !acc.address) throw new Error(t("mn_fr_denied"));
+  const g = acc.address;
+  $("d-mainnet").textContent = t("mn_working", { g: shortG(g) });
+  const acct = await mainnetAccount(g);
+  if (!acct) throw new Error(t("mn_no_account", { g: shortG(g) }));
+  const proof = new Uint8Array(await crypto.subtle.sign({ name: "Ed25519" }, me.priv, linkMessage(g)));
+  const auditorKey = Uint8Array.from(me.key.slice(9).match(/../g), (x) => parseInt(x, 16));
+  const pub = Uint8Array.from(keyOfAccount(g).slice(9).match(/../g), (x) => parseInt(x, 16));
+  const tx = linkTransaction(pub, BigInt(acct.sequence) + 1n, Math.floor(Date.now() / 1000) + 600, [[LINK_KEY, auditorKey], [LINK_PROOF, proof]]);
+  const signed = await fr.signTransaction(unsignedEnvelope(tx), { networkPassphrase: MAINNET.passphrase, address: g });
+  if (signed.error || !signed.signedTxXdr) throw new Error(t("mn_fr_declined", { err: signed.error?.message || "" }));
+  await submitMainnet(signed.signedTxXdr);
+  await ask(`a/${me.slug}/stellar-link`, { action: "stellar-link", auditor: me.componentId, account: g }, me.priv);
+  toast(t("mn_done", { g: shortG(g) }));
+  await showMainnet();
+}
+$("d-mainnet-go").addEventListener("click", guard(async () => {
+  $("d-mainnet-go").disabled = true;
+  try { await linkMainnet(); } catch (e) { await showMainnet(); throw e; } finally { $("d-mainnet-go").disabled = false; }
+}));
+$("d-mainnet-off").addEventListener("click", guard(async () => {
+  if (!confirm(t("mn_confirm_off"))) return;
+  await ask(`a/${me.slug}/stellar-link`, { action: "stellar-unlink", auditor: me.componentId, account: "" }, me.priv);
+  await showMainnet();
+}));
 
 async function revoke(id, reason) {
   if (!confirm(t("confirm_revoke", { id }))) return;

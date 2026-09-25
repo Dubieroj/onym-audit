@@ -117,3 +117,61 @@ export async function anchorState(g, statusText) {
   const want = hex(await anchorDigest(statusText));
   return { state: hex(unb64(v)) === want ? "match" : "stale", at: acct.last_modified_time, anchored: hex(unb64(v)), want };
 }
+
+// ---- Linking an auditor to an account on the public network
+//
+// The account's holder writes two data entries on it, in one transaction
+// they sign in their own wallet: the auditor's key, and the auditor key's
+// signature over linkMessage(account). Both sides consent on the network;
+// the auditor needs no account or funds of its own there.
+
+export const MAINNET = {
+  passphrase: "Public Global Stellar Network ; September 2015",
+  horizon: "https://horizon.stellar.org",
+  explorer: "https://stellar.expert/explorer/public/account/",
+};
+export const LINK_KEY = "onym-audit-auditor";
+export const LINK_PROOF = "onym-audit-proof";
+export const linkMessage = (g) => enc.encode(`onym-audit-link-v1\n${MAINNET.passphrase}\n${g}`);
+
+// linkTransaction: source account, fee (for the whole transaction), sequence
+// number, time bounds, no memo, one ManageData operation per entry.
+export function linkTransaction(pub, seq, maxTime, entries, fee = 10000) {
+  const x = new XDR().u32(0).fixed(pub).u32(fee).u64(seq).u32(1).u64(0).u64(maxTime).u32(0).u32(entries.length);
+  for (const [name, value] of entries) x.u32(0).u32(10).opaque(enc.encode(name)).u32(1).opaque(value);
+  return x.u32(0).bytes();
+}
+
+// unsignedEnvelope is what a wallet signs: the transaction, no signatures.
+export const unsignedEnvelope = (tx) => b64(new XDR().u32(2).fixed(tx).u32(0).bytes());
+
+export async function mainnetAccount(g) {
+  const r = await fetch(`${MAINNET.horizon}/accounts/${g}`, { credentials: "omit", cache: "no-store" });
+  if (r.status === 404) return null;
+  if (!r.ok) throw new Error(`Stellar: HTTP ${r.status}`);
+  return r.json();
+}
+
+export async function submitMainnet(envelopeB64) {
+  const r = await fetch(`${MAINNET.horizon}/transactions`, {
+    method: "POST", credentials: "omit", headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: "tx=" + encodeURIComponent(envelopeB64),
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error("Stellar: " + (j.extras?.result_codes ? JSON.stringify(j.extras.result_codes) : j.title || "HTTP " + r.status));
+  return j.hash;
+}
+
+// linkState checks the two entries on account g against an auditor key:
+// "linked", "none" (no entries), "other" (another auditor's key), "bad"
+// (the proof does not verify) or "no-account".
+export async function linkState(g, key) {
+  const acct = await mainnetAccount(g);
+  if (!acct) return { state: "no-account" };
+  const k = acct.data?.[LINK_KEY], p = acct.data?.[LINK_PROOF];
+  if (!k || !p) return { state: "none" };
+  if (hex(unb64(k)) !== key.slice("onym:key:".length)) return { state: "other" };
+  const pub = await crypto.subtle.importKey("raw", unb64(k), { name: "Ed25519" }, false, ["verify"]);
+  const good = await crypto.subtle.verify({ name: "Ed25519" }, pub, unb64(p), linkMessage(g)).catch(() => false);
+  return { state: good ? "linked" : "bad", at: acct.last_modified_time };
+}

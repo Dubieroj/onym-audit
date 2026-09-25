@@ -79,7 +79,11 @@
    "sev_medium": "medium",
    "sev_low": "low",
    "sev_informational": "informational",
-   "note_unlisted": "The status list does not list this attestation."
+   "note_unlisted": "The status list does not list this attestation.",
+   "mn_unlinked": "not linked",
+   "mn_bad": "✗ link not signed by this auditor",
+   "mn_short_ok": "✓ linked, checked on the network",
+   "mn_short_bad": "✗ not confirmed on the network"
   },
   "o_title": "Order an audit · onym audit",
   "o_description": "Order a signed examination of any Onym component — a repository, a running service, a Discovery catalog, or a build — from the auditor you choose.",
@@ -465,7 +469,24 @@
    "sev_medium": "medium",
    "sev_low": "low",
    "sev_informational": "informational",
-   "ph_commit": "40 hex characters"
+   "ph_commit": "40 hex characters",
+   "mn_unlinked": "Not linked to an account on the Stellar public network.",
+   "mn_go": "Link to an account on the public network",
+   "mn_again": "Link to another account",
+   "mn_linked": "✓ Linked to {g} on the Stellar public network: both entries are on the account and the proof verifies.",
+   "mn_none": "✗ The link to {g} is published, but the account no longer carries the entries.",
+   "mn_other": "✗ The account {g} now names another auditor.",
+   "mn_bad": "✗ The proof on {g} does not verify.",
+   "mn_no-account": "✗ The account {g} does not exist on the public network.",
+   "mn_unknown": "Linked to {g}; the network could not be reached to check it.",
+   "mn_working": "Linking {g}: confirm the transaction in Freighter…",
+   "mn_no_account": "The account {g} does not exist on the public network: fund it first.",
+   "mn_fr_load": "Could not load the Freighter wallet script.",
+   "mn_fr_missing": "Freighter is not installed in this browser: install it from freighter.app and reload.",
+   "mn_fr_denied": "Freighter did not share an account with this page.",
+   "mn_fr_declined": "The transaction was not signed in Freighter. {err}",
+   "mn_done": "Linked to {g} on the Stellar public network.",
+   "mn_confirm_off": "Remove the published link? The entries stay on the account until you remove them there."
   },
   "o_brand": "onym audit",
   "o_rule": "Orders under signed offers · Onym audit seat",
@@ -706,7 +727,11 @@
   "api_kicker": "For developers",
   "api_h1": "HTTP API",
   "api_lede": "Everything you can read, verify and send: addresses, request bodies, the checks the server makes, replies and limits. Every change is a signed document; the server keeps the bytes but cannot forge them.",
-  "nav_api": "API"
+  "nav_api": "API",
+  "s_mainnet_go": "Link to an account on the public network",
+  "s_mainnet_off": "Remove the link",
+  "s_mainnet_h": "Links this auditor to a Stellar account you already have, on the public network, through Freighter. One transaction from that account writes two data entries on it: this auditor's key, and this key's signature for that account — both sides consent on the network. Freighter must be on Mainnet; the account pays the fee (0.001 XLM) and keeps 1 XLM in reserve for the two entries.",
+  "facts_stellar": "Stellar (public network)"
  },
  "ru": {
   "title": "onym audit · аудитор сети Onym",
@@ -787,7 +812,11 @@
    "sev_medium": "средняя",
    "sev_low": "низкая",
    "sev_informational": "информационная",
-   "note_unlisted": "Этой аттестации нет в списке статусов."
+   "note_unlisted": "Этой аттестации нет в списке статусов.",
+   "mn_unlinked": "не связан",
+   "mn_bad": "✗ связь не подписана этим аудитором",
+   "mn_short_ok": "✓ связан, проверено в сети",
+   "mn_short_bad": "✗ не подтверждено в сети"
   },
   "o_title": "Заказать аудит · onym audit",
   "o_description": "Закажите подписанную проверку любого компонента Onym — репозитория, работающего сервиса, каталога Discovery или сборки — у аудитора, которого выберете сами.",
@@ -1173,7 +1202,24 @@
    "sev_medium": "средняя",
    "sev_low": "низкая",
    "sev_informational": "информационная",
-   "ph_commit": "40 шестнадцатеричных символов"
+   "ph_commit": "40 шестнадцатеричных символов",
+   "mn_unlinked": "Не связан с аккаунтом в основной сети Stellar.",
+   "mn_go": "Связать с аккаунтом в основной сети",
+   "mn_again": "Связать с другим аккаунтом",
+   "mn_linked": "✓ Связан с {g} в основной сети Stellar: обе записи на аккаунте, подпись сходится.",
+   "mn_none": "✗ Связь с {g} опубликована, но записей на аккаунте больше нет.",
+   "mn_other": "✗ Аккаунт {g} теперь указывает на другого аудитора.",
+   "mn_bad": "✗ Подпись на {g} не сходится.",
+   "mn_no-account": "✗ Аккаунта {g} нет в основной сети.",
+   "mn_unknown": "Связан с {g}; сеть недоступна, проверить не удалось.",
+   "mn_working": "Связываю {g}: подтвердите транзакцию в Freighter…",
+   "mn_no_account": "Аккаунта {g} нет в основной сети: сначала пополните его.",
+   "mn_fr_load": "Не удалось загрузить скрипт кошелька Freighter.",
+   "mn_fr_missing": "В этом браузере нет Freighter: установите его с freighter.app и обновите страницу.",
+   "mn_fr_denied": "Freighter не дал этой странице доступ к аккаунту.",
+   "mn_fr_declined": "Транзакция не подписана в Freighter. {err}",
+   "mn_done": "Связан с {g} в основной сети Stellar.",
+   "mn_confirm_off": "Убрать опубликованную связь? Записи на аккаунте останутся, пока вы не удалите их там."
   },
   "o_brand": "onym audit",
   "o_rule": "Заказы по подписанным предложениям · место аудитора Onym",
@@ -1414,7 +1460,11 @@
   "api_kicker": "Для разработчиков",
   "api_h1": "HTTP API",
   "api_lede": "Всё, что можно прочитать, проверить и отправить: адреса, тела запросов, проверки на стороне сервера, ответы и лимиты. Каждое изменение — подписанный документ; сервер хранит байты, но подделать их не может.",
-  "nav_api": "API"
+  "nav_api": "API",
+  "s_mainnet_go": "Связать с аккаунтом в основной сети",
+  "s_mainnet_off": "Убрать связь",
+  "s_mainnet_h": "Связывает этого аудитора с вашим существующим аккаунтом в основной сети Stellar через Freighter. Одна транзакция с этого аккаунта записывает на него две записи данных: ключ аудитора и подпись этого ключа для этого аккаунта — согласие обеих сторон видно в сети. В Freighter должна быть выбрана основная сеть (Mainnet); аккаунт платит комиссию (0,001 XLM) и держит 1 XLM в резерве под две записи.",
+  "facts_stellar": "Stellar (основная сеть)"
  },
  "cnr": {
   "title": "onym audit · revizor Onym mreže",
@@ -1495,7 +1545,11 @@
    "sev_medium": "srednja",
    "sev_low": "niska",
    "sev_informational": "informativna",
-   "note_unlisted": "Ove atestacije nema u listi statusa."
+   "note_unlisted": "Ove atestacije nema u listi statusa.",
+   "mn_unlinked": "nije povezan",
+   "mn_bad": "✗ veza nije potpisana ovim revizorom",
+   "mn_short_ok": "✓ povezan, provjereno na mreži",
+   "mn_short_bad": "✗ nije potvrđeno na mreži"
   },
   "o_title": "Naruči reviziju · onym audit",
   "o_description": "Naručite potpisani pregled bilo koje Onym komponente — repozitorijuma, servisa u radu, Discovery kataloga ili build-a — od revizora kojeg sami izaberete.",
@@ -1881,7 +1935,24 @@
    "sev_medium": "srednja",
    "sev_low": "niska",
    "sev_informational": "informativna",
-   "ph_commit": "40 heksadecimalnih znakova"
+   "ph_commit": "40 heksadecimalnih znakova",
+   "mn_unlinked": "Nije povezan s nalogom na glavnoj Stellar mreži.",
+   "mn_go": "Poveži s nalogom na glavnoj mreži",
+   "mn_again": "Poveži s drugim nalogom",
+   "mn_linked": "✓ Povezan s {g} na glavnoj Stellar mreži: oba unosa su na nalogu i potpis se slaže.",
+   "mn_none": "✗ Veza s {g} je objavljena, ali unosa na nalogu više nema.",
+   "mn_other": "✗ Nalog {g} sada upućuje na drugog revizora.",
+   "mn_bad": "✗ Potpis na {g} se ne slaže.",
+   "mn_no-account": "✗ Naloga {g} nema na glavnoj mreži.",
+   "mn_unknown": "Povezan s {g}; mreža nije dostupna za provjeru.",
+   "mn_working": "Povezujem {g}: potvrdite transakciju u Freighteru…",
+   "mn_no_account": "Naloga {g} nema na glavnoj mreži: prvo ga dopunite.",
+   "mn_fr_load": "Nije moguće učitati skriptu novčanika Freighter.",
+   "mn_fr_missing": "U ovom pregledaču nema Freightera: instalirajte ga s freighter.app i osvježite stranicu.",
+   "mn_fr_denied": "Freighter nije dao ovoj stranici pristup nalogu.",
+   "mn_fr_declined": "Transakcija nije potpisana u Freighteru. {err}",
+   "mn_done": "Povezan s {g} na glavnoj Stellar mreži.",
+   "mn_confirm_off": "Ukloniti objavljenu vezu? Unosi na nalogu ostaju dok ih tamo ne uklonite."
   },
   "o_brand": "onym audit",
   "o_rule": "Narudžbe po potpisanim ponudama · Onym mjesto revizora",
@@ -2122,6 +2193,10 @@
   "api_kicker": "Za programere",
   "api_h1": "HTTP API",
   "api_lede": "Sve što možete pročitati, provjeriti i poslati: adrese, tijela zahtjeva, provjere na serveru, odgovori i ograničenja. Svaka promjena je potpisan dokument; server čuva bajtove, ali ih ne može krivotvoriti.",
-  "nav_api": "API"
+  "nav_api": "API",
+  "s_mainnet_go": "Poveži s nalogom na glavnoj mreži",
+  "s_mainnet_off": "Ukloni vezu",
+  "s_mainnet_h": "Povezuje ovog revizora s vašim postojećim Stellar nalogom na glavnoj mreži preko Freightera. Jedna transakcija s tog naloga upisuje na njega dva unosa podataka: ključ revizora i potpis tog ključa za taj nalog — saglasnost obje strane vidi se na mreži. U Freighteru mora biti izabrana glavna mreža (Mainnet); nalog plaća naknadu (0,001 XLM) i drži 1 XLM u rezervi za dva unosa.",
+  "facts_stellar": "Stellar (glavna mreža)"
  }
 }

@@ -125,7 +125,7 @@ h1 { font-size: clamp(38px, 6vw, 68px); line-height: 1.05; letter-spacing: -.02e
 }
 
 /* ledger facts */
-.ledger-facts dl { display: grid; grid-template-columns: repeat(4, 1fr); margin: 24px auto 0; border-top: 2px solid var(--ink); border-bottom: 1px solid var(--rule); }
+.ledger-facts dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); margin: 24px auto 0; border-top: 2px solid var(--ink); border-bottom: 1px solid var(--rule); }
 .ledger-facts dl > div { padding: 14px 16px 16px 0; border-right: 1px solid var(--rule); min-width: 0; }
 .ledger-facts dl > div + div { padding-left: 16px; }
 .ledger-facts dl > div:last-child { border-right: 0; }
@@ -133,9 +133,9 @@ h1 { font-size: clamp(38px, 6vw, 68px); line-height: 1.05; letter-spacing: -.02e
 .ledger-facts dd { margin: 0; font-size: 15px; overflow-wrap: anywhere; }
 @media (max-width: 900px) {
   .ledger-facts dl { grid-template-columns: 1fr 1fr; }
-  .ledger-facts dl > div:nth-child(2) { border-right: 0; }
+  .ledger-facts dl > div:nth-child(even) { border-right: 0; }
   .ledger-facts dl > div:nth-child(n+3) { border-top: 1px solid var(--rule); }
-  .ledger-facts dl > div:nth-child(3) { padding-left: 0; }
+  .ledger-facts dl > div:nth-child(odd) { padding-left: 0; }
 }
 @media (max-width: 520px) {
   .ledger-facts dl { grid-template-columns: 1fr; }
@@ -442,3 +442,8 @@ button.who-chip::after { content: " ⏻"; }
 
 /* A hint inside a label reads as a hint, not as an upper-case label. */
 .order-form label .hint { display: block; font: 14px/1.45 var(--sans); letter-spacing: 0; text-transform: none; }
+
+/* the link to a public-network account, on the auditor dashboard */
+.mainnet-box { margin: 0 0 22px; padding: 14px 16px; border: 1px solid var(--rule); border-radius: 4px; background: var(--card); max-width: 760px; }
+.mainnet-box .anchor-line { margin: 0 0 10px; }
+.mainnet-box .hint { margin: 10px 0 0; }

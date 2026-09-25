@@ -215,6 +215,20 @@ const d = await verifyAttestation({
     <p>A list of all files in the auditor's tree, for moving it to your own server: the hub is a replaceable default.</p>
     <p class="resp"><b>200</b> <code>{"base", "files": ["manifest.json", …]}</code></p>
   </article>
+  <article class="ep" id="ep-stellar-link">
+    <h3><span class="verb">POST</span> <code>hub/api/a/{slug}/stellar-link</code> <span class="cost">5 tokens</span> <span class="tag">🔏 auditor key</span></h3>
+    <p>Link the auditor to an account it already has on the Stellar public network. First the account's holder writes two data entries on that account in one transaction (in the dashboard, through Freighter):</p>
+    <table class="api-table">
+      <tr><th><code>onym-audit-auditor</code></th><td>the auditor's public key, 32 bytes</td></tr>
+      <tr><th><code>onym-audit-proof</code></th><td>the auditor key's signature, 64 bytes, over <code>"onym-audit-link-v1\nPublic Global Stellar Network ; September 2015\n" + G address</code></td></tr>
+    </table>
+    <p>Both sides consent on the network: the account signed the transaction, the auditor key signed the proof. The auditor needs no account on the public network. Then:</p>
+<pre><code>{"request": {"action": "stellar-link" | "stellar-unlink", "auditor": "onym:component:&lt;name&gt;",
+             "account": "G…", "issuedAt": "…", "signature": "…"}}</code></pre>
+    <p>The hub reads the account from <code>horizon.stellar.org</code> and checks both entries. If they hold, it publishes the signed request itself as <code>a/&lt;name&gt;/stellar-link.json</code>; the auditor's page checks it again in the browser the same way.</p>
+    <p class="resp"><b>201</b> <code>{"account", "uri"}</code>; <b>stellar-unlink</b> → <code>{"unlinked": true}</code> (the entries on the account are removed by its holder).</p>
+    <p class="small muted">Errors: 403 — not signed by the auditor key, or not fresh; 422 — the entries are missing, name another key, or the proof does not verify.</p>
+  </article>
 </section>
 
 <section id="orders">

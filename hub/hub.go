@@ -62,6 +62,9 @@ type Hub struct {
 	PublicBase string // https://foldy.io/audit/
 	Now        func() time.Time
 	OnChange   func() // called after an auditor registers, publishes, or revokes
+	// Horizon, when set, answers for the Stellar public network's Horizon:
+	// an account's data entries (tests use it; nil asks horizon.stellar.org).
+	Horizon func(ctx context.Context, account string) (map[string]string, error)
 
 	mu      sync.Mutex
 	stripes [256]sync.Mutex // per-tenant locks, by hash of the name
@@ -149,6 +152,7 @@ func (h *Hub) Handler() http.Handler {
 	mux.HandleFunc("POST /hub/api/a/{slug}/order-status", h.orderStatus)
 	mux.HandleFunc("GET /hub/api/a/{slug}/export", h.export)
 	mux.HandleFunc("POST /hub/api/a/{slug}/inbox", h.inbox)
+	mux.HandleFunc("POST /hub/api/a/{slug}/stellar-link", h.stellarLink)
 	mux.HandleFunc("POST /a/{slug}/orders", h.postOrder)
 	mux.HandleFunc("POST /a/{slug}/responses", h.response)
 	mux.HandleFunc("GET /a/{slug}/{path...}", h.static)

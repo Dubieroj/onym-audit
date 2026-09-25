@@ -1,4 +1,5 @@
 import { verifyAttestation, verifySig, parseStrict, plain, fingerprint, digest } from "./verify.js";
+import { MAINNET, linkState } from "./stellar.js";
 
 const $ = (id) => document.getElementById(id);
 // The auditor's root: a hosted auditor's page names its own tree with
@@ -82,6 +83,7 @@ async function main() {
   // The contact is the auditor's own text: only mailto: and https: become links.
   if (/^(mailto:|https:\/\/)/i.test(manifest.contact)) a.href = manifest.contact;
   opt("f-contact").replaceChildren(a);
+  if ($("f-stellar")) stellarLink();
 
   const manifestOK = await verifySig(manifestText, manifest.operator).catch(() => false);
   try { statusText = await get("status.json"); } catch { statusText = null; }
@@ -101,6 +103,20 @@ async function main() {
   }
   $("credit").addEventListener("change", render);
   await render();
+}
+
+// stellarLink shows the auditor's account on the Stellar public network: the
+// link the auditor key signed, checked against the account's own entries.
+async function stellarLink() {
+  const box = $("f-stellar");
+  let text;
+  try { text = await get("stellar-link.json"); } catch { box.textContent = t("mn_unlinked"); return; }
+  const q = plain(parseStrict(text));
+  if (!(await verifySig(text, manifest.operator).catch(() => false))) { box.textContent = t("mn_bad"); return; }
+  const s = await linkState(q.account, manifest.operator).catch(() => ({ state: "unknown" }));
+  const a = el("a", "mono", q.account.slice(0, 4) + "…" + q.account.slice(-4));
+  a.href = MAINNET.explorer + q.account;
+  box.replaceChildren(a, el("span", s.state === "linked" ? "ok-line" : "bad", " " + t("mn_short_" + (s.state === "linked" ? "ok" : "bad"))));
 }
 
 async function render() {

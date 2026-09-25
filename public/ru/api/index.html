@@ -10,7 +10,7 @@
 <link rel="alternate" hreflang="ru" href="https://foldy.io/audit/ru/api/">
 <link rel="alternate" hreflang="sr-Latn-ME" href="https://foldy.io/audit/cnr/api/">
 <link rel="alternate" hreflang="x-default" href="https://foldy.io/audit/api/">
-<link rel="stylesheet" href="../../style.css?v=1f75bc98ea">
+<link rel="stylesheet" href="../../style.css?v=362f297d52">
 </head>
 <body class="api-page">
 <div class="grain" aria-hidden="true"></div>
@@ -251,6 +251,20 @@ const d = await verifyAttestation({
     <h3><span class="verb get">GET</span> <code>hub/api/a/{slug}/export</code></h3>
     <p>Список всех файлов дерева аудитора — чтобы перенести его на свой сервер: хаб — заменяемый вариант по умолчанию.</p>
     <p class="resp"><b>200</b> <code>{"base", "files": ["manifest.json", …]}</code></p>
+  </article>
+  <article class="ep" id="ep-stellar-link">
+    <h3><span class="verb">POST</span> <code>hub/api/a/{slug}/stellar-link</code> <span class="cost">5 токенов</span> <span class="tag">🔏 ключ аудитора</span></h3>
+    <p>Связать аудитора с его существующим аккаунтом в основной сети Stellar. Сначала владелец аккаунта одной транзакцией (в кабинете — через Freighter) пишет на этот аккаунт две записи данных:</p>
+    <table class="api-table">
+      <tr><th><code>onym-audit-auditor</code></th><td>открытый ключ аудитора, 32 байта</td></tr>
+      <tr><th><code>onym-audit-proof</code></th><td>подпись ключа аудитора, 64 байта, над строкой <code>"onym-audit-link-v1\nPublic Global Stellar Network ; September 2015\n" + G-адрес</code></td></tr>
+    </table>
+    <p>Так согласие обеих сторон видно в сети: аккаунт подписал транзакцию, ключ аудитора — доказательство. Аккаунту аудитора не нужно существовать в основной сети. Затем:</p>
+<pre><code>{"request": {"action": "stellar-link" | "stellar-unlink", "auditor": "onym:component:&lt;имя&gt;",
+             "account": "G…", "issuedAt": "…", "signature": "…"}}</code></pre>
+    <p>Хаб читает аккаунт на <code>horizon.stellar.org</code> и проверяет обе записи. Если всё сходится, он публикует сам подписанный запрос как <code>a/&lt;имя&gt;/stellar-link.json</code>; страница аудитора перепроверяет его в браузере так же.</p>
+    <p class="resp"><b>201</b> <code>{"account", "uri"}</code>; <b>stellar-unlink</b> → <code>{"unlinked": true}</code> (записи на аккаунте удаляет их владелец).</p>
+    <p class="small muted">Ошибки: 403 — подпись не ключа аудитора или несвежий запрос; 422 — записей нет, в них другой ключ или подпись не сходится.</p>
   </article>
 </section>
 
