@@ -454,3 +454,13 @@ button.who-chip::after { content: " ⏻"; }
 #d-mn-account { font: 14px var(--mono); padding: 8px 10px; border: 1px solid var(--rule); background: var(--paper); color: var(--ink); min-width: min(34em, 100%); flex: 1; }
 #d-mn-xdr { width: 100%; font: 12px/1.5 var(--mono); padding: 10px 12px; border: 1px solid var(--rule); background: var(--paper); color: var(--ink); resize: vertical; overflow-wrap: anywhere; }
 .mainnet-box .hint { font-size: 14px; line-height: 1.5; color: var(--ink-3); }
+
+/* the landing's proof from the Onym app */
+.inapp-sec.wrap { padding-top: 40px; padding-bottom: 8px; }
+.inapp-sec + .how-sec.wrap { padding-top: 56px; }
+.inapp-grid { display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: 56px; align-items: center; }
+.app-shot { margin: 0; }
+.app-shot img { display: block; width: 100%; height: auto; border-radius: 14px; border: 1px solid var(--rule); box-shadow: 0 30px 60px -30px rgba(0, 0, 0, .55); }
+.app-shot figcaption { margin-top: 10px; font-size: 13px; color: var(--ink-3); text-align: center; }
+.inapp-list { padding-left: 20px; display: grid; gap: 8px; color: var(--ink-2); margin: 0 0 8px; }
+@media (max-width: 760px) { .inapp-grid { grid-template-columns: 1fr; gap: 28px; } .app-shot { max-width: 300px; margin: 0 auto; } }

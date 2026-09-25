@@ -735,7 +735,16 @@
   "s_mn_sign_h": "Or copy the XDR and sign it in Stellar Lab: Import transaction → paste → Mainnet → sign with the account → submit. The transaction is valid for 30 minutes.",
   "s_mn_check": "The transaction is submitted — check",
   "s_mn_qr": "Scan with a phone wallet that reads SEP-7 links (LOBSTR and others), or open the link:",
-  "s_mn_open": "Open in a wallet"
+  "s_mn_open": "Open in a wallet",
+  "inapp_kicker": "Already in the Onym app",
+  "inapp_h": "Our catalog works in a real Onym client",
+  "inapp_p": "The Onym app for macOS shows the onym-relayer service from our Discovery catalog: “Listed by foldy.io”, an UNDER REVIEW badge and a link to the audit status page.",
+  "inapp_l1": "The catalog is added the standard way — Settings → Discovery Providers, key checked by its fingerprint; the client verifies the signature of every snapshot itself.",
+  "inapp_l2": "The audit status arrives in the catalog entry's status field: nothing in the app had to change.",
+  "inapp_l3": "The link opens our status page with signed attestations that verify in the browser.",
+  "inapp_status": "onym-relayer status page",
+  "inapp_cap": "Onym for macOS, 25 September 2026",
+  "inapp_alt": "The Onym app: the Review Service screen for onym-relayer, marked “Listed by foldy.io”, with an UNDER REVIEW badge linking to the status page"
  },
  "ru": {
   "title": "onym audit · аудитор сети Onym",
@@ -1472,7 +1481,16 @@
   "s_mn_build": "Сформировать транзакцию",
   "s_mn_sign_h": "Или скопируйте XDR и подпишите в Stellar Lab: Import transaction → вставить → Mainnet → подписать ключом аккаунта → отправить. Транзакция действует 30 минут.",
   "s_mn_qr": "Отсканируйте кошельком на телефоне, который понимает ссылки SEP-7 (LOBSTR и другие), или откройте ссылку:",
-  "s_mn_open": "Открыть в кошельке"
+  "s_mn_open": "Открыть в кошельке",
+  "inapp_kicker": "Уже в приложении Onym",
+  "inapp_h": "Наш каталог работает в настоящем клиенте Onym",
+  "inapp_p": "Приложение Onym для macOS показывает сервис onym-relayer из нашего Discovery-каталога: «Listed by foldy.io», плашку UNDER REVIEW и ссылку на страницу статуса аудита.",
+  "inapp_l1": "Каталог подключён штатно — Settings → Discovery Providers, ключ сверен по отпечатку; клиент сам проверяет подпись каждого снимка.",
+  "inapp_l2": "Статус аудита приходит в поле status записи каталога: в приложении ничего менять не пришлось.",
+  "inapp_l3": "Ссылка ведёт на нашу страницу статуса с подписанными аттестациями, которые проверяются в браузере.",
+  "inapp_status": "Страница статуса onym-relayer",
+  "inapp_cap": "Onym для macOS, 25 сентября 2026",
+  "inapp_alt": "Приложение Onym: экран Review Service для onym-relayer с пометкой «Listed by foldy.io» и плашкой UNDER REVIEW со ссылкой на страницу статуса"
  },
  "cnr": {
   "title": "onym audit · revizor Onym mreže",
@@ -2209,6 +2227,15 @@
   "s_mn_sign_h": "Ili kopirajte XDR i potpišite ga u Stellar Labu: Import transaction → zalijepite → Mainnet → potpišite ključem naloga → pošaljite. Transakcija važi 30 minuta.",
   "s_mn_check": "Transakcija je poslata — provjeri",
   "s_mn_qr": "Skenirajte novčanikom na telefonu koji čita SEP-7 linkove (LOBSTR i drugi), ili otvorite link:",
-  "s_mn_open": "Otvori u novčaniku"
+  "s_mn_open": "Otvori u novčaniku",
+  "inapp_kicker": "Već u Onym aplikaciji",
+  "inapp_h": "Naš katalog radi u pravom Onym klijentu",
+  "inapp_p": "Onym aplikacija za macOS prikazuje servis onym-relayer iz našeg Discovery kataloga: „Listed by foldy.io“, oznaku UNDER REVIEW i link na stranicu statusa revizije.",
+  "inapp_l1": "Katalog je dodat na standardan način — Settings → Discovery Providers, ključ provjeren po otisku; klijent sam provjerava potpis svakog snimka.",
+  "inapp_l2": "Status revizije stiže u polju status unosa kataloga: u aplikaciji ništa nije trebalo mijenjati.",
+  "inapp_l3": "Link vodi na našu stranicu statusa s potpisanim atestacijama koje se provjeravaju u pregledaču.",
+  "inapp_status": "Stranica statusa onym-relayer",
+  "inapp_cap": "Onym za macOS, 25. septembar 2026.",
+  "inapp_alt": "Onym aplikacija: ekran Review Service za onym-relayer, s oznakom „Listed by foldy.io“ i UNDER REVIEW koja vodi na stranicu statusa"
  }
 }
