@@ -627,7 +627,7 @@ $("d-mn-copy").addEventListener("click", guard(async () => {
 
 // qrSvg draws a QR code as SVG; the encoder is loaded only here.
 async function qrSvg(text) {
-  const { default: qrcode } = await import(new URL("vendor/qrcode-generator-2.0.4.mjs", ROOT).href);
+  const { default: qrcode } = await import(new URL("vendor/qrcode-generator-2.0.4.js", ROOT).href);
   const qr = qrcode(0, "L");
   qr.addData(text);
   qr.make();
