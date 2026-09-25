@@ -591,28 +591,63 @@ async function showMainnet() {
   line.className = s.state === "linked" ? "ok-line" : "bad";
 }
 
+// linkTx builds the unsigned transaction that writes the two entries on
+// account g, with this auditor key's proof for g; valid for `minutes`.
+async function linkTx(g, minutes) {
+  const k = keyOfAccount(g);
+  if (!k) throw new Error(t("mn_bad_g"));
+  const acct = await mainnetAccount(g);
+  if (!acct) throw new Error(t("mn_no_account", { g: shortG(g) }));
+  const bytes = (h) => Uint8Array.from(h.slice(9).match(/../g), (x) => parseInt(x, 16));
+  const proof = new Uint8Array(await crypto.subtle.sign({ name: "Ed25519" }, me.priv, linkMessage(g)));
+  const tx = linkTransaction(bytes(k), BigInt(acct.sequence) + 1n, Math.floor(Date.now() / 1000) + minutes * 60, [[LINK_KEY, bytes(me.key)], [LINK_PROOF, proof]]);
+  return unsignedEnvelope(tx);
+}
+
+// publishLink asks the hub to publish the link, which it checks on the network.
+async function publishLink(g) {
+  try {
+    await ask(`a/${me.slug}/stellar-link`, { action: "stellar-link", auditor: me.componentId, account: g }, me.priv);
+  } catch (e) {
+    throw e.status === 422 ? new Error(t("mn_not_yet", { g: shortG(g) })) : e;
+  }
+  toast(t("mn_done", { g: shortG(g) }));
+  await showMainnet();
+}
+
 // linkMainnet writes the two entries on the account chosen in Freighter,
-// signed there, then asks the hub to publish the link it checks.
+// signed there. Without Freighter, the manual path below is opened.
 async function linkMainnet() {
   const fr = await freighter();
-  if (!(await fr.isConnected()).isConnected) throw new Error(t("mn_fr_missing"));
+  if (!(await fr.isConnected()).isConnected) {
+    $("d-mn-manual").open = true;
+    $("d-mn-account").focus();
+    throw new Error(t("mn_fr_missing"));
+  }
   const acc = await fr.requestAccess();
   if (acc.error || !acc.address) throw new Error(t("mn_fr_denied"));
   const g = acc.address;
   $("d-mainnet").textContent = t("mn_working", { g: shortG(g) });
-  const acct = await mainnetAccount(g);
-  if (!acct) throw new Error(t("mn_no_account", { g: shortG(g) }));
-  const proof = new Uint8Array(await crypto.subtle.sign({ name: "Ed25519" }, me.priv, linkMessage(g)));
-  const auditorKey = Uint8Array.from(me.key.slice(9).match(/../g), (x) => parseInt(x, 16));
-  const pub = Uint8Array.from(keyOfAccount(g).slice(9).match(/../g), (x) => parseInt(x, 16));
-  const tx = linkTransaction(pub, BigInt(acct.sequence) + 1n, Math.floor(Date.now() / 1000) + 600, [[LINK_KEY, auditorKey], [LINK_PROOF, proof]]);
-  const signed = await fr.signTransaction(unsignedEnvelope(tx), { networkPassphrase: MAINNET.passphrase, address: g });
+  const signed = await fr.signTransaction(await linkTx(g, 10), { networkPassphrase: MAINNET.passphrase, address: g });
   if (signed.error || !signed.signedTxXdr) throw new Error(t("mn_fr_declined", { err: signed.error?.message || "" }));
   await submitMainnet(signed.signedTxXdr);
-  await ask(`a/${me.slug}/stellar-link`, { action: "stellar-link", auditor: me.componentId, account: g }, me.priv);
-  toast(t("mn_done", { g: shortG(g) }));
-  await showMainnet();
+  await publishLink(g);
 }
+
+// The manual path: any wallet or Stellar Lab signs and submits the
+// transaction; then the hub checks the entries.
+let manualG = "";
+$("d-mn-build").addEventListener("click", guard(async () => {
+  const g = $("d-mn-account").value.trim().toUpperCase();
+  $("d-mn-xdr").value = await linkTx(g, 30);
+  manualG = g;
+  $("d-mn-tx").hidden = false;
+}));
+$("d-mn-copy").addEventListener("click", guard(async () => {
+  await navigator.clipboard.writeText($("d-mn-xdr").value).catch(() => $("d-mn-xdr").select());
+  toast(t("mn_copied"));
+}));
+$("d-mn-check").addEventListener("click", guard(() => publishLink(manualG)));
 $("d-mainnet-go").addEventListener("click", guard(async () => {
   $("d-mainnet-go").disabled = true;
   try { await linkMainnet(); } catch (e) { await showMainnet(); throw e; } finally { $("d-mainnet-go").disabled = false; }

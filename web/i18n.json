@@ -482,11 +482,14 @@
    "mn_working": "Linking {g}: confirm the transaction in Freighter…",
    "mn_no_account": "The account {g} does not exist on the public network: fund it first.",
    "mn_fr_load": "Could not load the Freighter wallet script.",
-   "mn_fr_missing": "Freighter is not installed in this browser: install it from freighter.app and reload.",
+   "mn_fr_missing": "Freighter was not found: it works in Chrome, Brave, Firefox and Edge on a computer. You can sign with another wallet below.",
    "mn_fr_denied": "Freighter did not share an account with this page.",
    "mn_fr_declined": "The transaction was not signed in Freighter. {err}",
    "mn_done": "Linked to {g} on the Stellar public network.",
-   "mn_confirm_off": "Remove the published link? The entries stay on the account until you remove them there."
+   "mn_confirm_off": "Remove the published link? The entries stay on the account until you remove them there.",
+   "mn_bad_g": "Enter a Stellar account address (G…, 56 characters).",
+   "mn_not_yet": "The entries are not on {g} yet: sign and submit the transaction, wait a few seconds, and check again.",
+   "mn_copied": "Copied."
   },
   "o_brand": "onym audit",
   "o_rule": "Orders under signed offers · Onym audit seat",
@@ -731,7 +734,13 @@
   "s_mainnet_go": "Link to an account on the public network",
   "s_mainnet_off": "Remove the link",
   "s_mainnet_h": "Links this auditor to a Stellar account you already have, on the public network, through Freighter. One transaction from that account writes two data entries on it: this auditor's key, and this key's signature for that account — both sides consent on the network. Freighter must be on Mainnet; the account pays the fee (0.001 XLM) and keeps 1 XLM in reserve for the two entries.",
-  "facts_stellar": "Stellar (public network)"
+  "facts_stellar": "Stellar (public network)",
+  "s_mn_manual": "No Freighter? Sign with another wallet",
+  "s_mn_manual_h": "Enter the account's address: the page builds the transaction with this auditor's proof; you sign and submit it in any wallet that takes a transaction XDR, or in Stellar Lab.",
+  "s_mn_account": "Stellar account address",
+  "s_mn_build": "Build the transaction",
+  "s_mn_sign_h": "In Stellar Lab: Import transaction → paste → choose Mainnet → sign with the account → submit. The transaction is valid for 30 minutes. Then check here.",
+  "s_mn_check": "I submitted it — check"
  },
  "ru": {
   "title": "onym audit · аудитор сети Onym",
@@ -1215,11 +1224,14 @@
    "mn_working": "Связываю {g}: подтвердите транзакцию в Freighter…",
    "mn_no_account": "Аккаунта {g} нет в основной сети: сначала пополните его.",
    "mn_fr_load": "Не удалось загрузить скрипт кошелька Freighter.",
-   "mn_fr_missing": "В этом браузере нет Freighter: установите его с freighter.app и обновите страницу.",
+   "mn_fr_missing": "Freighter не найден: он работает в Chrome, Brave, Firefox и Edge на компьютере. Можно подписать другим кошельком — ниже.",
    "mn_fr_denied": "Freighter не дал этой странице доступ к аккаунту.",
    "mn_fr_declined": "Транзакция не подписана в Freighter. {err}",
    "mn_done": "Связан с {g} в основной сети Stellar.",
-   "mn_confirm_off": "Убрать опубликованную связь? Записи на аккаунте останутся, пока вы не удалите их там."
+   "mn_confirm_off": "Убрать опубликованную связь? Записи на аккаунте останутся, пока вы не удалите их там.",
+   "mn_bad_g": "Введите адрес Stellar-аккаунта (G…, 56 символов).",
+   "mn_not_yet": "На {g} ещё нет записей: подпишите и отправьте транзакцию, подождите несколько секунд и проверьте снова.",
+   "mn_copied": "Скопировано."
   },
   "o_brand": "onym audit",
   "o_rule": "Заказы по подписанным предложениям · место аудитора Onym",
@@ -1464,7 +1476,13 @@
   "s_mainnet_go": "Связать с аккаунтом в основной сети",
   "s_mainnet_off": "Убрать связь",
   "s_mainnet_h": "Связывает этого аудитора с вашим существующим аккаунтом в основной сети Stellar через Freighter. Одна транзакция с этого аккаунта записывает на него две записи данных: ключ аудитора и подпись этого ключа для этого аккаунта — согласие обеих сторон видно в сети. В Freighter должна быть выбрана основная сеть (Mainnet); аккаунт платит комиссию (0,001 XLM) и держит 1 XLM в резерве под две записи.",
-  "facts_stellar": "Stellar (основная сеть)"
+  "facts_stellar": "Stellar (основная сеть)",
+  "s_mn_check": "Транзакция отправлена — проверить",
+  "s_mn_manual": "Нет Freighter? Подписать другим кошельком",
+  "s_mn_manual_h": "Введите адрес аккаунта: страница соберёт транзакцию с доказательством этого аудитора, а вы подпишете и отправите её в любом кошельке, который принимает XDR транзакции, или в Stellar Lab.",
+  "s_mn_account": "Адрес Stellar-аккаунта",
+  "s_mn_build": "Собрать транзакцию",
+  "s_mn_sign_h": "В Stellar Lab: Import transaction → вставить → выбрать Mainnet → подписать ключом аккаунта → отправить. Транзакция действует 30 минут. Потом проверьте здесь."
  },
  "cnr": {
   "title": "onym audit · revizor Onym mreže",
@@ -1948,11 +1966,14 @@
    "mn_working": "Povezujem {g}: potvrdite transakciju u Freighteru…",
    "mn_no_account": "Naloga {g} nema na glavnoj mreži: prvo ga dopunite.",
    "mn_fr_load": "Nije moguće učitati skriptu novčanika Freighter.",
-   "mn_fr_missing": "U ovom pregledaču nema Freightera: instalirajte ga s freighter.app i osvježite stranicu.",
+   "mn_fr_missing": "Freighter nije pronađen: radi u Chromeu, Braveu, Firefoxu i Edgeu na računaru. Možete potpisati drugim novčanikom — ispod.",
    "mn_fr_denied": "Freighter nije dao ovoj stranici pristup nalogu.",
    "mn_fr_declined": "Transakcija nije potpisana u Freighteru. {err}",
    "mn_done": "Povezan s {g} na glavnoj Stellar mreži.",
-   "mn_confirm_off": "Ukloniti objavljenu vezu? Unosi na nalogu ostaju dok ih tamo ne uklonite."
+   "mn_confirm_off": "Ukloniti objavljenu vezu? Unosi na nalogu ostaju dok ih tamo ne uklonite.",
+   "mn_bad_g": "Unesite adresu Stellar naloga (G…, 56 znakova).",
+   "mn_not_yet": "Na {g} još nema unosa: potpišite i pošaljite transakciju, sačekajte nekoliko sekundi i provjerite ponovo.",
+   "mn_copied": "Kopirano."
   },
   "o_brand": "onym audit",
   "o_rule": "Narudžbe po potpisanim ponudama · Onym mjesto revizora",
@@ -2197,6 +2218,12 @@
   "s_mainnet_go": "Poveži s nalogom na glavnoj mreži",
   "s_mainnet_off": "Ukloni vezu",
   "s_mainnet_h": "Povezuje ovog revizora s vašim postojećim Stellar nalogom na glavnoj mreži preko Freightera. Jedna transakcija s tog naloga upisuje na njega dva unosa podataka: ključ revizora i potpis tog ključa za taj nalog — saglasnost obje strane vidi se na mreži. U Freighteru mora biti izabrana glavna mreža (Mainnet); nalog plaća naknadu (0,001 XLM) i drži 1 XLM u rezervi za dva unosa.",
-  "facts_stellar": "Stellar (glavna mreža)"
+  "facts_stellar": "Stellar (glavna mreža)",
+  "s_mn_manual": "Nemate Freighter? Potpišite drugim novčanikom",
+  "s_mn_manual_h": "Unesite adresu naloga: stranica će sastaviti transakciju s dokazom ovog revizora, a vi je potpišite i pošaljite u bilo kom novčaniku koji prima XDR transakcije, ili u Stellar Labu.",
+  "s_mn_account": "Adresa Stellar naloga",
+  "s_mn_build": "Sastavi transakciju",
+  "s_mn_sign_h": "U Stellar Labu: Import transaction → zalijepite → izaberite Mainnet → potpišite ključem naloga → pošaljite. Transakcija važi 30 minuta. Zatim provjerite ovdje.",
+  "s_mn_check": "Transakcija je poslata — provjeri"
  }
 }
