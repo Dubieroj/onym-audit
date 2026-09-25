@@ -464,3 +464,5 @@ button.who-chip::after { content: " ⏻"; }
 .app-shot figcaption { margin-top: 10px; font-size: 13px; color: var(--ink-3); text-align: center; }
 .inapp-list { padding-left: 20px; display: grid; gap: 8px; color: var(--ink-2); margin: 0 0 8px; }
 @media (max-width: 760px) { .inapp-grid { grid-template-columns: 1fr; gap: 28px; } .app-shot { max-width: 300px; margin: 0 auto; } }
+/* With section links and both dashboards, the masthead has no room for the brand's subtitle. */
+@media (max-width: 1500px) { .with-cabinets:has(nav) .brand .muted { display: none; } }
