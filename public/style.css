@@ -447,8 +447,10 @@ button.who-chip::after { content: " ⏻"; }
 .mainnet-box { margin: 0 0 22px; padding: 14px 16px; border: 1px solid var(--rule); border-radius: 4px; background: var(--card); max-width: 760px; }
 .mainnet-box .anchor-line { margin: 0 0 10px; }
 .mainnet-box .hint { margin: 10px 0 0; }
-#d-mn-manual { margin-top: 12px; border-top: 1px solid var(--rule); padding-top: 10px; }
-#d-mn-manual summary { cursor: pointer; color: var(--ink-2); font-size: 15px; }
+#d-mn-form { margin-top: 12px; border-top: 1px solid var(--rule); padding-top: 12px; }
+.mn-qr-row { display: flex; flex-wrap: wrap; align-items: center; gap: 16px 24px; margin: 8px 0 14px; }
+.mn-qr { width: 220px; max-width: 100%; }
+.mn-qr svg { display: block; width: 100%; height: auto; }
 #d-mn-account { font: 14px var(--mono); padding: 8px 10px; border: 1px solid var(--rule); background: var(--paper); color: var(--ink); min-width: min(34em, 100%); flex: 1; }
 #d-mn-xdr { width: 100%; font: 12px/1.5 var(--mono); padding: 10px 12px; border: 1px solid var(--rule); background: var(--paper); color: var(--ink); resize: vertical; overflow-wrap: anywhere; }
 .mainnet-box .hint { font-size: 14px; line-height: 1.5; color: var(--ink-3); }

@@ -7,7 +7,7 @@
 // document is built to the static-Ed25519 profile and signed here.
 import { parseStrict, canonical, plain, digest, fingerprint, verifySig, verifyAttestation } from "../verify.js";
 import { normalize, check, generate, derive, orderKey, accountOfKey, keyOfAccount, vaultKeys } from "../onym-id.js";
-import { NETWORK, anchorDigest, anchor, anchorState, MAINNET, LINK_KEY, LINK_PROOF, linkMessage, linkTransaction, unsignedEnvelope, mainnetAccount, submitMainnet, linkState } from "../stellar.js";
+import { NETWORK, anchorDigest, anchor, anchorState, MAINNET, LINK_KEY, LINK_PROOF, linkMessage, linkTransaction, unsignedEnvelope, mainnetAccount, linkState, sep7 } from "../stellar.js";
 import { RE as ORE, auditors as orderAuditors, load as loadAuditor, kindsOf, feeText, pin, subjectOf, newOrderID, sign as signOrder, send as sendOrder, contactOf } from "../order-core.js";
 
 const $ = (id) => document.getElementById(id);
@@ -558,15 +558,6 @@ $("d-anchor-go").addEventListener("click", guard(anchorNow));
 
 // ---- The auditor's account on the Stellar public network
 
-// The Freighter wallet's page API, served from this site; loaded only here.
-let freighterLoad;
-const freighter = () => (window.freighterApi ? Promise.resolve(window.freighterApi) : (freighterLoad ??= new Promise((ok, bad) => {
-  const s = document.createElement("script");
-  s.src = new URL("vendor/freighter-api-6.0.1.min.js", ROOT).href;
-  s.onload = () => ok(window.freighterApi);
-  s.onerror = () => { freighterLoad = null; bad(new Error(t("mn_fr_load"))); };
-  document.head.append(s);
-})));
 const shortG = (g) => g.slice(0, 4) + "…" + g.slice(-4);
 
 // showMainnet reads the published link and checks it on the network.
@@ -615,43 +606,48 @@ async function publishLink(g) {
   await showMainnet();
 }
 
-// linkMainnet writes the two entries on the account chosen in Freighter,
-// signed there. Without Freighter, the manual path below is opened.
-async function linkMainnet() {
-  const fr = await freighter();
-  if (!(await fr.isConnected()).isConnected) {
-    $("d-mn-manual").open = true;
-    $("d-mn-account").focus();
-    throw new Error(t("mn_fr_missing"));
-  }
-  const acc = await fr.requestAccess();
-  if (acc.error || !acc.address) throw new Error(t("mn_fr_denied"));
-  const g = acc.address;
-  $("d-mainnet").textContent = t("mn_working", { g: shortG(g) });
-  const signed = await fr.signTransaction(await linkTx(g, 10), { networkPassphrase: MAINNET.passphrase, address: g });
-  if (signed.error || !signed.signedTxXdr) throw new Error(t("mn_fr_declined", { err: signed.error?.message || "" }));
-  await submitMainnet(signed.signedTxXdr);
-  await publishLink(g);
-}
-
-// The manual path: any wallet or Stellar Lab signs and submits the
-// transaction; then the hub checks the entries.
+// The page forms the transaction; any wallet signs and submits it: a phone
+// wallet from the QR code or the web+stellar link (SEP-7), Stellar Lab or
+// anything that takes a transaction XDR. Then the hub checks the entries.
 let manualG = "";
 $("d-mn-build").addEventListener("click", guard(async () => {
   const g = $("d-mn-account").value.trim().toUpperCase();
-  $("d-mn-xdr").value = await linkTx(g, 30);
+  const xdr = await linkTx(g, 30);
   manualG = g;
+  const uri = sep7(xdr);
+  $("d-mn-xdr").value = xdr;
+  $("d-mn-open").href = uri;
+  $("d-mn-qr").replaceChildren(await qrSvg(uri));
   $("d-mn-tx").hidden = false;
 }));
 $("d-mn-copy").addEventListener("click", guard(async () => {
   await navigator.clipboard.writeText($("d-mn-xdr").value).catch(() => $("d-mn-xdr").select());
   toast(t("mn_copied"));
 }));
+
+// qrSvg draws a QR code as SVG; the encoder is loaded only here.
+async function qrSvg(text) {
+  const { default: qrcode } = await import(new URL("vendor/qrcode-generator-2.0.4.mjs", ROOT).href);
+  const qr = qrcode(0, "L");
+  qr.addData(text);
+  qr.make();
+  const n = qr.getModuleCount(), ns = "http://www.w3.org/2000/svg";
+  let d = "";
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) if (qr.isDark(y, x)) d += `M${x + 4} ${y + 4}h1v1h-1z`;
+  const svg = document.createElementNS(ns, "svg");
+  svg.setAttribute("viewBox", `0 0 ${n + 8} ${n + 8}`);
+  const bg = document.createElementNS(ns, "rect");
+  bg.setAttribute("width", n + 8); bg.setAttribute("height", n + 8); bg.setAttribute("fill", "#fff");
+  const path = document.createElementNS(ns, "path");
+  path.setAttribute("d", d); path.setAttribute("fill", "#000");
+  svg.append(bg, path);
+  return svg;
+}
 $("d-mn-check").addEventListener("click", guard(() => publishLink(manualG)));
-$("d-mainnet-go").addEventListener("click", guard(async () => {
-  $("d-mainnet-go").disabled = true;
-  try { await linkMainnet(); } catch (e) { await showMainnet(); throw e; } finally { $("d-mainnet-go").disabled = false; }
-}));
+$("d-mainnet-go").addEventListener("click", () => {
+  $("d-mn-form").hidden = false;
+  $("d-mn-account").focus();
+});
 $("d-mainnet-off").addEventListener("click", guard(async () => {
   if (!confirm(t("mn_confirm_off"))) return;
   await ask(`a/${me.slug}/stellar-link`, { action: "stellar-unlink", auditor: me.componentId, account: "" }, me.priv);

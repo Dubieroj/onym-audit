@@ -124,17 +124,18 @@
       <p class="anchor-line"><span id="d-mainnet">…</span> <a id="d-mainnet-link" target="_blank" rel="noopener" hidden>stellar.expert ↗</a></p>
       <p class="row-inline"><button class="btn btn-line small-btn" id="d-mainnet-go" type="button">{{s_mainnet_go}}</button> <button class="link-btn" id="d-mainnet-off" type="button" hidden>{{s_mainnet_off}}</button></p>
       <p class="hint">{{s_mainnet_h}}</p>
-      <details id="d-mn-manual">
-        <summary>{{s_mn_manual}}</summary>
-        <p class="hint">{{s_mn_manual_h}}</p>
-        <p class="row-inline"><input id="d-mn-account" class="mono" placeholder="G…" autocomplete="off" spellcheck="false" aria-label="{{s_mn_account}}"> <button class="btn btn-line small-btn" id="d-mn-build" type="button">{{s_mn_build}}</button></p>
+      <div id="d-mn-form" hidden>
+        <p class="row-inline"><input id="d-mn-account" class="mono" placeholder="G…" autocomplete="off" spellcheck="false" aria-label="{{s_mn_account}}"> <button class="btn btn-ink small-btn" id="d-mn-build" type="button">{{s_mn_build}}</button></p>
         <div id="d-mn-tx" hidden>
-          <textarea id="d-mn-xdr" class="mono" rows="5" readonly aria-label="XDR"></textarea>
-          <p class="row-inline"><button class="btn btn-line small-btn" id="d-mn-copy" type="button">{{conn_copy}}</button> <a href="https://lab.stellar.org/transaction/import" target="_blank" rel="noopener">Stellar Lab ↗</a></p>
+          <p class="hint">{{s_mn_qr}}</p>
+          <div class="mn-qr-row"><div id="d-mn-qr" class="mn-qr" role="img" aria-label="QR"></div>
+            <p><a class="btn btn-line small-btn" id="d-mn-open">{{s_mn_open}}</a></p></div>
           <p class="hint">{{s_mn_sign_h}}</p>
+          <textarea id="d-mn-xdr" class="mono" rows="4" readonly aria-label="XDR"></textarea>
+          <p class="row-inline"><button class="btn btn-line small-btn" id="d-mn-copy" type="button">{{conn_copy}}</button> <a href="https://lab.stellar.org/transaction/import" target="_blank" rel="noopener">Stellar Lab ↗</a></p>
           <p><button class="btn btn-ink small-btn" id="d-mn-check" type="button">{{s_mn_check}}</button></p>
         </div>
-      </details>
+      </div>
     </div>
     <p class="cta">
       <button class="btn btn-ink" data-go="audit">{{s_d_new}}</button>

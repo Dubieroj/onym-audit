@@ -10,7 +10,7 @@
 <link rel="alternate" hreflang="ru" href="https://foldy.io/audit/ru/api/">
 <link rel="alternate" hreflang="sr-Latn-ME" href="https://foldy.io/audit/cnr/api/">
 <link rel="alternate" hreflang="x-default" href="https://foldy.io/audit/api/">
-<link rel="stylesheet" href="../../style.css?v=289f266f3d">
+<link rel="stylesheet" href="../../style.css?v=6d76412164">
 </head>
 <body class="api-page">
 <div class="grain" aria-hidden="true"></div>
@@ -254,7 +254,7 @@ const d = await verifyAttestation({
   </article>
   <article class="ep" id="ep-stellar-link">
     <h3><span class="verb">POST</span> <code>hub/api/a/{slug}/stellar-link</code> <span class="cost">5 токенов</span> <span class="tag">🔏 ключ аудитора</span></h3>
-    <p>Связать аудитора с его существующим аккаунтом в основной сети Stellar. Сначала владелец аккаунта одной транзакцией (в кабинете — через Freighter) пишет на этот аккаунт две записи данных:</p>
+    <p>Связать аудитора с его существующим аккаунтом в основной сети Stellar. Сначала владелец аккаунта одной транзакцией (кабинет аудитора формирует её сам, подписать можно любым кошельком: по QR-коду, ссылкой SEP-7 или в Stellar Lab) пишет на этот аккаунт две записи данных:</p>
     <table class="api-table">
       <tr><th><code>onym-audit-auditor</code></th><td>открытый ключ аудитора, 32 байта</td></tr>
       <tr><th><code>onym-audit-proof</code></th><td>подпись ключа аудитора, 64 байта, над строкой <code>"onym-audit-link-v1\nPublic Global Stellar Network ; September 2015\n" + G-адрес</code></td></tr>

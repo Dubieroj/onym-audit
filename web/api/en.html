@@ -217,7 +217,7 @@ const d = await verifyAttestation({
   </article>
   <article class="ep" id="ep-stellar-link">
     <h3><span class="verb">POST</span> <code>hub/api/a/{slug}/stellar-link</code> <span class="cost">5 tokens</span> <span class="tag">🔏 auditor key</span></h3>
-    <p>Link the auditor to an account it already has on the Stellar public network. First the account's holder writes two data entries on that account in one transaction (in the dashboard, through Freighter):</p>
+    <p>Link the auditor to an account it already has on the Stellar public network. First the account's holder writes two data entries on that account in one transaction (the auditor dashboard forms it; any wallet signs it: from a QR code, a SEP-7 link or Stellar Lab):</p>
     <table class="api-table">
       <tr><th><code>onym-audit-auditor</code></th><td>the auditor's public key, 32 bytes</td></tr>
       <tr><th><code>onym-audit-proof</code></th><td>the auditor key's signature, 64 bytes, over <code>"onym-audit-link-v1\nPublic Global Stellar Network ; September 2015\n" + G address</code></td></tr>

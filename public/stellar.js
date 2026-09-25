@@ -152,15 +152,9 @@ export async function mainnetAccount(g) {
   return r.json();
 }
 
-export async function submitMainnet(envelopeB64) {
-  const r = await fetch(`${MAINNET.horizon}/transactions`, {
-    method: "POST", credentials: "omit", headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: "tx=" + encodeURIComponent(envelopeB64),
-  });
-  const j = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error("Stellar: " + (j.extras?.result_codes ? JSON.stringify(j.extras.result_codes) : j.title || "HTTP " + r.status));
-  return j.hash;
-}
+// sep7 is the web+stellar link a wallet opens to sign and submit a
+// transaction on the public network (SEP-7; the public network is the default).
+export const sep7 = (envelopeB64) => "web+stellar:tx?xdr=" + encodeURIComponent(envelopeB64);
 
 // linkState checks the two entries on account g against an auditor key:
 // "linked", "none" (no entries), "other" (another auditor's key), "bad"

@@ -10,7 +10,7 @@
 <link rel="alternate" hreflang="ru" href="https://foldy.io/audit/ru/api/">
 <link rel="alternate" hreflang="sr-Latn-ME" href="https://foldy.io/audit/cnr/api/">
 <link rel="alternate" hreflang="x-default" href="https://foldy.io/audit/api/">
-<link rel="stylesheet" href="../../style.css?v=289f266f3d">
+<link rel="stylesheet" href="../../style.css?v=6d76412164">
 </head>
 <body class="api-page">
 <div class="grain" aria-hidden="true"></div>
@@ -254,7 +254,7 @@ const d = await verifyAttestation({
   </article>
   <article class="ep" id="ep-stellar-link">
     <h3><span class="verb">POST</span> <code>hub/api/a/{slug}/stellar-link</code> <span class="cost">5 tokena</span> <span class="tag">🔏 ključ revizora</span></h3>
-    <p>Povežite revizora s nalogom koji već ima na glavnoj Stellar mreži. Prvo vlasnik naloga jednom transakcijom (u kabinetu — preko Freightera) upisuje na taj nalog dva unosa podataka:</p>
+    <p>Povežite revizora s nalogom koji već ima na glavnoj Stellar mreži. Prvo vlasnik naloga jednom transakcijom (kabinet revizora je sastavlja; potpisuje je bilo koji novčanik: preko QR koda, SEP-7 linka ili u Stellar Labu) upisuje na taj nalog dva unosa podataka:</p>
     <table class="api-table">
       <tr><th><code>onym-audit-auditor</code></th><td>javni ključ revizora, 32 bajta</td></tr>
       <tr><th><code>onym-audit-proof</code></th><td>potpis ključa revizora, 64 bajta, nad <code>"onym-audit-link-v1\nPublic Global Stellar Network ; September 2015\n" + G adresa</code></td></tr>
